@@ -1,0 +1,164 @@
+---
+title: "pgvector on Heroku Postgres"
+description: "The pgvector extension for Heroku Postgres adds support for the vector data type. It adds functions for working with vectors, such as nearest neighbor..."
+---
+
+## Use Cases
+
+With `pgvector`, you can:
+
+- Perform retrieval augmented generation (RAG): You can populate the database with vectorized embeddings that represent the semantic nature of the documents indexed, such as the latest product documentation for a specific domain. Given a query, RAG can retrieve the most relevant embeddings and the corresponding documents, which are then used to augment the context of the prompt for generative AI. The AI can then generate responses that are both accurate and contextually relevant.
+
+- Recommend products: With a vector database containing various attributes, searching for alternatives based on the search criteria is simple. For example, you can make recommendations based on similar products like dresses or shirts, or match the style and color to offer pants or shoes. You can further extend this with collaborative filtering where the similar preferences of other shoppers enhance the recommendations.
+
+- Search Salesforce data: Use [Heroku Connect](https://devcenter.heroku.com/articles/heroku-connect) to synchronize Salesforce data into Heroku.Create a table with the embeddings since Heroku Connect can’t synchronize vector data types. For example, you can search for similar support cases with embeddings from Service Cloud cases.
+
+- Search multimedia: Search across multimedia content, like images, audio, and video. You can [embed the content](https://www.sbert.net/examples/applications/image-search/README.html) directly or work with transcriptions and other attributes to perform your search. For example, generating a music playlist by finding similar tracks based on embedded features like tempo, mood, genre, and lyrics.
+
+- Categorize and segment data: From industries such as healthcare to manufacturing, data segmentation and categorization are key to successful data analysis. For example, by converting patient records, diagnostic data, or genomic sequences into vectors, you can identify similar cases, aiding in rare disease diagnosis and personalized treatment recommendations.
+
+- Detect anomalies: Detect anomalies in your data by comparing vectors that don’t fit the regular pattern. This comparison is useful in analyzing and detecting problematic or suspicious patterns in areas such as network traffic data, industrial sensor data, transactions data, or online behavior.
+
+- Perform similarity searches: Perform simple vector similarity searches (VSS) based on the input query vector. Generally, query embeddings are used to search against the embeddings loaded into the database, but any vector data can work.
+
+## Prerequisites
+
+- You have an [Essential-0, Essential-1, or Essential-2 database](https://devcenter.heroku.com/articles/heroku-postgres-plans#essential-tier) running PostgreSQL 14 or higher, or a [Standard-tier and higher database](https://devcenter.heroku.com/articles/heroku-postgres-plans) running PostgreSQL 15 or higher.
+
+- You don’t have [Heroku Streaming Data Connectors](https://devcenter.heroku.com/articles/heroku-data-connectors) set up on that database. Vector data types don’t sync.
+
+## Provisioning
+
+You can install `pgvector` by running `CREATE EXTENSION vector;` in a [`psql`](https://devcenter.heroku.com/articles/managing-heroku-postgres-using-cli#pg-psql) session on your database.
+
+```term
+$ heroku pg:psql DATABASE_URL -a example-app
+--> Connecting to postgresql-octagonal-12345
+psql (13.2, server 11.12 (Ubuntu 11.12-1.pgdg16.04+1))
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+example-app::DATABASE=> CREATE EXTENSION vector;
+CREATE EXTENSION
+example-app::DATABASE=>
+```
+
+To check what version is installed, run the following query from `psql`:
+
+```term
+=> SELECT extversion FROM pg_extension WHERE extname = 'vector';
+ extversion
+------------
+ 0.5.0
+(1 row)
+```
+
+## Work with pgvector
+
+You can create a table with a vector column:
+
+```term
+CREATE TABLE animals(id serial PRIMARY KEY, name VARCHAR(100), embedding VECTOR(100));
+```
+
+In the example, we created an `animals` table with an `embedding` vector column.
+
+After creating a table, you can insert vectors:
+
+```term
+INSERT INTO animals(name, embedding) VALUES ('llama', '[-0.15647223591804504,
+…
+-0.7506130933761597, 0.1427040845155716]');
+```
+
+In the example, we inserted `llama` in the `embedding` vector column.
+
+You can also add a vector column to an existing table:
+
+```term
+ALTER TABLE fruit ADD COLUMN embedding VECTOR(100);
+```
+
+In the example, we added a vector column to an existing `fruit` table.
+
+## Perform Vector Queries
+
+You can perform different operations on your vector data with these common query operators.
+
+### : Euclidean Distance
+
+The Euclidean distance, or L2 distance, operator measures the straight-line distance between two points in a vector. This operator is best for searching for an alternative item or most similar item to the query.
+
+In the example, we use Euclidean distance search for animals similar to a shark in the `animals` table.
+
+```term
+=> SELECT name FROM animals WHERE name != 'shark' ORDER BY embedding  (SELECT embedding FROM animals WHERE name = 'shark') LIMIT 5;
+ name
+-----------
+ crocodile
+ dolphin
+ whale
+ turtle
+ alligator
+(5 rows)
+```
+
+### : Negative Inner Product
+
+The negative inner product operator measures the orthogonal projection, which is whether the vectors point in the same or opposite direction with magnitude. The greater the inner product means a greater similarity between two vectors. This operator is best for searching for items of similar topics and similar in magnitude. For example, image identification where an image of a shark yields the highest inner product against the embedding of a shark.
+
+### : Cosine Distance
+
+The cosine distance operator measures the cosine of the angle between two vectors. The value ranges from -1 to 1, with values closer to 1 representing greater similarity between the vectors. This operator is best for similarity searches where it’s better to omit the magnitude. For example, anomaly detection where the frequency doesn’t matter, or text-based search for whole paragraph and document semantics.
+
+## Performance
+
+As you add more vector data to your database, there can be performance issues or slowness in performing queries. You can index vector data like other columns in Postgres, and `pgvector` provides [a few ways](https://github.com/pgvector/pgvector?tab=readme-ov-file#indexing) to do so. Keep in mind:
+
+- Adding an index causes `pgvector` to switch to using approximate nearest neighbor search instead of exact nearest neighbor search, possibly causing a difference in query results.
+
+- Indexing functions are based on distance calculations. Create functions based on the calculation you plan to rely on the most in your application.
+
+You can set the following settings to help optimize performance.
+
+[`max_parallel_workers_per_gather`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-MAX-PARALLEL-WORKERS-PER-GATHER) speeds up queries without creating an index.
+
+```term
+SET max_parallel_workers_per_gather = 4;
+```
+
+[`max_parallel_maintenance_workers`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-MAX-PARALLEL-MAINTENANCE-WORKERS) speeds up creating indexes on large tables by increasing the number of parallel workers.
+
+```term
+SET max_parallel_maintenance_workers = 7;
+```
+
+To see the current settings, use the `SHOW` command:
+
+```term
+=> SHOW max_parallel_workers_per_gather;
+ max_parallel_workers_per_gather
+---------------------------------
+ 1
+(1 row)
+```
+
+See the [`pgvector` documentation](https://github.com/pgvector/pgvector#performance) for guidance on creating indexes and optimizing performance on vector data types.
+
+### Indexes
+
+`pgvector` supports two index types: HNSW (Hierarchical Navigable Small Worlds) and IVFFlat (Inverted File with Flat Compression index). Depending on the type of index you choose, there are common trade-offs including speed, recall or the quality of the query result, build times, and resource consumption.
+
+The default index type is having no index as `pgvector` is configured for exact nearest neighbor search. The default allows for perfect recall at the expense of speed. Adding an HNSW or IVFFlat index lets you perform approximate nearest neighbor (ANN) searches.
+
+#### HNSW
+
+HNSW is the preferred index type for ANN searches as it performs better than IVFFlat in most use cases. However, HNSW indexes take longer to build and take more memory. The algorithm builds multi-layer graphs that allow for fast search results. The index is built as you insert data into the table, so you can create these indexes without any data.
+
+#### IVFFlat
+
+You can use IVFFlat indexes for improving performance on ANN searches, including searches against high-dimensional embeddings. Since the IVFFlat relies on an existing vector, it’s best to build the index after the table has data in it for better recall. If the data distribution changes significantly, rebuild the index. IVFFlat indexes have faster build times and take less memory than HNSW, but it has worse query performance.
+
+## Examples
+
+- [How to Use pgvector for Similarity Search on Heroku Postgres](https://blog.heroku.com/pgvector-for-similarity-search-on-heroku-postgres)

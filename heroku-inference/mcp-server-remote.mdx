@@ -1,0 +1,163 @@
+---
+title: "Heroku Remote MCP Server"
+description: "The Heroku Remote MCP Server is a Model Context Protocol (MCP) implementation that enables you to connect AI agents to the Heroku platform. This remot..."
+---
+
+## Connect Your MCP Client to Heroku
+
+To connect your MCP client to Heroku’s remote MCP server:
+
+- Follow your client’s documentation to add a new MCP server with the URL `https://mcp.heroku.com/mcp`.
+
+- Log in to your Heroku account when prompted to authenticate.
+
+Your client is now securely connected and ready to use.
+
+### Connect to Claude.ai
+
+Connecting to remote MCP servers with Claude requires a [Claude Enterprise or Team plan](https://www.anthropic.com/pricing#team-&-enterprise).
+
+- Open your [Claude.ai](https://claude.ai/) dashboard.
+
+- Select `Settings`, then `Integrations`.
+
+- Select `Add Server`.
+
+- Enter “Heroku” as the `Name` and `https://mcp.heroku.com/mcp` as the `URL`.
+
+- Follow the prompts to authenticate into your Heroku account with OAuth 2.0.
+
+### Connect to Claude Desktop
+
+You can connect to Claude Desktop with a proxy command:
+
+- Open the config file:
+
+Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+- Windows: `C:\Users\\AppData\Roaming\Claude\claude_desktop_config.json`
+
+- Add the following to the `mcpServers` object:
+
+```term
+{
+    "mcpServers": {
+      "Heroku": {
+        "command": "npx",
+        "args": ["-y", "mcp-remote", "https://mcp.heroku.com/mcp"]
+      }
+    }
+}
+```
+
+- Restart the Claude desktop app.
+
+### Connect to Cursor
+
+- Open your [Cursor](https://cursor.com/) settings, then select `Tools & Integrations`.
+
+- Click `New MCP Server`.
+
+- Locate the `mcpServers` object, then add the following:
+
+```term
+{
+    "mcpServers": {
+      "heroku": {
+        "url": "https://mcp.heroku.com/mcp"
+      }
+    }
+}
+```
+
+- In Cursor settings, reopen `Tools & Integrations`.
+
+- Click `Needs login` next to Heroku MCP.
+
+- Follow the prompts to authenticate into your Heroku account with OAuth 2.0.
+
+### Connect to VS Code
+
+- In [VS Code](https://code.visualstudio.com/), open the [`Command Palette`](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette).
+
+- Select `MCP: Add Server...`, then `HTTP (HTTP or Server-Sent Events)`.
+
+- Enter `https://mcp.heroku.com/mcp` as the Server URL.
+
+- Enter `heroku` as the Server ID.
+
+- Save the MCP configuration to a `settings.json` file.
+
+- Select `Allow` to authenticate into your Heroku account with OAuth 2.0.
+
+## Troubleshooting
+
+If you’re having trouble connecting an MCP client to `mcp.heroku.com`:
+
+- Ensure your MCP client supports Streamable HTTP, which is a newer standard than server-sent events (SSE).
+
+- Confirm you have permission to add `https://mcp.heroku.com/mcp` with clients that restrict this access, for example, Claude Enterprise and Team plans.
+
+- Confirm your client has an extension installed to rewrite MCP server URLs, for example, Cursor).
+
+### Authorization Issues
+
+MCP clients must support [web-based OAuth flow](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization) to connect to `mcp.heroku.com`. With web-based OAuth flow, users are asked to authenticate with the server’s identity provider (`id.heroku.com`) when the client opens a default browser window. After successful authorization, the client maintains the connection using OAuth token refresh.
+
+If an established connection to the remote MCP server hangs, continuously retries, or is otherwise broken, you may need to reset your client’s authorization.
+
+#### Reset Auth for Cursor
+
+- In the web browser, clear cookies for the MCP server origin `mcp.heroku.com`.
+
+- Open Cursor.
+
+- Open the Command palette (Cmd+Shift+P).
+
+- Select `Cursor: Clear All MCP Tokens`.
+
+- Restart Cursor.
+
+- Ensure that the MCP server configuration is the correct URL `https://mcp.heroku.com/mcp` (some extensions may alter configured URLs).
+
+- Enable the MCP server and click `Login`.
+
+#### Reset Auth for mcp-remote Clients
+
+For clients based on [`mcp-remote`](https://github.com/geelen/mcp-remote) library, like mcp-inspector:
+
+- In the web browser, clear cookies for the MCP server origin `mcp.heroku.com`.
+
+- Quit the `mcp-remote` client.
+
+- In the terminal/shell, execute `rm -rf ~/.mcp-auth`.
+
+- Start the client and proceed with login.
+
+#### Reset Auth for Other Clients
+
+Generally, if an established MCP server connection is failing:
+
+- In the web browser, clear cookies for the MCP server origin, `mcp.heroku.com`.
+
+- Open your client.
+
+Remove the MCP server configuration.
+
+- Restart the client.
+
+- Recreate the MCP server config.
+
+- Initiate the login flow.
+
+Authorization behavior for MCP clients isn’t standardized. Reach out to the developer or publisher of your MCP client for support on how to reset configuration and authorization for remote MCP servers as necessary.
+
+## Customer Support
+
+You can submit issues via one of our [Heroku Support channels](https://devcenter.heroku.com/articles/support-channels).
+
+## Additional Resources
+
+- [STDIO MCP Servers](https://devcenter.heroku.com/articles/heroku-mcp-server)
+
+- [Working With MCP on Heroku](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp)

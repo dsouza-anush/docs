@@ -1,0 +1,123 @@
+---
+title: "LlamaIndex AI Integration"
+description: "LlamaIndex is a data framework that enables you to build context-augmented large language model (LLM) applications. You can use LlamaIndex for various..."
+---
+
+## Installation and Setup
+
+To install the integration, run:
+
+```shell
+pip install llama-index-llms-heroku
+```
+
+To set up LlamaIndex:
+
+- Create an app in Heroku:
+
+```bash
+heroku create example-app
+```
+
+- Create and attach a [chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards#available-models) to your app:
+
+```bash
+heroku ai:models:create -a example-app claude-3-5-haiku
+```
+
+- Export configuration variables:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a example-app)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a example-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a example-app)
+```
+
+## Using the Integration
+
+### Available Models
+
+For a complete list of available models, see [Managed Inference and Agents API Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards).
+
+### Chat Completion Example
+
+```python
+from llama_index.llms.heroku import Heroku
+from llama_index.core.llms import ChatMessage, MessageRole
+
+# Initialize the Heroku LLM
+llm = Heroku()
+
+# Create chat messages
+messages = [
+    ChatMessage(
+        role=MessageRole.SYSTEM, content="You are a helpful assistant."
+    ),
+    ChatMessage(
+        role=MessageRole.USER,
+        content="What are the most popular house pets in North America?",
+    ),
+]
+
+# Get response
+response = llm.chat(messages)
+print(response)
+```
+
+### Using Environment Variables
+
+The integration automatically reads environment variables:
+
+```python
+import os
+
+# Set environment variables
+os.environ["INFERENCE_KEY"] = "your-inference-key"
+os.environ["INFERENCE_URL"] = "https://us.inference.heroku.com"
+os.environ["INFERENCE_MODEL_ID"] = "claude-3-5-haiku"
+
+# Initialize without parameters
+llm = Heroku()
+```
+
+### Parameters
+
+You can pass parameters directly:
+
+```python
+import os
+
+llm = Heroku(
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-3-5-haiku"),
+    api_key=os.getenv("INFERENCE_KEY", "your-inference-key"),
+    inference_url=os.getenv(
+        "INFERENCE_URL", "https://us.inference.heroku.com"
+    ),
+    max_tokens=1024,
+)
+```
+
+### Text Completion Example
+
+```python
+response = llm.complete("Explain the importance of open source LLMs")
+print(response.text)
+```
+
+## Error Handling
+
+The integration includes error handling for common issues, including:
+
+- Missing API key
+
+- Invalid inference URL
+
+- Missing model configuration
+
+## Additional Resources
+
+- [AI Integrations](https://devcenter.heroku.com/categories/ai)
+
+- [Managed Inference and Agents Add-on](https://devcenter.heroku.com/articles/heroku-inference)
+
+- [Managed Inference and Agents API Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards)

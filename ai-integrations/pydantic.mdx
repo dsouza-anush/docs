@@ -1,0 +1,59 @@
+---
+title: "Pydantic AI Integration"
+description: "Pydantic AI is a Python agent framework that enables developers to build production-grade applications and agents with generative AI. You can use Hero..."
+---
+
+## Setup and Configuration
+
+Set the `INFERENCE_KEY` to the API key and `INFERENCE_URL` to the base URL with [environment variables](https://devcenter.heroku.com/articles/config-vars):
+
+```bash
+export INFERENCE_KEY='your-heroku-api-key'
+export INFERENCE_URL='https://us.inference.heroku.com'
+```
+
+Then, configure the Pydantic AI agent:
+
+```bash
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.heroku import HerokuProvider
+
+model = OpenAIModel(
+    'claude-4-sonnet',
+    provider=HerokuProvider(api_key='your-heroku-inference-key'),
+)
+agent = Agent(model)
+```
+
+## MCP
+
+You can use Heroku Managed Inference and Agents and Pydantic AI to create agentic workflows with [built-in tools](https://devcenter.heroku.com/articles/heroku-inference-tools) and [tool calling with MCP](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp).
+
+- MCP Client: Pydantic AI agents can act as an [MCP Client](https://ai.pydantic.dev/mcp/client/), connecting to MCP servers to use their tools.
+
+- MCP Server: Agents can be exposed as [MCP servers](https://ai.pydantic.dev/mcp/server/), allowing other agents to use them as tools.
+
+## A2A
+
+Pydantic’s [FastA2A](https://ai.pydantic.dev/a2a/#fasta2a) library simplifies implementation of [A2A protocol](https://ai.pydantic.dev/a2a/) in Python. To expose a Pydantic AI agent as an A2A server:
+
+```bash
+from pydantic_ai import Agent
+agent = Agent('HerokuProvider:claude-4-sonnet', instructions='Be fun!')
+app = agent.to_a2a()
+```
+
+Then, run the example with [uvicorn](https://www.uvicorn.org/):
+
+```bash
+uvicorn agent_to_a2a:app --host 0.0.0.0 --port 8000
+```
+
+## Additional Resources
+
+- [Managed Inference and Agents Add-on](https://devcenter.heroku.com/articles/heroku-inference)
+
+- [Working With MCP on Heroku](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp)
+
+- [AI Integrations](https://devcenter.heroku.com/categories/ai-integrations)

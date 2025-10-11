@@ -48,6 +48,56 @@
         ]
       },
       {
+        "tab": "Heroku AI",
+        "groups": [
+          {
+            "group": "Working with AI",
+            "pages": [
+              "heroku-inference/ai-studio"
+            ]
+          },
+          {
+            "group": "Heroku Inference",
+            "pages": [
+              "heroku-inference/mcp-server-stdio",
+              "heroku-inference/mcp-server-remote"
+            ]
+          },
+          {
+            "group": "Heroku Inference Quick Start Guides",
+            "pages": []
+          },
+          {
+            "group": "Inference API",
+            "pages": []
+          },
+          {
+            "group": "AI Models",
+            "pages": []
+          },
+          {
+            "group": "Tool Use",
+            "pages": [
+              "tool-use/heroku-tools",
+              "tool-use/working-with-mcp"
+            ]
+          },
+          {
+            "group": "Vector Database",
+            "pages": [
+              "vector-database/pgvector"
+            ]
+          },
+          {
+            "group": "AI Integrations",
+            "pages": [
+              "ai-integrations/llamaindex",
+              "ai-integrations/pydantic"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API reference",
         "groups": [
           {

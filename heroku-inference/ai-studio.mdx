@@ -1,0 +1,56 @@
+---
+title: "Heroku AI Studio"
+description: "Heroku AI Studio is a web-based interface that enables developers to explore, test, and understand the capabilities of the Managed Inference and Agent..."
+---
+
+## Use Cases and Benefits
+
+AI Studio supports AI development, from model experimentation to integration:
+
+- Understand model nuances: Experiment with different prompts and parameters to understand the capabilities of the [model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) you provisioned.
+
+- Tune prompts: Tune and refine prompts for your application before you implement them. Tuning enables you to iterate on your text and instructions without frequently redeploying code.
+
+- Manage tool use: Verify which tools are effective for your use case, so you can receive reliable and expected outputs.
+
+- Streamline integration: Integrate validated prompts and configurations into your app’s code with the help of built-in guidance and code snippets.
+
+## Get Started with AI Studio
+
+To access AI Studio:
+
+- Open the [Heroku Dashboard](https://dashboard.heroku.com/).
+
+- Select the app that has the Managed Inference and Agents add-on attached.
+
+- Select the `Resources` tab.
+
+- Select `Heroku Managed Inference and Agents` under `Add-on Services`. If you don’t have the add-on yet, use the search bar to find and add the Heroku Managed Inference and Agents add-on.
+
+- Select `Open Playground`.
+
+## Using AI Studio
+
+You can use the chat function in Heroku AI Studio to ask questions, analyze data, and get general help with Heroku apps. AI Studio can help with a variety of tasks, like analyzing app performance, debugging production issues, and optimizing configurations.
+
+You can change `Parameters` to guide the AI’s behavior and responses:
+
+- System Prompt: instructions that guide the AI’s behavior and responses
+
+- Temperature: sets the randomness of responses
+
+- Top-p: nucleus sampling that limits the model to the most probable tokens
+
+- Max tokens: sets response length
+
+- Stop sequences: text patterns that stop generation immediately
+
+When you chat with AI Studio, you can toggle `Agent Mode` on and off. Agent mode allows you to use tools. To enable Heroku tool use, click `Tools` in the upper-right corner. You can use tools for tasks like code execution, content conversion, computation, and database querying.
+
+Select the moon (or sun) icon to switch between light and dark modes. Click `View code` to copy code snippets you can integrate into your app.
+
+## Additional Resources
+
+- [Heroku Inference](https://devcenter.heroku.com/categories/heroku-inference)
+
+- [Heroku AI](https://devcenter.heroku.com/categories/ai)

@@ -1,0 +1,33 @@
+---
+title: "Using Heroku Tools with the Managed Inference and Agents Add-on"
+description: "The Heroku Managed Inference and Agent add-on extends beyond basic inferencing by automatically executing a curated set of supported tools...."
+---
+
+## Heroku Tool: dyno_run_command
+
+The `dyno_run_command` tool allows the agent to run pre-specified commands on a deployed Heroku app. You can use this to make existing code available for use by the LLM. You must specify the entrypoint `cmd` command to run, as well as provide a `description` of what your function does and the `parameters` it expects.
+
+Example:
+
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+-H "Authorization: Bearer $INFERENCE_KEY" \
+-d @- 
+
+For all database tools, we currently only allow [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases). Follower databases are read-only by default, ensuring the LLM can’t alter your data. Learn how to [create a follower database](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower).
+
+Example:
+
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+-H "Authorization: Bearer $INFERENCE_KEY" \
+-d @- 
+
+For all database tools, we currently only allow [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases). Follower databases are read-only by default, ensuring the LLM can’t alter your data. Learn how to [create a follower database](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower).
+
+Example:
+
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+-H "Authorization: Bearer $INFERENCE_KEY" \
+-d @-
