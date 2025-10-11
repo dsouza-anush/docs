@@ -51,55 +51,45 @@
         "tab": "Heroku AI",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Overview",
             "pages": [
+              "inference-api/overview",
               "heroku-inference/ai-studio"
             ]
           },
           {
-            "group": "API Reference",
+            "group": "API Endpoints",
             "pages": [
-              "inference-api/overview",
-              {
-                "group": "Endpoints",
-                "pages": [
-                  "inference-api/chat-completions",
-                  "inference-api/agents-heroku",
-                  "inference-api/embeddings",
-                  "inference-api/images-generations",
-                  "inference-api/mcp-servers"
-                ]
-              }
+              "inference-api/chat-completions",
+              "inference-api/agents-heroku",
+              "inference-api/embeddings",
+              "inference-api/images-generations",
+              "inference-api/mcp-servers"
             ]
           },
           {
-            "group": "CLI Commands",
+            "group": "CLI",
             "pages": [
               "inference-api/cli-commands"
             ]
           },
           {
-            "group": "Platform",
+            "group": "MCP Servers",
             "pages": [
-              {
-                "group": "MCP Servers",
-                "pages": [
-                  "heroku-inference/mcp-server-stdio",
-                  "heroku-inference/mcp-server-remote"
-                ]
-              },
-              {
-                "group": "Tool Use",
-                "pages": [
-                  "tool-use/heroku-tools",
-                  "tool-use/working-with-mcp"
-                ]
-              },
+              "heroku-inference/mcp-server-stdio",
+              "heroku-inference/mcp-server-remote"
+            ]
+          },
+          {
+            "group": "Tools & Extensions",
+            "pages": [
+              "tool-use/heroku-tools",
+              "tool-use/working-with-mcp",
               "vector-database/pgvector"
             ]
           },
           {
-            "group": "Integrations",
+            "group": "Framework Integrations",
             "pages": [
               "ai-integrations/llamaindex",
               "ai-integrations/pydantic"
