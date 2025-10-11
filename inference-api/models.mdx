@@ -1,0 +1,461 @@
+---
+title: "Models"
+description: "Explore all available models and compare their capabilities"
+---
+
+Heroku Managed Inference and Agents provides access to state-of-the-art AI models from leading providers. Choose the right model for your use case based on performance, cost, and capabilities.
+
+## Featured Models
+
+<CardGroup cols={3}>
+  <Card title="Claude 4 Sonnet" icon="sparkles" color="#8B7FD4">
+    Latest flagship model with extended thinking capabilities
+
+    **Best for:** Complex reasoning, coding, analysis
+
+    **Context:** 200K tokens
+  </Card>
+
+  <Card title="Claude 3.5 Haiku" icon="bolt" color="#A99FE8">
+    Fastest, most cost-efficient Claude model
+
+    **Best for:** Quick responses, high-volume tasks
+
+    **Context:** 200K tokens
+  </Card>
+
+  <Card title="Stable Image Ultra" icon="image" color="#6B5FC7">
+    High-quality image generation from text
+
+    **Best for:** Marketing assets, creative content
+
+    **Resolution:** Up to 1536x640
+  </Card>
+</CardGroup>
+
+## Chat Models
+
+Advanced language models for conversational AI, content generation, coding assistance, and complex reasoning tasks.
+
+### Claude 4 Sonnet
+
+Anthropic's most advanced model with extended thinking for complex reasoning.
+
+<Accordion title="Key Features">
+- **Extended Thinking**: Additional internal reasoning steps for complex problems
+- **200K Context Window**: Process large documents and codebases
+- **Tool Use**: Native function calling and agent capabilities
+- **Vision**: Analyze images and documents
+- **Maximum Output**: 8,192 tokens
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Complex data analysis and research
+- Advanced coding and debugging
+- Multi-step problem solving
+- Long document processing
+- Strategic planning and decision making
+</Accordion>
+
+<Accordion title="Model ID">
+```
+claude-4-sonnet
+```
+</Accordion>
+
+---
+
+### Claude 3.7 Sonnet
+
+High-intelligence model with extended thinking capabilities at a lower price point.
+
+<Accordion title="Key Features">
+- **Extended Thinking**: Enable deeper reasoning when needed
+- **200K Context Window**: Large document support
+- **Tool Use**: Function calling and agents
+- **Vision**: Image and document analysis
+- **Maximum Output**: 8,192 tokens
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Research and analysis tasks
+- Code generation and review
+- Technical documentation
+- Data extraction from documents
+- Content creation with research
+</Accordion>
+
+<Accordion title="Model ID">
+```
+claude-3-7-sonnet
+```
+</Accordion>
+
+---
+
+### Claude 3.5 Sonnet
+
+Balanced model offering strong intelligence with excellent speed.
+
+<Accordion title="Key Features">
+- **200K Context Window**: Handle large contexts
+- **Tool Use**: Native function calling
+- **Vision**: Image understanding
+- **Maximum Output**: 8,192 tokens
+- **Fast Performance**: Quick response times
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- General-purpose chat applications
+- Code assistance and generation
+- Content creation and editing
+- Customer support automation
+- Data analysis
+</Accordion>
+
+<Accordion title="Model ID">
+```
+claude-3-5-sonnet
+```
+</Accordion>
+
+---
+
+### Claude 3.5 Haiku
+
+Fastest and most cost-effective Claude model for high-volume applications.
+
+<Accordion title="Key Features">
+- **Ultra-Fast**: Lowest latency responses
+- **200K Context Window**: Large context support
+- **Tool Use**: Function calling support
+- **Cost-Effective**: Optimized pricing for scale
+- **Maximum Output**: 4,096 tokens
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- High-volume chat applications
+- Real-time customer support
+- Quick data extraction
+- Rapid content moderation
+- API integrations requiring speed
+</Accordion>
+
+<Accordion title="Model ID">
+```
+claude-3-5-haiku
+```
+</Accordion>
+
+---
+
+### Claude 3.0 Haiku
+
+Original Haiku model offering ultra-fast responses.
+
+<Accordion title="Key Features">
+- **Ultra-Fast**: Extremely low latency
+- **200K Context Window**: Handle large inputs
+- **Tool Use**: Basic function calling
+- **Maximum Output**: 4,096 tokens
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Simple Q&A applications
+- High-frequency API calls
+- Basic content generation
+- Quick data parsing
+</Accordion>
+
+<Accordion title="Model ID">
+```
+claude-3-haiku
+```
+</Accordion>
+
+---
+
+### Amazon Nova Pro
+
+Amazon's advanced reasoning model for complex tasks.
+
+<Accordion title="Key Features">
+- **Advanced Reasoning**: Strong analytical capabilities
+- **Large Context**: Extended context support
+- **Tool Use**: Function calling support
+- **Multimodal**: Text and data processing
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Enterprise applications
+- Complex data analysis
+- Technical problem solving
+- AWS ecosystem integration
+</Accordion>
+
+<Accordion title="Model ID">
+```
+amazon-nova-pro
+```
+</Accordion>
+
+---
+
+### Amazon Nova Lite
+
+Amazon's efficient model for everyday tasks.
+
+<Accordion title="Key Features">
+- **Cost-Effective**: Optimized pricing
+- **Fast**: Quick response times
+- **Tool Use**: Function calling
+- **Efficient**: Lower resource usage
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- General chat applications
+- Simple content generation
+- Quick data processing
+- High-volume requests
+</Accordion>
+
+<Accordion title="Model ID">
+```
+amazon-nova-lite
+```
+</Accordion>
+
+---
+
+### OpenAI GPT OSS 120B
+
+Open-source compatible large language model.
+
+<Accordion title="Key Features">
+- **Open Source**: Open weights and architecture
+- **120B Parameters**: Large model capacity
+- **Tool Use**: Function calling support
+- **Customizable**: Fine-tuning options
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Research and experimentation
+- Custom model development
+- Open-source projects
+- Educational purposes
+</Accordion>
+
+<Accordion title="Model ID">
+```
+openai-gpt-oss-120b
+```
+</Accordion>
+
+## Embedding Models
+
+Generate vector embeddings for semantic search, classification, clustering, and RAG applications.
+
+### Cohere Embed Multilingual
+
+Multilingual embedding model supporting 100+ languages.
+
+<Accordion title="Key Features">
+- **Multilingual**: 100+ language support
+- **1024 Dimensions**: High-quality embeddings
+- **Input Types**: Optimized for search, classification, clustering
+- **Max Input**: 2,048 characters per string
+- **Batch Size**: Up to 96 strings per request
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Semantic search across languages
+- Document similarity matching
+- Content recommendation systems
+- RAG (Retrieval-Augmented Generation)
+- Classification and clustering
+</Accordion>
+
+<Accordion title="Model ID">
+```
+cohere-embed-multilingual
+```
+</Accordion>
+
+<Accordion title="Input Types">
+- `search_document` - For indexing documents
+- `search_query` - For search queries
+- `classification` - For classification tasks
+- `clustering` - For grouping similar texts
+</Accordion>
+
+## Image Models
+
+Generate high-quality images from text descriptions.
+
+### Stable Image Ultra
+
+State-of-the-art image generation with exceptional quality and prompt adherence.
+
+<Accordion title="Key Features">
+- **High Quality**: Photorealistic and artistic outputs
+- **Aspect Ratios**: 16:9, 1:1, 21:9, 2:3, 3:2, 4:5, 5:4, 9:16, 9:21
+- **Resolutions**: Up to 1536x640 pixels
+- **Negative Prompts**: Exclude unwanted elements
+- **Reproducible**: Seed-based generation
+- **Formats**: PNG, JPEG
+</Accordion>
+
+<Accordion title="Best Use Cases">
+- Marketing and advertising assets
+- Product visualization
+- Social media content
+- Concept art and design
+- Creative projects
+</Accordion>
+
+<Accordion title="Model ID">
+```
+stable-image-ultra
+```
+</Accordion>
+
+<Accordion title="Prompt Tips">
+- Be specific about style, lighting, and composition
+- Include details about colors and atmosphere
+- Use negative prompts to avoid unwanted elements
+- Specify aspect ratio for intended use case
+</Accordion>
+
+## Model Comparison
+
+### Chat Models Comparison
+
+| Model | Speed | Intelligence | Cost | Context | Max Output | Extended Thinking | Vision |
+|-------|-------|--------------|------|---------|------------|-------------------|--------|
+| Claude 4 Sonnet | Medium | Highest | Premium | 200K | 8K | ✓ | ✓ |
+| Claude 3.7 Sonnet | Medium | Very High | High | 200K | 8K | ✓ | ✓ |
+| Claude 3.5 Sonnet | Fast | High | Medium | 200K | 8K | ✗ | ✓ |
+| Claude 3.5 Haiku | Fastest | Good | Low | 200K | 4K | ✗ | ✗ |
+| Claude 3.0 Haiku | Fastest | Good | Lowest | 200K | 4K | ✗ | ✗ |
+| Amazon Nova Pro | Medium | High | Medium | Large | - | ✗ | ✗ |
+| Amazon Nova Lite | Fast | Good | Low | Medium | - | ✗ | ✗ |
+
+### When to Use Each Model
+
+<AccordionGroup>
+  <Accordion title="Claude 4 Sonnet - Complex Reasoning">
+    Use when you need:
+    - Advanced problem-solving and analysis
+    - Multi-step reasoning tasks
+    - Complex coding assistance
+    - Strategic planning
+    - Research synthesis
+
+    **Trade-off**: Higher cost, moderate speed
+  </Accordion>
+
+  <Accordion title="Claude 3.5 Haiku - High Volume">
+    Use when you need:
+    - Real-time responses
+    - High request volumes
+    - Simple Q&A
+    - Cost optimization
+    - Quick data extraction
+
+    **Trade-off**: Simpler reasoning, shorter outputs
+  </Accordion>
+
+  <Accordion title="Claude 3.5 Sonnet - Balanced">
+    Use when you need:
+    - General-purpose applications
+    - Good balance of speed and intelligence
+    - Standard chat applications
+    - Content generation
+    - Code assistance
+
+    **Trade-off**: Balanced trade-offs across metrics
+  </Accordion>
+</AccordionGroup>
+
+## Provisioning Models
+
+### Via Heroku CLI
+
+```bash
+# Create a chat model
+heroku ai:models:create claude-4-sonnet --app my-app
+
+# Create an embedding model
+heroku ai:models:create cohere-embed-multilingual --app my-app --as EMBEDDING
+
+# Create an image model
+heroku ai:models:create stable-image-ultra --app my-app --as DIFFUSION
+```
+
+### List Available Models
+
+```bash
+heroku ai:models:list
+```
+
+### Get Model Info
+
+```bash
+heroku ai:models:info --app my-app
+```
+
+## Pricing and Limits
+
+Pricing and rate limits vary by model and plan. Key factors:
+
+- **Input Tokens**: Cost per 1K input tokens
+- **Output Tokens**: Cost per 1K output tokens
+- **Rate Limits**: Requests per minute/hour
+- **Concurrent Requests**: Maximum simultaneous requests
+- **Quota**: Monthly token allowance
+
+<Note>
+  View your current usage and limits in the [Heroku Dashboard](https://dashboard.heroku.com).
+</Note>
+
+## Best Practices
+
+### Choosing the Right Model
+
+1. **Start with Claude 3.5 Haiku** for prototyping and high-volume use cases
+2. **Upgrade to Claude 3.5 Sonnet** for better quality and vision capabilities
+3. **Use Claude 4 Sonnet** only for tasks requiring deep reasoning
+4. **Test with different models** in AI Studio before production deployment
+
+### Optimizing Costs
+
+- Use faster models (Haiku) for simple tasks
+- Implement caching for repeated queries
+- Set appropriate `max_tokens` limits
+- Use streaming to show progressive responses
+- Batch embedding requests when possible
+
+### Performance Tips
+
+- Choose model based on latency requirements
+- Use Haiku models for real-time applications
+- Enable streaming for better user experience
+- Set timeouts appropriate to model speed
+- Monitor response times in production
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Use chat models in your application
+  </Card>
+  <Card title="Embeddings API" href="/inference-api/embeddings" icon="vector-square">
+    Generate vector embeddings
+  </Card>
+  <Card title="Image Generation API" href="/inference-api/images-generations" icon="image">
+    Create images with AI
+  </Card>
+  <Card title="AI Studio" href="/heroku-inference/ai-studio" icon="palette">
+    Test models interactively
+  </Card>
+</CardGroup>

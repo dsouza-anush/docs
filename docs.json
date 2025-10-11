@@ -54,6 +54,7 @@
             "group": "Overview",
             "pages": [
               "inference-api/overview",
+              "inference-api/models",
               "heroku-inference/ai-studio"
             ]
           },
