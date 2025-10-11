@@ -58,7 +58,7 @@
             ]
           },
           {
-            "group": "API Endpoints",
+            "group": "API",
             "pages": [
               "inference-api/chat-completions",
               "inference-api/agents-heroku",
@@ -74,14 +74,14 @@
             ]
           },
           {
-            "group": "MCP Servers",
+            "group": "MCP",
             "pages": [
               "heroku-inference/mcp-server-stdio",
               "heroku-inference/mcp-server-remote"
             ]
           },
           {
-            "group": "Tools & Extensions",
+            "group": "Tools",
             "pages": [
               "tool-use/heroku-tools",
               "tool-use/working-with-mcp",
@@ -89,7 +89,7 @@
             ]
           },
           {
-            "group": "Framework Integrations",
+            "group": "Integrations",
             "pages": [
               "ai-integrations/llamaindex",
               "ai-integrations/pydantic"

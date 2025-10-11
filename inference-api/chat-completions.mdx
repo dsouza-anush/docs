@@ -6,6 +6,10 @@ openapi: "openapi.json POST /v1/chat/completions"
 The `/v1/chat/completions` endpoint generates conversational completions for a provided set of input messages. You can specify the model, adjust generation settings such as temperature, and optionally stream responses or enable tool calling.
 
 <Note>
+  **OpenAI Compatible**: This endpoint is fully compatible with the OpenAI Chat Completions API. Simply point the OpenAI SDK to our base URL.
+</Note>
+
+<Note>
   View our [available chat models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
 </Note>
 
@@ -223,7 +227,7 @@ curl https://us.inference.heroku.com/v1/chat/completions \
   }'
 ```
 
-```python Python
+```python Python (requests)
 import os
 import requests
 
@@ -247,7 +251,30 @@ response = requests.post(url, headers=headers, json=data)
 print(response.json())
 ```
 
-```javascript JavaScript
+```python Python (OpenAI SDK)
+import os
+from openai import OpenAI
+
+# OpenAI-compatible: point to Heroku Inference API
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL"),
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ],
+    max_completion_tokens=1024,
+    temperature=0.7
+)
+
+print(response.choices[0].message.content)
+```
+
+```javascript JavaScript (fetch)
 const response = await fetch(
   `${process.env.INFERENCE_URL}/v1/chat/completions`,
   {
@@ -270,6 +297,28 @@ const response = await fetch(
 
 const data = await response.json();
 console.log(data);
+```
+
+```javascript JavaScript (OpenAI SDK)
+import OpenAI from 'openai';
+
+// OpenAI-compatible: point to Heroku Inference API
+const client = new OpenAI({
+  baseURL: process.env.INFERENCE_URL,
+  apiKey: process.env.INFERENCE_KEY
+});
+
+const response = await client.chat.completions.create({
+  model: process.env.INFERENCE_MODEL_ID,
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'What is Heroku?' }
+  ],
+  max_completion_tokens: 1024,
+  temperature: 0.7
+});
+
+console.log(response.choices[0].message.content);
 ```
 
 ```ruby Ruby
