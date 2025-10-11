@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Mint Starter Kit",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#6762A6",
+    "light": "#9D92E0",
+    "dark": "#4B3D99"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -69,7 +69,12 @@
                   "inference-api/images-generations",
                   "inference-api/mcp-servers"
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "group": "CLI Commands",
+            "pages": [
               "inference-api/cli-commands"
             ]
           },
