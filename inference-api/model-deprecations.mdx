@@ -1,0 +1,419 @@
+---
+title: "Model deprecations"
+description: "Stay informed about model lifecycle, deprecation timelines, and migration paths"
+---
+
+Heroku Managed Inference and Agents regularly updates its model offerings to provide access to the latest and most capable AI models. This page outlines our deprecation policy and current model status.
+
+## Deprecation Policy
+
+### Timeline
+
+When a model is scheduled for deprecation, we provide:
+
+- **6 months notice** - Announcement of deprecation date
+- **3 months** - Recommended migration window
+- **Final 3 months** - Grace period before shutdown
+- **Shutdown date** - Model becomes unavailable
+
+### Communication
+
+We notify you through:
+
+1. **Dashboard notifications** - Alerts in your Heroku Dashboard
+2. **Email notifications** - Sent to account administrators
+3. **API warnings** - Deprecation headers in API responses
+4. **Documentation updates** - This page and release notes
+
+### Migration Support
+
+During the deprecation period:
+
+- Deprecated models continue to work normally
+- Migration guides are provided
+- New model recommendations are specified
+- API compatibility is maintained when possible
+
+## Current Model Status
+
+### Active Models
+
+All models currently available are actively supported with no planned deprecations:
+
+<Tabs>
+  <Tab title="Chat Models">
+    | Model | Status | Released |
+    |-------|--------|----------|
+    | Claude 4 Sonnet | ✓ Active | 2025 |
+    | Claude 3.7 Sonnet | ✓ Active | 2024 |
+    | Claude 3.5 Sonnet | ✓ Active | 2024 |
+    | Claude 3.5 Haiku | ✓ Active | 2024 |
+    | Claude 3.0 Haiku | ✓ Active | 2024 |
+    | Amazon Nova Pro | ✓ Active | 2024 |
+    | Amazon Nova Lite | ✓ Active | 2024 |
+    | OpenAI GPT OSS 120B | ✓ Active | 2024 |
+  </Tab>
+
+  <Tab title="Embedding Models">
+    | Model | Status | Released |
+    |-------|--------|----------|
+    | Cohere Embed Multilingual | ✓ Active | 2024 |
+  </Tab>
+
+  <Tab title="Image Models">
+    | Model | Status | Released |
+    |-------|--------|----------|
+    | Stable Image Ultra | ✓ Active | 2024 |
+  </Tab>
+</Tabs>
+
+<Note>
+  **No current deprecations**: All models listed above are fully supported with no planned end-of-life dates.
+</Note>
+
+## Deprecation Status Indicators
+
+Models go through several stages before deprecation:
+
+### ✓ Active
+- Fully supported and recommended
+- Receives updates and improvements
+- No deprecation planned
+
+### ⚠️ Maintenance Mode
+- Still supported but not receiving updates
+- Consider migrating to newer models
+- Deprecation may be announced
+
+### 🚨 Deprecated
+- Scheduled for removal
+- Migration recommended immediately
+- Specific end-of-life date announced
+
+### ❌ End of Life
+- No longer available
+- API requests will fail
+- Must use alternative models
+
+## How to Check Model Status
+
+### Via Dashboard
+
+1. Log into [Heroku Dashboard](https://dashboard.heroku.com)
+2. Navigate to your app
+3. Check for deprecation notices in notifications
+4. Review model resource details
+
+### Via API Headers
+
+Deprecated models return warning headers:
+
+```bash
+curl -I https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY"
+
+# Response includes:
+# Warning: 299 - "This model is deprecated and will be removed on 2025-XX-XX"
+# Sunset: Sat, 01 Jun 2025 00:00:00 GMT
+```
+
+### Via CLI
+
+```bash
+# Check your model status
+heroku ai:models:info --app my-app
+
+# List available models (shows deprecation status)
+heroku ai:models:list
+```
+
+## Migration Planning
+
+### When You Receive a Deprecation Notice
+
+Follow these steps to ensure smooth migration:
+
+#### 1. Review Timeline
+
+- Note the deprecation date
+- Plan migration before the deadline
+- Allow time for testing
+
+#### 2. Identify Recommended Replacement
+
+We provide specific migration paths for each deprecated model:
+
+```
+Example:
+Old Model: claude-3-opus
+Replacement: claude-3-5-sonnet or claude-4-sonnet
+```
+
+#### 3. Test in Development
+
+```bash
+# Create a new model resource for testing
+heroku ai:models:create claude-3-5-sonnet \
+  --app my-app-staging \
+  --as INFERENCE_NEW
+
+# Test your application
+# Compare outputs with old model
+# Verify performance and quality
+```
+
+#### 4. Update Application Code
+
+If model IDs are hardcoded, update them:
+
+```python
+# Before
+model = "old-deprecated-model"
+
+# After
+model = "claude-3-5-sonnet"
+```
+
+Or use environment variables:
+
+```python
+# Recommended approach
+model = os.getenv("INFERENCE_MODEL_ID")
+```
+
+#### 5. Deploy to Production
+
+```bash
+# Attach new model to production app
+heroku ai:models:create claude-3-5-sonnet \
+  --app my-app-production \
+  --as INFERENCE
+
+# Deploy updated code
+git push heroku main
+
+# Verify everything works
+heroku logs --tail --app my-app-production
+```
+
+#### 6. Clean Up
+
+```bash
+# After successful migration, remove old model
+heroku ai:models:detach OLD_MODEL --app my-app-production
+```
+
+## Backward Compatibility
+
+### API Compatibility
+
+When possible, new models maintain API compatibility:
+
+- Same request/response format
+- Compatible parameter sets
+- Similar behavior patterns
+
+### Breaking Changes
+
+If a replacement model has breaking changes, we provide:
+
+- Detailed migration documentation
+- Code examples showing differences
+- Extended deprecation timeline
+
+## Example Migration Scenarios
+
+### Scenario 1: Simple Model Upgrade
+
+**Situation**: Claude 3.0 Opus deprecated → Claude 4 Sonnet recommended
+
+**Migration Steps**:
+
+<Steps>
+  <Step title="Test new model">
+    ```bash
+    heroku ai:models:create claude-4-sonnet --app my-app-staging
+    ```
+  </Step>
+
+  <Step title="Update environment variable">
+    ```bash
+    heroku config:set INFERENCE_MODEL_ID=claude-4-sonnet --app my-app
+    ```
+  </Step>
+
+  <Step title="Verify">
+    Test your application to ensure it works correctly
+  </Step>
+
+  <Step title="Remove old model">
+    ```bash
+    heroku ai:models:detach INFERENCE_OLD --app my-app
+    ```
+  </Step>
+</Steps>
+
+### Scenario 2: Feature Change Required
+
+**Situation**: Model deprecation requires code changes
+
+**Migration Steps**:
+
+<Steps>
+  <Step title="Review migration guide">
+    Read the specific migration documentation for your model
+  </Step>
+
+  <Step title="Update code">
+    Implement required changes in your codebase
+  </Step>
+
+  <Step title="Test thoroughly">
+    ```bash
+    # Create new model
+    heroku ai:models:create new-model --app my-app-staging
+
+    # Run your test suite
+    pytest tests/
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    ```bash
+    # Deploy to staging first
+    git push staging main
+
+    # Then to production after verification
+    git push heroku main
+    ```
+  </Step>
+</Steps>
+
+## Best Practices
+
+### Proactive Monitoring
+
+<AccordionGroup>
+  <Accordion title="Subscribe to Updates">
+    - Enable email notifications in your Heroku account
+    - Check the dashboard regularly for notices
+    - Monitor API response headers
+    - Review this page periodically
+  </Accordion>
+
+  <Accordion title="Use Environment Variables">
+    ```python
+    # Don't hardcode model names
+    # Bad:
+    model = "claude-3-sonnet"
+
+    # Good:
+    model = os.getenv("INFERENCE_MODEL_ID")
+    ```
+
+    This makes model switching much easier during migrations.
+  </Accordion>
+
+  <Accordion title="Test New Models Early">
+    Don't wait until the last minute:
+    - Test recommended replacements as soon as deprecation is announced
+    - Compare quality and performance
+    - Identify any integration issues early
+  </Accordion>
+
+  <Accordion title="Plan for Multiple Environments">
+    Maintain separate model resources for:
+    - Development
+    - Staging
+    - Production
+
+    This allows safe testing before production migration.
+  </Accordion>
+</AccordionGroup>
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="What happens if I don't migrate before the deadline?">
+    After the end-of-life date, the deprecated model will stop working:
+    - API requests will return errors
+    - Your application will fail
+    - You'll need to migrate immediately
+
+    **Avoid this**: Migrate well before the deadline with proper testing.
+  </Accordion>
+
+  <Accordion title="Can I still use a deprecated model?">
+    Yes, during the deprecation period (usually 6 months), deprecated models continue to work normally. However, we strongly recommend migrating as soon as possible to:
+    - Avoid last-minute issues
+    - Access improved capabilities
+    - Take advantage of better pricing
+  </Accordion>
+
+  <Accordion title="Will pricing change during deprecation?">
+    Pricing for deprecated models typically remains the same during the deprecation period. However, new models may have different pricing structures. Check the [pricing page](/inference-api/pricing) for details.
+  </Accordion>
+
+  <Accordion title="How do I know which model to migrate to?">
+    We provide specific migration recommendations for each deprecated model:
+    - Check the deprecation notice in your dashboard
+    - Review this page for recommended replacements
+    - See the [choosing a model](/inference-api/choosing-a-model) guide
+    - Test alternatives in [AI Studio](/heroku-inference/ai-studio)
+  </Accordion>
+
+  <Accordion title="What if the replacement model doesn't work for my use case?">
+    If the recommended replacement isn't suitable:
+    1. Review all available models on the [models overview](/inference-api/models) page
+    2. Test alternatives in AI Studio
+    3. Contact Heroku support for guidance
+    4. Consider adjusting your application to work with available models
+  </Accordion>
+
+  <Accordion title="Will my data be affected?">
+    No. Model deprecations only affect:
+    - Which models are available for inference
+    - API endpoints for those models
+
+    Your application data, configurations, and other resources remain unchanged.
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+If you have questions about model deprecations or need migration assistance:
+
+1. **Documentation**: Review the [models overview](/inference-api/models) and [choosing a model](/inference-api/choosing-a-model) guides
+2. **AI Studio**: Test replacement models interactively
+3. **Heroku Support**: Contact support through your dashboard
+4. **Community**: Ask questions in Heroku forums
+
+## Stay Informed
+
+To stay up-to-date on model changes:
+
+- Enable notifications in your Heroku Dashboard
+- Check this page regularly
+- Monitor the [release notes](/release-notes)
+- Subscribe to Heroku AI announcements
+
+<Note>
+  **Proactive migration is key**: Don't wait until the last minute. Test and migrate as soon as deprecations are announced to ensure smooth transitions.
+</Note>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Models overview" href="/inference-api/models" icon="sparkles">
+    See all available models
+  </Card>
+  <Card title="Choosing a model" href="/inference-api/choosing-a-model" icon="lightbulb">
+    Select the right model for your needs
+  </Card>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Compare model costs
+  </Card>
+  <Card title="CLI Commands" href="/inference-api/cli-commands" icon="terminal">
+    Manage model resources
+  </Card>
+</CardGroup>

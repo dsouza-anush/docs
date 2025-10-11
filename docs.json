@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Heroku AI",
   "colors": {
     "primary": "#8B7FD4",
     "light": "#A99FE8",
@@ -54,8 +54,16 @@
             "group": "Overview",
             "pages": [
               "inference-api/overview",
-              "inference-api/models",
               "heroku-inference/ai-studio"
+            ]
+          },
+          {
+            "group": "Models & pricing",
+            "pages": [
+              "inference-api/models",
+              "inference-api/choosing-a-model",
+              "inference-api/model-deprecations",
+              "inference-api/pricing"
             ]
           },
           {

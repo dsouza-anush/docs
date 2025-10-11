@@ -1,0 +1,368 @@
+---
+title: "Choosing a model"
+description: "Select the right AI model for your use case based on performance, cost, and capabilities"
+---
+
+Selecting the right model depends on your specific needs. Consider these factors when choosing:
+
+- **Task complexity**: How sophisticated does the reasoning need to be?
+- **Response speed**: How quickly do you need results?
+- **Cost constraints**: What's your budget for API calls?
+- **Context requirements**: How much input data do you need to process?
+- **Special features**: Do you need vision, extended thinking, or other capabilities?
+
+## Decision Framework
+
+### Start with Your Use Case
+
+<AccordionGroup>
+  <Accordion title="Real-time Chat Applications">
+    **Recommended: Claude 3.5 Haiku**
+
+    For customer support, live chat, or interactive applications where speed is critical:
+    - Ultra-fast response times
+    - Cost-effective for high volumes
+    - Good quality for straightforward tasks
+    - 200K context window
+
+    **When to upgrade**: If you need better reasoning or vision capabilities, consider Claude 3.5 Sonnet.
+  </Accordion>
+
+  <Accordion title="Complex Analysis & Research">
+    **Recommended: Claude 4 Sonnet**
+
+    For data analysis, research, strategic planning, or complex problem-solving:
+    - Extended thinking for deep reasoning
+    - Highest intelligence across all tasks
+    - Vision support for documents/images
+    - Best for multi-step problems
+
+    **Cost consideration**: Premium pricing. Use Claude 3.7 Sonnet for similar quality at lower cost.
+  </Accordion>
+
+  <Accordion title="Code Generation & Review">
+    **Recommended: Claude 3.5 Sonnet or Claude 4 Sonnet**
+
+    For development assistance, code review, or debugging:
+    - Strong coding capabilities
+    - Understands multiple languages
+    - Can analyze codebases with large context
+    - Good balance of speed and quality
+
+    **For simple tasks**: Claude 3.5 Haiku can handle basic code generation efficiently.
+  </Accordion>
+
+  <Accordion title="Content Creation">
+    **Recommended: Claude 3.5 Sonnet**
+
+    For blog posts, marketing copy, or creative writing:
+    - Balanced quality and speed
+    - Natural, engaging writing style
+    - Large context for research integration
+    - Cost-effective for regular use
+
+    **For high-volume**: Use Claude 3.5 Haiku for shorter-form content.
+  </Accordion>
+
+  <Accordion title="Document Processing">
+    **Recommended: Claude 3.5 Sonnet or Claude 4 Sonnet**
+
+    For extracting data, summarizing, or analyzing documents:
+    - Vision capabilities for PDFs and images
+    - 200K context window
+    - Structured output support
+    - Good accuracy
+
+    **With extended thinking**: Claude 4 Sonnet for complex document analysis.
+  </Accordion>
+
+  <Accordion title="Semantic Search & RAG">
+    **Recommended: Cohere Embed Multilingual + Claude 3.5 Haiku**
+
+    For retrieval-augmented generation applications:
+    - Use Cohere for generating embeddings
+    - Store vectors in Postgres with pgvector
+    - Use Claude 3.5 Haiku for fast, cost-effective responses
+    - Upgrade to Claude 3.5 Sonnet for better synthesis
+
+    **Benefit**: Fast, accurate, cost-optimized for production.
+  </Accordion>
+
+  <Accordion title="Image Generation">
+    **Recommended: Stable Image Ultra**
+
+    For marketing assets, product visualization, or creative content:
+    - High-quality photorealistic outputs
+    - Multiple aspect ratios
+    - Negative prompt support
+    - Reproducible with seeds
+
+    **Best for**: Marketing, social media, concept art.
+  </Accordion>
+</AccordionGroup>
+
+## Model Comparison by Use Case
+
+### Customer Support
+
+| Scenario | Recommended Model | Why |
+|----------|------------------|-----|
+| Simple FAQs | Claude 3.5 Haiku | Fastest, most cost-effective |
+| Product support | Claude 3.5 Sonnet | Better reasoning, still fast |
+| Technical support | Claude 3.5 Sonnet | Code understanding, good balance |
+| Complex troubleshooting | Claude 4 Sonnet | Deep reasoning when needed |
+
+### Development Tools
+
+| Scenario | Recommended Model | Why |
+|----------|------------------|-----|
+| Code completion | Claude 3.5 Haiku | Fast inline suggestions |
+| Code generation | Claude 3.5 Sonnet | Good quality, reasonable speed |
+| Code review | Claude 3.5 Sonnet | Thorough analysis capability |
+| Architecture design | Claude 4 Sonnet | Complex reasoning required |
+| Debugging | Claude 4 Sonnet | Extended thinking helps |
+
+### Content & Marketing
+
+| Scenario | Recommended Model | Why |
+|----------|------------------|-----|
+| Social media posts | Claude 3.5 Haiku | Quick, high volume |
+| Blog articles | Claude 3.5 Sonnet | Quality writing, research integration |
+| Product descriptions | Claude 3.5 Haiku | Consistent, efficient |
+| Brand strategy | Claude 4 Sonnet | Deep thinking required |
+| Visual assets | Stable Image Ultra | High-quality images |
+
+## Performance Characteristics
+
+### Speed Comparison
+
+```
+Claude 3.5 Haiku    ████████████████████ Fastest
+Claude 3.0 Haiku    ████████████████████ Fastest
+Amazon Nova Lite    ████████████████░░░░ Very Fast
+Claude 3.5 Sonnet   ███████████████░░░░░ Fast
+Amazon Nova Pro     ██████████████░░░░░░ Medium
+Claude 3.7 Sonnet   ██████████░░░░░░░░░░ Medium
+Claude 4 Sonnet     █████████░░░░░░░░░░░ Medium
+```
+
+### Intelligence Comparison
+
+```
+Claude 4 Sonnet     ████████████████████ Highest
+Claude 3.7 Sonnet   ███████████████████░ Very High
+Claude 3.5 Sonnet   ██████████████████░░ High
+Amazon Nova Pro     ████████████████░░░░ High
+Claude 3.5 Haiku    █████████████░░░░░░░ Good
+Claude 3.0 Haiku    ████████████░░░░░░░░ Good
+Amazon Nova Lite    ███████████░░░░░░░░░ Good
+```
+
+### Cost Efficiency
+
+```
+Claude 3.0 Haiku    ████████████████████ Most efficient
+Claude 3.5 Haiku    ███████████████████░ Very efficient
+Amazon Nova Lite    ██████████████████░░ Very efficient
+Claude 3.5 Sonnet   ██████████████░░░░░░ Moderate
+Amazon Nova Pro     ███████████░░░░░░░░░ Moderate
+Claude 3.7 Sonnet   ████████░░░░░░░░░░░░ Higher cost
+Claude 4 Sonnet     ██████░░░░░░░░░░░░░░ Premium
+```
+
+## Feature Matrix
+
+| Feature | Haiku 3.0 | Haiku 3.5 | Sonnet 3.5 | Sonnet 3.7 | Sonnet 4 | Nova Lite | Nova Pro |
+|---------|-----------|-----------|------------|------------|----------|-----------|----------|
+| **Context Window** | 200K | 200K | 200K | 200K | 200K | Large | Large |
+| **Max Output** | 4K | 4K | 8K | 8K | 8K | - | - |
+| **Vision** | ✗ | ✗ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| **Extended Thinking** | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ |
+| **Tool Use** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Speed** | Fastest | Fastest | Fast | Medium | Medium | Fast | Medium |
+| **Relative Cost** | Lowest | Low | Medium | High | Premium | Low | Medium |
+
+## Making the Trade-off
+
+### When Speed Matters Most
+
+Choose **Claude 3.5 Haiku** if:
+- Real-time responses are critical
+- You have high request volumes
+- Tasks are relatively straightforward
+- Cost optimization is important
+
+**Trade-off**: Simpler reasoning, shorter outputs
+
+### When Quality Matters Most
+
+Choose **Claude 4 Sonnet** if:
+- Task requires deep analysis
+- Multi-step reasoning is needed
+- Extended thinking provides value
+- Cost is secondary to quality
+
+**Trade-off**: Slower responses, higher cost
+
+### When Balance Matters Most
+
+Choose **Claude 3.5 Sonnet** if:
+- You need good quality and reasonable speed
+- Vision capabilities are required
+- Building general-purpose applications
+- Budget is moderate
+
+**Trade-off**: No extended thinking, moderate cost
+
+## Testing Strategy
+
+### 1. Start Conservative
+
+Begin with **Claude 3.5 Haiku** for most tasks:
+- Lowest cost for testing
+- Fast iteration
+- Good baseline performance
+
+### 2. Test Upward
+
+If quality isn't sufficient, test with **Claude 3.5 Sonnet**:
+- Better reasoning
+- Vision support
+- Still reasonable cost
+
+### 3. Use Premium Selectively
+
+Reserve **Claude 4 Sonnet** for:
+- Clearly complex tasks
+- High-value operations
+- When extended thinking provides measurable benefit
+
+### 4. Use AI Studio
+
+Test different models interactively:
+1. Open [AI Studio](/heroku-inference/ai-studio)
+2. Try the same prompt with different models
+3. Compare quality, speed, and output
+4. Export code when satisfied
+
+## Cost Optimization Tips
+
+### Use the Right Model for Each Task
+
+```python
+# Example: Multi-model approach
+def process_request(request_type, content):
+    if request_type == "simple_query":
+        return call_model("claude-3-5-haiku", content)
+    elif request_type == "analysis":
+        return call_model("claude-3-5-sonnet", content)
+    elif request_type == "complex_reasoning":
+        return call_model("claude-4-sonnet", content)
+```
+
+### Implement Caching
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=1000)
+def get_embedding(text):
+    """Cache embeddings to avoid redundant API calls"""
+    return client.embeddings.create(
+        model="cohere-embed-multilingual",
+        input=[text]
+    )
+```
+
+### Set Token Limits
+
+```python
+response = client.chat.completions.create(
+    model="claude-3-5-sonnet",
+    messages=messages,
+    max_tokens=500  # Limit output length
+)
+```
+
+### Batch When Possible
+
+```python
+# Batch embeddings instead of individual requests
+texts = ["text1", "text2", "text3", ...]
+response = client.embeddings.create(
+    model="cohere-embed-multilingual",
+    input=texts  # Up to 96 strings
+)
+```
+
+## Common Mistakes to Avoid
+
+<Warning>
+  **Don't use Claude 4 Sonnet for everything**. While it's the most capable model, it's also the most expensive. Reserve it for tasks that truly need extended thinking.
+</Warning>
+
+<Warning>
+  **Don't forget about context limits**. Even with 200K context windows, larger contexts increase costs. Summarize or filter content when possible.
+</Warning>
+
+<Warning>
+  **Don't ignore speed requirements**. For real-time applications, choose Haiku models even if quality is slightly lower. User experience matters.
+</Warning>
+
+<Warning>
+  **Don't skip testing**. What works for one use case may not work for another. Always test with real data before production deployment.
+</Warning>
+
+## Migration Path
+
+### Starting Simple
+
+```
+1. Launch with Claude 3.5 Haiku
+   ↓
+2. Monitor quality metrics
+   ↓
+3. Identify tasks that need better quality
+   ↓
+4. Upgrade those tasks to Claude 3.5 Sonnet
+   ↓
+5. Reserve Claude 4 Sonnet for complex cases
+```
+
+### Gradual Optimization
+
+```
+Phase 1: Single model (Claude 3.5 Sonnet)
+  ↓
+Phase 2: Two-tier (Haiku for simple, Sonnet for complex)
+  ↓
+Phase 3: Three-tier (Haiku/Sonnet/Sonnet 4)
+  ↓
+Phase 4: Task-specific routing with monitoring
+```
+
+## Getting Help
+
+Still not sure which model to choose?
+
+1. **Start with AI Studio**: Test interactively with real prompts
+2. **Check the comparison table**: Review side-by-side metrics
+3. **Review use case examples**: Find similar applications
+4. **Monitor and iterate**: Track quality and costs in production
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Models overview" href="/inference-api/models" icon="sparkles">
+    Detailed specifications for all models
+  </Card>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Understand costs for each model
+  </Card>
+  <Card title="AI Studio" href="/heroku-inference/ai-studio" icon="palette">
+    Test models interactively
+  </Card>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Start using models in production
+  </Card>
+</CardGroup>
