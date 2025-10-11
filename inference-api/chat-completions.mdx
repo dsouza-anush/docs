@@ -3,34 +3,6 @@ title: "Managed Inference and Agents API /v1/chat/completions"
 description: "The /v1/chat/completions endpoint generates conversational completions for a provided set of input messages. You can specify the model, adjust generat..."
 ---
 
-## Table of Contents [expand]
-
-        - [Request Body Parameters](#request-body-parameters)
-
-        - [extended_thinking Object](#extended_thinking-object)
-
-        - [tools Array of Objects](#tools-array-of-objects)
-
-        - [tool_choice Object](#tool_choice-object)
-
-        - [messages Array of Objects](#messages-array-of-objects)
-
-        - [Request Headers](#request-headers)
-
-        - [Response Format](#response-format)
-
-        - [Example Request](#example-request)
-
-        - [Example Response](#example-response)
-
-        - [Example Request with Tools](#example-request-with-tools)
-
-        - [Example Response with Tools](#example-response-with-tools)
-
-The `/v1/chat/completions` endpoint generates conversational completions for a provided set of input messages. You can specify the model, adjust generation settings such as `temperature` , and opt to stream the responses in real time. You can also specify `tools` the model can choose to call.
-
-View our [available chat models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards).
-
 ## Request Body Parameters
 
 Use parameters to manage how conversational completions are generated.
@@ -487,7 +459,7 @@ Information about token consumption.
 Let’s walk through an example `/v1/chat/completions` curl request.
 
 First, use this command to set your Heroku environment variables as local variables.
-`bash
+```bash
 eval $(heroku config -a $APP_NAME --shell | grep '^INFERENCE_' | sed 's/^/export /' | tee >(cat >&2))`
 Next, send the `curl` request:
 

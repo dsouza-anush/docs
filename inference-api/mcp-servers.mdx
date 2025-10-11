@@ -3,26 +3,6 @@ title: "Managed Inference and Agents API /v1/mcp/servers"
 description: "The /v1/mcp/servers endpoint returns a list of MCP servers registered to your Heroku Managed Inference and Agents chat model. This list includes detai..."
 ---
 
-## Table of Contents [expand]
-
-        - [Authentication](#authentication)
-
-        - [Example Request](#example-request)
-
-        - [Response Format](#response-format)
-
-        - [MCP Server Object](#mcp-server-object)
-
-        - [Tool Object](#tool-object)
-
-        - [Notes](#notes)
-
-        - [Additional Reading](#additional-reading)
-
-The `/v1/mcp/servers` endpoint returns a list of [MCP](https://modelcontextprotocol.io/introduction) servers registered to your Heroku Managed Inference and Agents chat model. This list includes details about each server and the tools it exposes.
-
-If you haven’t [deployed and registered](https://devcenter.heroku.com/heroku-inference-working-with-mcp.md#deploying-custom-mcp-servers-to-heroku) an MCP server, requests made to `/v1/mcp/servers` return an empty list.
-
 ## Authentication
 
 The `/v1/mcp/servers` endpoint requires a valid `INFERENCE_KEY` for a Heroku chat model you have [provisioned](https://devcenter.heroku.com/articles/heroku-inference#provision-access-to-an-ai-model-resource).
