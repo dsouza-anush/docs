@@ -69,7 +69,15 @@
           },
           {
             "group": "Inference API",
-            "pages": []
+            "pages": [
+              "inference-api/overview",
+              "inference-api/chat-completions",
+              "inference-api/agents-heroku",
+              "inference-api/embeddings",
+              "inference-api/images-generations",
+              "inference-api/mcp-servers",
+              "inference-api/cli-commands"
+            ]
           },
           {
             "group": "AI Models",

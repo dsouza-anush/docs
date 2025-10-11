@@ -1,0 +1,369 @@
+---
+title: "Managed Inference and Agents API /v1/agents/heroku"
+description: "The /v1/agents/heroku endpoint allows you to interact with an agentic system powered by large language models (LLMs) that can autonomously invoke tool..."
+---
+
+## Table of Contents [expand]
+
+        - [Request Body Parameters](#request-body-parameters)
+
+        - [tools Array of Objects](#tools-array-of-objects)
+
+        - [messages Array of Objects](#messages-array-of-objects)
+
+        - [Request Headers](#request-headers)
+
+        - [Response Format](#response-format)
+
+        - [Example Request](#example-request)
+
+        - [Example Response](#example-response)
+
+The `/v1/agents/heroku` endpoint allows you to interact with an agentic system powered by large language models (LLMs) that can autonomously invoke tools based on your messages. Unlike [`/chat/completions`](https://devcenter.heroku.com/articles/heroku-inference-api-v1-chat-completions), which generates a single model response, the `v1/agents/heroku` endpoint supports automatic tool execution and multistep workflows.
+
+## Request Body Parameters
+
+Use the following parameters to manage the behavior of the agent and which tools it can use.
+
+### Required Parameters
+
+| model 
+| string 
+| model used for inference, typically the value of your `INFERENCE_MODEL_ID` config var 
+|  
+
+| messages 
+| array 
+| array of [messages](#messages-array-of-objects) used by the agent to determine its response and next actions 
+| `[{"role": "user", "content": "Check my database schema."}]` 
+
+### Optional Parameters
+
+| max_tokens_per_inference_request 
+| integer 
+| max number of tokens the model can generate during each underlying inference request before stopping (a single call to `/v1/agents/heroku` can include multiple underlying inference requests)max value: 4096 for Haiku models, 8192 for Sonnet models 
+| varies 
+| `1024` 
+
+| stop 
+| array 
+| list of strings that stop the model from generating further tokens if any of the strings are in the response (for example, `["foo"]` causes the model to stop generating output only if it generated the string `"foo"`) 
+| `null` 
+| `["foo"]` 
+
+| temperature 
+| float 
+| controls randomness of the response: values closer to `0` make responses more focused by favoring high-probability tokens, while values closer to `1.0` encourage more diverse responses by sampling from a broader range of possibilities for each generated tokenrange: `0.0` to `1.0` 
+| `1.0` 
+| `0.2` 
+
+| tools 
+| array 
+| list of [tools](#tools-array-of-objects) the agent is allowed to use 
+| `null` 
+| see tools field in the [example request](#example-request) 
+
+| top_p 
+| float 
+| specifies the proportion of tokens to consider when generating the next token, in terms of cumulative probabilityrange: `0` to `1.0` 
+| `0.999` 
+| `0.95` 
+
+## tools Array of Objects
+
+Each tool in the array allows the agent to call an action on your behalf. Heroku automatically executes tool calls via one-off dynos. The `/v1/agents/heroku` endpoint currently supports two types of tools:
+
+- [heroku_tool](https://devcenter.heroku.com/articles/heroku-inference-tools): 1st-party tools that Heroku Managed Inference and Agents natively supports
+
+- [MCP tools](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp): custom [MCP](https://modelcontextprotocol.io/introduction) tools you deploy to Heroku, which Heroku automatically runs when called by your model. To learn more, see [Heroku MCP Tools](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp) about how to deploy your own custom MCP tools to Heroku.
+
+| type 
+| enum 
+| type of toolone of:`heroku_tool`, `mcp` 
+| `"heroku_tool"` 
+
+| name 
+| string 
+| name of tool (see [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) for available tools) 
+| `"code_exec_ruby"` 
+
+| description 
+| string 
+| (optional) hint text to inform the model when to use this tool 
+| `"Runs SQL query on a Heroku database"` 
+
+| runtime_params 
+| object 
+| configuration to control automatic execution of [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) and `mcp` tools (see [runtime parameters](#runtime-parameters)) 
+|  
+
+### Runtime Parameters
+
+The `v1/agents/heroku` endpoint passes certain settings to the specified `mcp` or `heroku_tool` tools at runtime The model can’t modify the settings.
+
+| target_app_name 
+| string 
+| (required) name of Heroku app to run the tool in 
+|  
+| `"my-heroku-app"` 
+
+| dyno_size 
+| string 
+| dyno size to use when running the tool 
+| `"standard-1x"` 
+| `"standard-1x"` 
+
+| ttl_seconds 
+| integer 
+| max seconds a dyno is allowed to runmax: `120` 
+| `120` 
+| `10` 
+
+| max_calls 
+| integer 
+| max number of times this tool can be called during the agent loop 
+| `3` 
+| `1` 
+
+| tool_params 
+| object 
+| additional parameters for tool (for example, `cmd`, `db_attachment`) (see tool-specific [docs](https://devcenter.heroku.com/articles/heroku-inference-tools)) 
+| (varies) 
+| `{}` 
+
+- `mcp` type tools allow optionally specifying `ttl_seconds`, `max_calls`, and `dyno_size`. The other parameters aren’t supported.
+
+- `heroku_tool` type tools require or allow certain parameters depending on the tool itself. See tool-specific [docs](https://devcenter.heroku.com/articles/heroku-inference-tools) for more information.
+
+## messages Array of Objects
+
+A `messages` object is an array of message objects.
+
+Each message must specify a `role` field that determines the message’s schema. Currently, the supported types are `user`, `assistant`, `system`, and `tool`.
+
+If the most recent message uses the `assistant` role, the model will continue its answer starting from the content in that most recent message.
+
+### role=user message
+
+`user` messages are the primary way to send queries to your model and prompt it to respond.
+
+| role 
+| string 
+| role of messagealways: `"user"` 
+| yes 
+| `"user"` 
+
+| content 
+| string 
+| contents of user message 
+| yes 
+| `"What is the weather?"` 
+
+### role=assistant message
+
+Typically, the model only generates `assistant` messages. However, you can create or prefill a partially completed `assistant` response to influence the content a model generates on its next turn.
+
+| role 
+| string 
+| role of messagealways: `"assistant"` 
+| yes 
+| `"assistant"` 
+
+| content 
+| string 
+| contents of assistant message 
+| yes, unless `tool_calls` is specified 
+| `"Here is the information"` 
+
+| refusal 
+| string or null 
+| (currently ignored in requests) refusal message by the assistant 
+| no 
+| `"I cannot answer that"` 
+
+| tool_calls 
+| array 
+| array of [tool call](#tool-call-object) request objects 
+| no 
+| `[{"id": "tool_call_12345", "type": "function", "function": {"name": "my_cool_tool", "arguments": {"some_input": 123}}}]` 
+
+#### Tool Call Object
+
+Represents the model’s request to execute a specific tool.
+
+| id 
+| string 
+| unique ID for the tool call 
+| `"tooluse_abc123"` 
+
+| type 
+| string 
+| type of callalways: `"function"` 
+| `"function"` 
+
+| function 
+| object 
+| [function](#function-object) call details 
+| see [tool call example](#tool-call-example) 
+
+Tool Call Example
+
+```json
+"tool_calls": [
+  {
+    "id": "tooluse_abc123",
+    "type": "function",
+    "function": {
+      "name": "dyno_run_command",
+      "arguments": "{}"
+    }
+  }
+]
+```
+
+#### Function Object
+
+| name 
+| string 
+| name of tool to invoke 
+| `"dyno_run_command"` 
+
+| arguments 
+| string 
+| JSON-encoded string of tool arguments 
+| `"{}"` 
+
+### role=system message
+
+A `system` message is a special prompt given to the model to guide its responses.
+
+| role 
+| string 
+| role of messagealways: `"system"` 
+| yes 
+| `"system"` 
+
+| content 
+| string 
+| contents of system message 
+| yes 
+| `"You are a helpful assistant. You favor brevity and avoid hedging. You readily admit when you don't know an answer."` 
+
+### role=tool message
+
+A `tool` message object representing a specified tool’s output.
+
+| role 
+| string 
+| role of messagealways: `"tool"` 
+| yes 
+| `"tool"` 
+
+| content 
+| string 
+| output of tool call 
+| yes 
+| `"Rainy and 84º"` 
+
+| tool_call_id 
+| string 
+| tool call the message is responding to 
+| yes 
+| `"toolu_02F9GXvY5MZAq8Lw3PTNQyJK"` 
+
+## Request Headers
+
+| `Authorization` 
+| string 
+| Bearer token containing your [Heroku Inference API key](https://devcenter.heroku.com/articles/heroku-inference#model-resource-config-vars) 
+
+All `/v1/agents/heroku` requests must include the following header:
+
+```bash
+-H "Authorization: Bearer $INFERENCE_KEY"
+```
+
+## Response Format
+
+Agent responses are streamed back over Server-Sent Events (SSE). Each `event: message` includes a JSON payload representing a completion. The final event is `event: done` with the data `[DONE]`.
+
+### Completion Object
+
+| id 
+| string 
+| unique ID for agent session 
+| `"chatcmpl-abc123"` 
+
+| object 
+| enum 
+| type of completionone of: `chat.completion`, `tool.completion` 
+| `"tool.completion"` 
+
+| created 
+| integer 
+| unix timestamp when chunk was created 
+| `1746546550` 
+
+| model 
+| string 
+| model ID used to generate the message 
+| `"claude-4-sonnet"` 
+
+| system_fingerprint 
+| string 
+| fingerprint of system generating output 
+| `"heroku-inf-abc123"` 
+
+| choices 
+| array of objects 
+| array of length 1 containing a single [choice object](#choice-object) 
+| see [example response](#example-response) 
+
+| usage 
+| object 
+| token [usage](#usage-object) statistics, empty for tool completions (no tokens consumed) 
+| `{"prompt_tokens":15,"completion_tokens":13,"total_tokens":28}` 
+
+### Choice Object
+
+| index 
+| integer 
+| index of the choicealways: `0` 
+| `0` 
+
+| message 
+| object 
+| [message](#messages-array-of-objects) content (response messages will always be of role [`assistant`](#role-assistant-message) or [`tool`](#role-tool-message)) 
+| see [example response](#example-response) 
+
+| finish_reason 
+| enum 
+| reason model stoppedone of: `stop`, `length`, `tool_calls`, `""` 
+| `"tool_calls"` 
+
+### Usage Object
+
+| prompt_tokens 
+| integer 
+| tokens used in prompt 
+| `397` 
+
+| completion_tokens 
+| integer 
+| tokens used in response 
+| `65` 
+
+| total_tokens 
+| integer 
+| sum of prompt and completion tokens 
+| `462` 
+
+Each `event: message` streamed over SSE contains a single completion object: either a `chat.completion` or a `tool.completion`. The final message is `event: done` with `data: [DONE]`.
+
+## Example Request
+
+```bash
+curl --location $INFERENCE_URL/v1/agents/heroku \
+  --header 'Content-Type: application/json' \
+  --header "Authorization: Bearer $INFERENCE_KEY" \
+  --data @-
