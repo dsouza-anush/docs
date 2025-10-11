@@ -1,0 +1,637 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Heroku Managed Inference and Agents API",
+    "description": "The Heroku Managed Inference and Agents API offers easy access to various large foundational AI models including language (chat), embedding, and diffusion (image) models.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://us.inference.heroku.com",
+      "description": "US Production Server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/chat/completions": {
+      "post": {
+        "summary": "Chat Completions",
+        "description": "Generates conversational completions for a provided set of input messages",
+        "operationId": "createChatCompletion",
+        "tags": ["Chat"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic chat completion",
+                  "value": {
+                    "model": "claude-4-sonnet",
+                    "messages": [
+                      {
+                        "role": "system",
+                        "content": "You are a helpful assistant."
+                      },
+                      {
+                        "role": "user",
+                        "content": "What is Heroku?"
+                      }
+                    ],
+                    "max_completion_tokens": 1024,
+                    "temperature": 0.7
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/heroku": {
+      "post": {
+        "summary": "Agents (Heroku)",
+        "description": "Interact with an agentic system that can autonomously invoke tools",
+        "operationId": "createAgentCompletion",
+        "tags": ["Agents"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response (Server-Sent Events)",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/embeddings": {
+      "post": {
+        "summary": "Embeddings",
+        "description": "Generate vector embeddings for text",
+        "operationId": "createEmbedding",
+        "tags": ["Embeddings"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic embedding",
+                  "value": {
+                    "model": "cohere-embed-multilingual",
+                    "input": [
+                      "What is the capital of France?",
+                      "Paris is the capital of France."
+                    ],
+                    "input_type": "search_document"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images/generations": {
+      "post": {
+        "summary": "Image Generation",
+        "description": "Generate images from text prompts",
+        "operationId": "createImage",
+        "tags": ["Images"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageGenerationRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic image generation",
+                  "value": {
+                    "model": "stable-image-ultra",
+                    "prompt": "A serene mountain landscape at sunset with vibrant colors",
+                    "aspect_ratio": "16:9",
+                    "output_format": "png"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageGenerationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp/servers": {
+      "get": {
+        "summary": "List MCP Servers",
+        "description": "Returns a list of MCP servers registered to your chat model",
+        "operationId": "listMCPServers",
+        "tags": ["MCP"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MCPServer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token using your INFERENCE_KEY"
+      }
+    },
+    "schemas": {
+      "ChatCompletionRequest": {
+        "type": "object",
+        "required": ["model", "messages"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Model ID to use for completion",
+            "example": "claude-4-sonnet"
+          },
+          "messages": {
+            "type": "array",
+            "description": "Array of message objects",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "max_completion_tokens": {
+            "type": "integer",
+            "description": "Maximum tokens to generate",
+            "example": 1024
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1.0,
+            "description": "Sampling temperature"
+          },
+          "top_p": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.999,
+            "description": "Nucleus sampling threshold"
+          },
+          "stream": {
+            "type": "boolean",
+            "default": false,
+            "description": "Stream responses via SSE"
+          },
+          "stop": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Strings that stop generation"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            },
+            "description": "Tools the model may call"
+          },
+          "tool_choice": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": ["none", "auto", "required"]
+              },
+              {
+                "type": "object"
+              }
+            ],
+            "default": "required",
+            "description": "Controls tool usage"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["system", "user", "assistant", "tool"],
+            "description": "Role of the message"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content of the message"
+          }
+        }
+      },
+      "Tool": {
+        "type": "object",
+        "required": ["type", "function"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["function"],
+            "description": "Type of tool"
+          },
+          "function": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the function"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of the function"
+              },
+              "parameters": {
+                "type": "object",
+                "description": "JSON Schema for parameters"
+              }
+            }
+          }
+        }
+      },
+      "ChatCompletionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique completion ID"
+          },
+          "object": {
+            "type": "string",
+            "enum": ["chat.completion"],
+            "description": "Object type"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model used"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Choice"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          }
+        }
+      },
+      "Choice": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "message": {
+            "$ref": "#/components/schemas/Message"
+          },
+          "finish_reason": {
+            "type": "string",
+            "enum": ["stop", "length", "tool_calls"]
+          }
+        }
+      },
+      "Usage": {
+        "type": "object",
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          }
+        }
+      },
+      "AgentRequest": {
+        "type": "object",
+        "required": ["model", "messages"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "example": "claude-4-sonnet"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float"
+          },
+          "top_p": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "EmbeddingRequest": {
+        "type": "object",
+        "required": ["model", "input"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "example": "cohere-embed-multilingual"
+          },
+          "input": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Text to embed"
+          },
+          "input_type": {
+            "type": "string",
+            "enum": ["search_document", "search_query", "classification", "clustering"]
+          },
+          "encoding_format": {
+            "type": "string",
+            "enum": ["raw", "base64"],
+            "default": "raw"
+          }
+        }
+      },
+      "EmbeddingResponse": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": ["list"]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "object": {
+                  "type": "string",
+                  "enum": ["embedding"]
+                },
+                "index": {
+                  "type": "integer"
+                },
+                "embedding": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "prompt_tokens": {
+                "type": "integer"
+              },
+              "total_tokens": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "ImageGenerationRequest": {
+        "type": "object",
+        "required": ["model", "prompt"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "example": "stable-image-ultra"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": ["16:9", "1:1", "21:9", "2:3", "3:2", "4:5", "5:4", "9:16", "9:21"],
+            "default": "1:1"
+          },
+          "negative_prompt": {
+            "type": "string"
+          },
+          "output_format": {
+            "type": "string",
+            "enum": ["jpeg", "png"],
+            "default": "png"
+          },
+          "size": {
+            "type": "string",
+            "enum": ["1344x768", "1024x1024", "1536x640", "832x1216", "1216x832", "896x1088", "1088x896", "768x1344", "640x1536"],
+            "default": "1024x1024"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295,
+            "default": 0
+          }
+        }
+      },
+      "ImageGenerationResponse": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "b64_json": {
+                  "type": "string"
+                },
+                "revised_prompt": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MCPServer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "app_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "process_type": {
+            "type": "string"
+          },
+          "process_command": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "server_status": {
+            "type": "string",
+            "enum": ["registered", "disconnected"]
+          },
+          "primitives_status": {
+            "type": "string",
+            "enum": ["syncing", "synced", "error"]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
