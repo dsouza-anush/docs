@@ -1,33 +1,359 @@
 ---
-title: "Using Heroku Tools with the Managed Inference and Agents Add-on"
-description: "The Heroku Managed Inference and Agent add-on extends beyond basic inferencing by automatically executing a curated set of supported tools...."
+title: "Heroku Tools"
+description: "Built-in tools that enable AI agents to execute code and query databases on Heroku"
 ---
 
-## Heroku Tool: dyno_run_command
+The Heroku Managed Inference and Agents add-on provides a curated set of built-in tools that agents can use to execute code, run commands, and query databases. These tools run in secure, isolated one-off dynos and automatically return results to the agent.
 
-The `dyno_run_command` tool allows the agent to run pre-specified commands on a deployed Heroku app. You can use this to make existing code available for use by the LLM. You must specify the entrypoint `cmd` command to run, as well as provide a `description` of what your function does and the `parameters` it expects.
+## Available Tools
 
-Example:
+Heroku provides the following built-in tools for agents:
+
+- **dyno_run_command** - Execute custom commands on your Heroku app
+- **code_exec_ruby** - Execute Ruby code with gem dependencies
+- **code_exec_python** - Execute Python code with package dependencies
+- **code_exec_go** - Execute Go code with module dependencies
+- **code_exec_node** - Execute Node.js code with npm dependencies
+- **pg_psql** - Run SQL queries on Heroku Postgres databases
+- **pg_vector_query** - Perform vector similarity searches with pgvector
+
+## Security
+
+<Warning>
+  **Database Safety**: All database tools currently only work with [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases), which are read-only by default. This ensures agents cannot modify your production data. Learn how to [create a follower database](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower).
+</Warning>
+
+## Tool Definitions
+
+### dyno_run_command
+
+Execute custom commands on your Heroku app. This tool allows agents to run pre-specified commands, making existing code available for LLM use.
+
+**Use Cases:**
+- Run data processing scripts
+- Execute application-specific commands
+- Trigger scheduled tasks on-demand
+- Run diagnostic or health check commands
+
+**Parameters:**
+- `cmd` (required) - The command to execute
+- `description` (required) - Description of what the command does
+- `parameters` (optional) - Input schema for command parameters
+
+**Example:**
 
 ```bash
 curl $INFERENCE_URL/v1/agents/heroku \
--H "Authorization: Bearer $INFERENCE_KEY" \
--d @- 
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Process the latest data batch"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "dyno_run_command",
+        "description": "Process batch data with custom script",
+        "runtime_params": {
+          "target_app_name": "my-app",
+          "tool_params": {
+            "cmd": "python scripts/process_batch.py"
+          }
+        }
+      }
+    ]
+  }'
+```
 
-For all database tools, we currently only allow [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases). Follower databases are read-only by default, ensuring the LLM can’t alter your data. Learn how to [create a follower database](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower).
+### code_exec_ruby
 
-Example:
+Execute Ruby code with optional gem dependencies in an isolated environment.
+
+**Use Cases:**
+- Perform data transformations
+- Run Ruby calculations or algorithms
+- Test Ruby code snippets
+- Process JSON or text data
+
+**Parameters:**
+- `code` (required) - Ruby code to execute
+- `packages` (optional) - Array of gem names to install
+
+**Example:**
 
 ```bash
 curl $INFERENCE_URL/v1/agents/heroku \
--H "Authorization: Bearer $INFERENCE_KEY" \
--d @- 
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Calculate the factorial of 10"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "code_exec_ruby",
+        "runtime_params": {
+          "target_app_name": "my-app"
+        }
+      }
+    ]
+  }'
+```
 
-For all database tools, we currently only allow [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases). Follower databases are read-only by default, ensuring the LLM can’t alter your data. Learn how to [create a follower database](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower).
+### code_exec_python
 
-Example:
+Execute Python code with optional package dependencies in an isolated environment.
+
+**Use Cases:**
+- Data analysis and manipulation
+- Mathematical computations
+- API data processing
+- Testing Python algorithms
+
+**Parameters:**
+- `code` (required) - Python code to execute
+- `packages` (optional) - Array of package names to install via pip
+
+**Example:**
 
 ```bash
 curl $INFERENCE_URL/v1/agents/heroku \
--H "Authorization: Bearer $INFERENCE_KEY" \
--d @-
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Calculate the mean and standard deviation of [1, 2, 3, 4, 5]"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "code_exec_python",
+        "runtime_params": {
+          "target_app_name": "my-app"
+        }
+      }
+    ]
+  }'
+```
+
+### code_exec_go
+
+Execute Go code with optional module dependencies in an isolated environment.
+
+**Use Cases:**
+- High-performance computations
+- Concurrent processing tasks
+- System-level operations
+- Testing Go algorithms
+
+**Parameters:**
+- `code` (required) - Go code to execute
+- `packages` (optional) - Array of Go module paths to install
+
+### code_exec_node
+
+Execute Node.js code with optional npm package dependencies in an isolated environment.
+
+**Use Cases:**
+- JavaScript/TypeScript computations
+- Async operations and promises
+- JSON data manipulation
+- Testing Node.js code
+
+**Parameters:**
+- `code` (required) - Node.js code to execute
+- `packages` (optional) - Array of npm package names to install
+
+**Example:**
+
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Parse this JSON and extract the email addresses"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "code_exec_node",
+        "runtime_params": {
+          "target_app_name": "my-app"
+        }
+      }
+    ]
+  }'
+```
+
+### pg_psql
+
+Execute SQL queries against Heroku Postgres databases. Works like the [`heroku pg:psql`](https://devcenter.heroku.com/articles/heroku-postgresql#pg-psql) CLI command.
+
+**Use Cases:**
+- Query database tables and schemas
+- Analyze data with SQL aggregations
+- Check database statistics and performance
+- Retrieve specific records for analysis
+
+**Parameters:**
+- `query` (required) - SQL query to execute
+- `db_attachment` (optional) - Database config var name (default: `DATABASE_URL`)
+
+**Example:**
+
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Show me all tables in the database"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "pg_psql",
+        "runtime_params": {
+          "target_app_name": "my-app",
+          "tool_params": {
+            "db_attachment": "HEROKU_POSTGRESQL_PURPLE_URL"
+          }
+        }
+      }
+    ]
+  }'
+```
+
+**Common Queries:**
+
+List all tables:
+```sql
+SELECT tablename FROM pg_tables WHERE schemaname='public';
+```
+
+Get table row counts:
+```sql
+SELECT schemaname, tablename, n_live_tup AS row_count
+FROM pg_stat_user_tables
+ORDER BY n_live_tup DESC;
+```
+
+Describe a table:
+```sql
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name='users';
+```
+
+### pg_vector_query
+
+Perform vector similarity searches using pgvector on Heroku Postgres databases.
+
+**Use Cases:**
+- Semantic search over embedded documents
+- Find similar records by vector similarity
+- Retrieval-augmented generation (RAG)
+- Recommendation systems
+
+**Parameters:**
+- `query_vector` (required) - Vector to search for (array of floats)
+- `table_name` (required) - Table containing vector column
+- `vector_column` (required) - Name of the vector column
+- `limit` (optional) - Number of results to return (default: 10)
+- `db_attachment` (optional) - Database config var name (default: `DATABASE_URL`)
+
+**Example:**
+
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Find similar documents to my query about machine learning"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "pg_vector_query",
+        "runtime_params": {
+          "target_app_name": "my-app",
+          "tool_params": {
+            "db_attachment": "HEROKU_POSTGRESQL_PURPLE_URL",
+            "table_name": "documents",
+            "vector_column": "embedding"
+          }
+        }
+      }
+    ]
+  }'
+```
+
+## Runtime Configuration
+
+All Heroku tools support these runtime parameters:
+
+### target_app_name
+**string** · required
+
+Name of the Heroku app where the tool will execute.
+
+### dyno_size
+**string** · optional · default: `"standard-1x"`
+
+Dyno size for tool execution. Options: `standard-1x`, `standard-2x`, `performance-m`, `performance-l`.
+
+### ttl_seconds
+**integer** · optional · default: `120`
+
+Maximum execution time in seconds. Range: 1-120 seconds.
+
+### max_calls
+**integer** · optional · default: `3`
+
+Maximum number of times this tool can be called during the agent loop.
+
+### tool_params
+**object** · optional
+
+Tool-specific configuration parameters. See individual tool documentation for available options.
+
+## Best Practices
+
+### Security
+- Always use follower databases for read-only operations
+- Set appropriate `max_calls` limits to prevent excessive tool usage
+- Use `ttl_seconds` to prevent long-running operations
+
+### Performance
+- Choose appropriate `dyno_size` based on workload
+- Keep code execution lightweight and focused
+- Use database indexes for vector queries
+
+### Error Handling
+- Provide clear descriptions to help agents understand tool purpose
+- Test tools independently before using in agent workflows
+- Monitor tool execution logs for errors
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Agents API" href="/inference-api/agents-heroku" icon="robot">
+    Learn how to use tools with agents
+  </Card>
+  <Card title="Working with MCP" href="/tool-use/working-with-mcp" icon="plug">
+    Deploy custom MCP tools
+  </Card>
+  <Card title="pgvector" href="/vector-database/pgvector" icon="database">
+    Set up vector similarity search
+  </Card>
+</CardGroup>

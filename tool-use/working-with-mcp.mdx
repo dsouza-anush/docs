@@ -1,113 +1,189 @@
 ---
-title: "Working With MCP on Heroku"
-description: "Model Context Protocol (MCP) is an open standard that helps developers connect large language models (LLMs) to tools, services, and data sources. Hero..."
+title: "Working with MCP"
+description: "Deploy and register custom Model Context Protocol servers to extend AI agents with custom tools"
 ---
+
+Model Context Protocol (MCP) is an open standard that enables developers to connect large language models to custom tools, services, and data sources. With Heroku's Managed Inference and Agents add-on, you can deploy MCP servers and automatically integrate them with your AI models.
+
+## Quick Start
+
+1. **Choose or create an MCP server** - Use a Heroku template or build your own
+2. **Deploy to Heroku** - Push your MCP app to Heroku
+3. **Add MCP line to Procfile** - Declare your MCP server process
+4. **Attach to your model** - Connect the MCP app to your AI model
+5. **Use in agents** - Tools become available via `/v1/agents/heroku`
+
+## Why Use MCP on Heroku?
+
+### Automatic Tool Orchestration
+
+Instead of manually building control loops to handle tool calls, Heroku automatically:
+
+- Registers your custom tools
+- Executes tool calls in secure, isolated dynos
+- Manages multiple MCP servers and tool sets
+- Handles tool responses and error conditions
+
+### Security and Isolation
+
+- Tools run in one-off dynos, not long-running processes
+- Each tool execution is isolated
+- No need for multi-tenant MCP servers
+- Reduced security risks and costs
+
+### Simplified Management
+
+- Deploy standard apps - no special MCP hosting required
+- Use familiar Heroku workflows
+- Manage all tools through a single endpoint
+- Scale tool execution independently
 
 ## Deploy and Register Custom MCP Servers
 
-### Deploy a Custom MCP Server to Heroku
+### Step 1: Choose or Create an MCP Server
 
-To deploy an MCP server to Heroku, create a `Procfile` that defines your MCP process and add any required files for your language of choice (e.g., `requirements.txt` for Python, `Gemfile` for Ruby). For examples, see our [open source MCP templates](#register-a-custom-mcp-server-with-heroku).
+#### Use a Heroku Template (Recommended)
 
-When you deploy a standard MCP server to Heroku, you can use frameworks like LangChain with our [`/v1/chat/completions`](https://devcenter.heroku.com/heroku-inference-api-v1-chat-completions.md) endpoint to make tool calls directly to your server. However, this approach requires you to:
+The fastest way to get started is to use one of Heroku's example MCP servers. Each template includes a "Deploy to Heroku" button for one-click deployment:
 
-- Build and maintain a control loop to handle tool calls from the model, execute them, and return structured responses
+| Purpose | Repository | Tools Included |
+|---------|------------|----------------|
+| Ruby Code Execution | [mcp-code-exec-ruby](https://github.com/heroku/mcp-code-exec-ruby) | `code_exec_ruby` |
+| Python Code Execution | [mcp-code-exec-python](https://github.com/heroku/mcp-code-exec-python) | `code_exec_python` |
+| Go Code Execution | [mcp-code-exec-go](https://github.com/heroku/mcp-code-exec-go) | `code_exec_go` |
+| Node Code Execution | [mcp-code-exec-node](https://github.com/heroku/mcp-code-exec-node) | `code_exec_node` |
+| Document Parsing | [mcp-doc-reader](https://github.com/heroku/mcp-doc-reader) | HTML & PDF to Markdown conversion |
 
-- Manage several different MCP servers and tool sets
+<Note>
+  These tools are also available as built-in `heroku_tools`. Deploying as MCP servers offers additional benefits like no upper limit on `ttl_seconds` for dyno runtime.
+</Note>
 
-- Have multi-tenant long-running SSE or streamable HTTP MCP servers, which can be less secure and costly
+#### Build Your Own MCP Server
 
-Instead, you can use Heroku’s [Managed Inference and Agents add-on](https://devcenter.heroku.com/articles/heroku-inference). The add-on automatically handles tool registration, execution, and orchestration. It also grants you access to the [Managed Inference and Agents API](https://devcenter.heroku.com/categories/inference-api) and enables you to build an MCP toolkit. To use Managed Inference and Agents add-on features, [register](#register-a-custom-mcp-server-with-heroku) your deployed custom MCP servers with Heroku.
+To create a custom MCP server, implement the [MCP protocol specification](https://modelcontextprotocol.io/docs/specification):
 
-### Register a Custom MCP Server with Heroku
+1. Define your tools with clear descriptions and input schemas
+2. Implement tool execution logic
+3. Handle MCP protocol messages (initialize, tools/list, tools/call)
+4. Add language-specific dependencies (requirements.txt, Gemfile, etc.)
 
-You must register deployed MCP servers with Heroku to [access servers](https://devcenter.heroku.com/articles/heroku-inference-api-v1-mcp-servers) and [enable automatic custom tool execution](https://devcenter.heroku.com/articles/heroku-inference-api-v1-agents-heroku) through the [Managed Inference and Agents API](https://devcenter.heroku.com/categories/inference-api). Registration also builds out your MCP toolkit, which gives your model access to all of your Heroku-hosted MCP servers registered with that model resource through a single URL.
+### Step 2: Deploy to Heroku
 
-There are two steps to register your deployed MCP app with Heroku:
-
-- [Add a line to your MCP app’s Procfile](#add-an-mcp-line-to-a-procfile).
-
-- [Attach your MCP app to the add-on model](#attach-an-mcp-server-to-an-add-on) you want to access your server.
-
-Heroku provides open-source MCP example repos you can modify and deploy to Heroku:
-
-Purpose
-Repository
-
-Ruby Code Execution
-[mcp-code-exec-ruby](https://github.com/heroku/mcp-code-exec-ruby)
-
-Python Code Execution
-[mcp-code-exec-python](https://github.com/heroku/mcp-code-exec-python)
-
-Go Code Execution
-[mcp-code-exec-go](https://github.com/heroku/mcp-code-exec-go)
-
-Node Code Execution
-[mcp-code-exec-node](https://github.com/heroku/mcp-code-exec-node)
-
-Document Parsing (HTML &amp; PDF –&gt; Markdown)
-[mcp-doc-reader](https://github.com/heroku/mcp-doc-reader)
-
-These examples are standard MCP apps. They include required files (e.g. Procfile) and have an [additional line](https://github.com/heroku/mcp-code-exec-python/blob/main/Procfile#L2) in the Procfile to declare the MCP server. To deploy an example repo as is, click the `Deploy to Heroku` button in the `README`.
-
-These tools are also available natively as [`heroku_tools`](https://devcenter.heroku.com/articles/heroku-inference-tools) and don’t require MCP deployment. Deployment offers additional benefits, including no upper limit on `ttl_seconds` for [dyno runtime](https://devcenter.heroku.com/articles/dyno-runtime). You can fork the example repos to help you develop and deploy your own custom tools.
-
-Currently, MCP servers running in [Private Spaces](https://devcenter.heroku.com/articles/private-spaces) cannot be registered or used by [`/v1/agents/heroku`](https://devcenter.heroku.com/heroku-inference-api-v1-agents-heroku.md).
-
-#### Add an MCP Line to a Procfile
-
-To register, add a line to your MCP app’s Procfile that declares the MCP server. Procfile `STDIO` server names must:
-
-- Start with `"mcp"`
-
-- Be unique across all apps registered with your model resource
-
-For example, Procfiles that declare MCP servers, see [Heroku’s open-source MCP repos](#register-a-custom-mcp-server-with-heroku) (e.g. [Python Procfile](https://github.com/heroku/mcp-code-exec-python/blob/main/Procfile#L2)).
-
-#### Attach an MCP Server to an Add-on
-
-Attach your deployed MCP app to a [Heroku Managed Inference and Agents chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to grant the model access to your MCP server’s tools.
-
-To [attach a new model resource to an MCP app](https://devcenter.heroku.com/articles/heroku-inference-cli-commands#heroku-ai-models-create-model_name), run:
+Deploy your MCP server like any standard Heroku app:
 
 ```bash
-heroku ai:models:create MODEL_NAME -a $APP_NAME --as INFERENCE
+# Create a new Heroku app
+heroku create my-mcp-server
+
+# Deploy your code
+git push heroku main
 ```
 
-To [attach an existing model resource to an MCP app](https://devcenter.heroku.com/articles/heroku-inference-cli-commands#heroku-ai-models-attach-model_resource), run:
+Or use the "Deploy to Heroku" button if using a template.
 
-```bash
-heroku addons:attach MODEL_RESOURCE -a $APP_NAME --as INFERENCE
+### Step 3: Add MCP Line to Procfile
+
+To register your MCP server with Heroku, add a process declaration to your `Procfile`:
+
+#### Requirements
+
+- Process name must start with `"mcp"`
+- Process name must be unique across all apps registered with your model
+- Must specify the STDIO server command
+
+#### Example Procfiles
+
+**Python MCP Server:**
+```
+web: gunicorn app:app
+mcp: python -m src.stdio_server
 ```
 
-If you have an app you’re already running inference requests from, you can attach the MCP server to your app’s inference add-on to grant it access to MCP tools.
-After attaching, your MCP server is automatically registered, tools synced, and requests made to [`/v1/agents/heroku`](https://devcenter.heroku.com/heroku-inference-api-v1-agents-heroku.md) with your model can [execute your tools automatically](#execute-tools-automatically-with-v1-agents-heroku) in secure, isolated, one-off dynos.
-
-## List Registered MCP Servers
-
-To access the Managed Inference and Agents API, retrieve your model resource’s `INFERENCE_KEY` and `INFERENCE_URL`:
-
-```bash
-export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a $APP_NAME)
-export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a $APP_NAME)
+**Ruby MCP Server:**
+```
+web: bundle exec rails server
+mcp: bundle exec ruby lib/mcp_server.rb
 ```
 
-List all MCP servers registered to your model with the [`/v1/mcp/servers`](https://devcenter.heroku.com/articles/heroku-inference-api-v1-mcp-servers) endpoint:
+**Node MCP Server:**
+```
+web: node server.js
+mcp: node src/mcp-server.js
+```
+
+**Go MCP Server:**
+```
+web: ./bin/web
+mcp: ./bin/mcp-server
+```
+
+<Note>
+  The MCP process only declares how to run your server - it doesn't need to be running continuously. Heroku executes it in one-off dynos when tools are called.
+</Note>
+
+### Step 4: Attach to Your Model
+
+Connect your MCP app to a Heroku Managed Inference and Agents model to make tools available:
+
+#### Option A: Create and Attach a New Model
+
+If you don't have a model yet:
 
 ```bash
+heroku ai:models:create claude-4-sonnet -a my-mcp-server --as INFERENCE
+```
+
+This creates a new model resource and attaches it to your MCP app.
+
+#### Option B: Attach an Existing Model
+
+If you already have a model resource:
+
+```bash
+heroku addons:attach MY_MODEL_RESOURCE -a my-mcp-server --as INFERENCE
+```
+
+Replace `MY_MODEL_RESOURCE` with your model's resource ID or alias.
+
+#### Option C: Attach MCP Server to Your Main App
+
+If you have a separate app that makes inference requests:
+
+```bash
+# Attach your model to the MCP server app
+heroku addons:attach my-main-app::INFERENCE -a my-mcp-server --as INFERENCE
+```
+
+This grants your existing model access to the new MCP tools.
+
+### Step 5: Verify Registration
+
+After attaching, Heroku automatically:
+- Registers your MCP server
+- Syncs available tools
+- Makes tools callable via `/v1/agents/heroku`
+
+Check registration status:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a my-main-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a my-main-app)
+
 curl "$INFERENCE_URL/v1/mcp/servers" \
-  -H "Authorization: Bearer $INFERENCE_KEY" \
-  -H "Content-Type: application/json" | jq .
+  -H "Authorization: Bearer $INFERENCE_KEY" | jq
 ```
 
-The endpoint returns metadata about each server, including its process type, namespace, and all registered tools with their schemas and annotations. To learn more about the response format, see the `/v1/mcp/servers` [API reference](https://devcenter.heroku.com/heroku-inference-api-v1-mcp-servers.md#response-format).
+You should see your MCP server with `"server_status": "registered"` and `"primitives_status": "synced"`.
 
-## Execute Tools Automatically with /v1/agents/heroku
+<Warning>
+  **Private Spaces Limitation**: MCP servers in [Private Spaces](https://devcenter.heroku.com/articles/private-spaces) cannot currently be registered or used by `/v1/agents/heroku`.
+</Warning>
 
-After you [register an MCP server](#register-a-custom-mcp-server-with-heroku), you can include its tools in the `tools` parameter when you call the [`/v1/agents/heroku`](https://devcenter.heroku.com/heroku-inference-api-v1-agents-heroku.md) endpoint. For each tool you want your model to have access to, include a [Tool Object](https://devcenter.heroku.com/heroku-inference-api-v1-agents-heroku.md#tool-object) with `"type": "mcp"` and the tool’s name. The tool only executes if the model chooses to call it during generation.
+## Using MCP Tools with Agents
 
-### Example /v1/agents/heroku Request with mcp Tool
+Once registered, your MCP tools become available through the `/v1/agents/heroku` endpoint. Include them in the `tools` array with `"type": "mcp"`.
+
+### Basic Example
 
 ```bash
 curl "$INFERENCE_URL/v1/agents/heroku" \

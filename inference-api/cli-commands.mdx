@@ -1,7 +1,34 @@
 ---
-title: "Heroku Managed Inference and Agent Add-on CLI Commands"
-description: "open Heroku Managed Inference and Agent’s Dev Center documentation in your browser..."
+title: "CLI Commands"
+description: "Manage AI models and tools using the Heroku CLI"
 ---
+
+The Heroku AI CLI plugin provides commands to provision, manage, and interact with AI models directly from your terminal. These commands help you create model resources, make inference requests, manage MCP servers, and access AI tools.
+
+## Installation
+
+The AI CLI plugin is included with the Heroku CLI. If you need to install or update the Heroku CLI, visit [heroku.com/cli](https://heroku.com/cli).
+
+## Quick Start
+
+1. **Create a model resource**
+   ```bash
+   heroku ai:models:create claude-4-sonnet --app my-app
+   ```
+
+2. **Make an inference request**
+   ```bash
+   heroku ai:models:call INFERENCE --app my-app --prompt "Hello!"
+   ```
+
+3. **List all available models**
+   ```bash
+   heroku ai:models:list
+   ```
+
+## Command Reference
+
+### Documentation
 
 ## heroku ai:docs
 
@@ -19,6 +46,8 @@ DESCRIPTION
 ```
 
 See code: [src/commands/ai/docs.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/docs.ts)
+
+### MCP Server Management
 
 ## heroku ai:mcp [ADDON]
 
@@ -40,6 +69,8 @@ DESCRIPTION
 ```
 
 See code: [src/commands/ai/mcp/index.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/mcp/index.ts)
+
+### Model Management
 
 ## heroku ai:models
 
@@ -244,6 +275,8 @@ EXAMPLES
 ```
 
 See code: [src/commands/ai/models/list.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/list.ts)
+
+### Tool Management
 
 ## heroku ai:tools:list [ADDON]
 

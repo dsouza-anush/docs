@@ -6,6 +6,10 @@ openapi: "openapi.json POST /v1/embeddings"
 The `/v1/embeddings` endpoint generates vector embeddings (numerical representations) for a provided set of input texts. These embeddings are optimized for semantic search, classification, clustering, and other machine learning tasks.
 
 <Note>
+  **OpenAI Compatible**: This endpoint is fully compatible with the OpenAI Embeddings API. You can use the OpenAI SDK by pointing it to our base URL.
+</Note>
+
+<Note>
   View our [available embedding models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
 </Note>
 
@@ -132,7 +136,7 @@ curl $EMBEDDING_URL/v1/embeddings \
   }'
 ```
 
-```python Python
+```python Python (requests)
 import os
 import requests
 
@@ -155,7 +159,28 @@ response = requests.post(url, headers=headers, json=data)
 print(response.json())
 ```
 
-```javascript JavaScript
+```python Python (OpenAI SDK)
+import os
+from openai import OpenAI
+
+# OpenAI-compatible: point to Heroku Inference API
+client = OpenAI(
+    base_url=os.getenv("EMBEDDING_URL"),
+    api_key=os.getenv("EMBEDDING_KEY")
+)
+
+response = client.embeddings.create(
+    model="cohere-embed-multilingual",
+    input=[
+        "What is the capital of France?",
+        "Paris is the capital of France."
+    ]
+)
+
+print(response.data[0].embedding)
+```
+
+```javascript JavaScript (fetch)
 const response = await fetch(
   `${process.env.EMBEDDING_URL}/v1/embeddings`,
   {
@@ -177,6 +202,26 @@ const response = await fetch(
 
 const data = await response.json();
 console.log(data);
+```
+
+```javascript JavaScript (OpenAI SDK)
+import OpenAI from 'openai';
+
+// OpenAI-compatible: point to Heroku Inference API
+const client = new OpenAI({
+  baseURL: process.env.EMBEDDING_URL,
+  apiKey: process.env.EMBEDDING_KEY
+});
+
+const response = await client.embeddings.create({
+  model: 'cohere-embed-multilingual',
+  input: [
+    'What is the capital of France?',
+    'Paris is the capital of France.'
+  ]
+});
+
+console.log(response.data[0].embedding);
 ```
 
 ```ruby Ruby

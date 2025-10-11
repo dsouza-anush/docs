@@ -6,6 +6,10 @@ openapi: "openapi.json POST /v1/images/generations"
 The `/v1/images/generations` endpoint generates images based on a descriptive text prompt. You can control the aspect ratio, image format, size, and provide negative prompts to refine the output.
 
 <Note>
+  **OpenAI Compatible**: This endpoint is compatible with the OpenAI Images API. You can use the OpenAI SDK by pointing it to our base URL.
+</Note>
+
+<Note>
   View our [available image models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
 </Note>
 
@@ -126,7 +130,7 @@ curl $DIFFUSION_URL/v1/images/generations \
   }'
 ```
 
-```python Python
+```python Python (requests)
 import os
 import requests
 import base64
@@ -154,7 +158,31 @@ with open('generated_image.png', 'wb') as f:
     f.write(image_data)
 ```
 
-```javascript JavaScript
+```python Python (OpenAI SDK)
+import os
+import base64
+from openai import OpenAI
+
+# OpenAI-compatible: point to Heroku Inference API
+client = OpenAI(
+    base_url=os.getenv("DIFFUSION_URL"),
+    api_key=os.getenv("DIFFUSION_KEY")
+)
+
+response = client.images.generate(
+    model="stable-image-ultra",
+    prompt="A serene mountain landscape at sunset with vibrant colors",
+    size="1344x768",
+    response_format="b64_json"
+)
+
+# Save the image
+image_data = base64.b64decode(response.data[0].b64_json)
+with open('generated_image.png', 'wb') as f:
+    f.write(image_data)
+```
+
+```javascript JavaScript (fetch)
 const response = await fetch(
   `${process.env.DIFFUSION_URL}/v1/images/generations`,
   {
@@ -178,6 +206,28 @@ const result = await response.json();
 // Decode and save the image
 const imageBuffer = Buffer.from(result.data[0].b64_json, 'base64');
 require('fs').writeFileSync('generated_image.png', imageBuffer);
+```
+
+```javascript JavaScript (OpenAI SDK)
+import OpenAI from 'openai';
+import fs from 'fs';
+
+// OpenAI-compatible: point to Heroku Inference API
+const client = new OpenAI({
+  baseURL: process.env.DIFFUSION_URL,
+  apiKey: process.env.DIFFUSION_KEY
+});
+
+const response = await client.images.generate({
+  model: 'stable-image-ultra',
+  prompt: 'A serene mountain landscape at sunset with vibrant colors',
+  size: '1344x768',
+  response_format: 'b64_json'
+});
+
+// Decode and save the image
+const imageBuffer = Buffer.from(response.data[0].b64_json, 'base64');
+fs.writeFileSync('generated_image.png', imageBuffer);
 ```
 
 ```ruby Ruby

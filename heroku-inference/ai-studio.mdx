@@ -1,19 +1,70 @@
 ---
-title: "Heroku AI Studio"
-description: "Heroku AI Studio is a web-based interface that enables developers to explore, test, and understand the capabilities of the Managed Inference and Agent..."
+title: "AI Studio"
+description: "Visual interface for testing AI models, tuning prompts, and experimenting with tools before deploying to production"
 ---
 
-## Use Cases and Benefits
+Heroku AI Studio is a web-based playground that enables developers to explore, test, and refine AI capabilities before integrating them into applications. It provides an interactive environment to experiment with models, prompts, parameters, and tools without writing code.
 
-AI Studio supports AI development, from model experimentation to integration:
+## Key Features
 
-- Understand model nuances: Experiment with different prompts and parameters to understand the capabilities of the [model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) you provisioned.
+- **Interactive Chat Interface** - Test conversational AI with real-time responses
+- **Parameter Tuning** - Adjust temperature, max tokens, and other model parameters
+- **Agent Mode** - Test tool execution with Heroku and MCP tools
+- **Code Export** - Copy validated configurations as code snippets
+- **Multi-Model Support** - Switch between different AI models instantly
+- **Dark/Light Mode** - Customize the interface to your preference
 
-- Tune prompts: Tune and refine prompts for your application before you implement them. Tuning enables you to iterate on your text and instructions without frequently redeploying code.
+## Use Cases
 
-- Manage tool use: Verify which tools are effective for your use case, so you can receive reliable and expected outputs.
+### Prompt Engineering
 
-- Streamline integration: Integrate validated prompts and configurations into your app’s code with the help of built-in guidance and code snippets.
+Fine-tune prompts for your specific use case without deploying code:
+
+- **Customer Support Chatbots** - Test different system prompts to ensure appropriate tone and helpfulness
+- **Content Generation** - Experiment with creative vs. factual writing styles
+- **Data Extraction** - Validate prompt structures for parsing structured data from text
+- **Translation Tasks** - Compare output quality across different prompt formulations
+
+**Example Workflow:**
+1. Start with a basic prompt in AI Studio
+2. Adjust system instructions to guide behavior
+3. Test with various user inputs
+4. Refine based on output quality
+5. Export finalized prompt to your code
+
+### Model Exploration
+
+Understand the capabilities and limitations of different models:
+
+- **Compare Response Quality** - Test the same prompt across Claude 4 Sonnet, Haiku, and other models
+- **Assess Speed vs. Quality** - Evaluate which model balances performance with your requirements
+- **Test Extended Thinking** - Experiment with extended thinking for complex reasoning tasks
+- **Evaluate Cost Trade-offs** - Understand token usage across different models
+
+### Tool Testing
+
+Verify that tools work correctly before production deployment:
+
+- **Database Queries** - Test pg_psql queries against your follower database
+- **Code Execution** - Validate Ruby, Python, Go, or Node code execution tools
+- **Custom MCP Tools** - Ensure your deployed MCP servers respond correctly
+- **Multi-Tool Workflows** - Test agents that use multiple tools in sequence
+
+**Example: Database Query Testing**
+1. Enable Agent Mode in AI Studio
+2. Add pg_psql tool
+3. Ask "Show me all users created in the last 7 days"
+4. Verify the agent constructs the correct SQL query
+5. Check the returned results match expectations
+
+### Integration Preparation
+
+Prepare for production integration with validated configurations:
+
+- **System Prompt Validation** - Ensure instructions are clear and effective
+- **Parameter Optimization** - Find the right temperature and token limits
+- **Error Handling** - Test edge cases and error scenarios
+- **Code Generation** - Export working configurations as code snippets
 
 ## Get Started with AI Studio
 
@@ -31,26 +82,150 @@ To access AI Studio:
 
 ## Using AI Studio
 
-You can use the chat function in Heroku AI Studio to ask questions, analyze data, and get general help with Heroku apps. AI Studio can help with a variety of tasks, like analyzing app performance, debugging production issues, and optimizing configurations.
+### Chat Interface
 
-You can change `Parameters` to guide the AI’s behavior and responses:
+The main chat interface allows you to:
 
-- System Prompt: instructions that guide the AI’s behavior and responses
+- **Send Messages** - Type questions or instructions to test model responses
+- **View Responses** - See real-time answers with streaming support
+- **Review History** - Scroll through the conversation to track context
+- **Start New Conversations** - Clear history to begin fresh tests
 
-- Temperature: sets the randomness of responses
+### Configure Parameters
 
-- Top-p: nucleus sampling that limits the model to the most probable tokens
+Adjust AI behavior by modifying parameters in the right panel:
 
-- Max tokens: sets response length
+#### System Prompt
+Instructions that guide the model's behavior, tone, and expertise.
 
-- Stop sequences: text patterns that stop generation immediately
+**Examples:**
+- "You are a helpful customer support agent. Be friendly and concise."
+- "You are a data analyst. Provide technical, data-driven responses."
+- "You are a creative writer. Use vivid descriptions and storytelling."
 
-When you chat with AI Studio, you can toggle `Agent Mode` on and off. Agent mode allows you to use tools. To enable Heroku tool use, click `Tools` in the upper-right corner. You can use tools for tasks like code execution, content conversion, computation, and database querying.
+#### Temperature (0.0 - 1.0)
+Controls response randomness and creativity.
 
-Select the moon (or sun) icon to switch between light and dark modes. Click `View code` to copy code snippets you can integrate into your app.
+- **0.0 - 0.3**: Focused and deterministic (good for factual responses)
+- **0.4 - 0.7**: Balanced creativity and consistency
+- **0.8 - 1.0**: More creative and diverse outputs
 
-## Additional Resources
+#### Top-p (0.0 - 1.0)
+Nucleus sampling that limits token selection to most probable options.
 
-- [Heroku Inference](https://devcenter.heroku.com/categories/heroku-inference)
+- Lower values (0.5-0.7): More focused responses
+- Higher values (0.9-0.999): More diverse vocabulary
 
-- [Heroku AI](https://devcenter.heroku.com/categories/ai)
+#### Max Tokens
+Maximum response length in tokens (approximately 4 characters per token).
+
+- **512**: Short, concise responses
+- **1024**: Standard responses
+- **4096+**: Long-form content
+
+#### Stop Sequences
+Text patterns that immediately stop generation when encountered.
+
+**Example:** Add `---` as a stop sequence to prevent the model from generating beyond that marker.
+
+### Agent Mode
+
+Enable Agent Mode to allow the model to use tools:
+
+1. Toggle **Agent Mode** on in the interface
+2. Click **Tools** in the upper-right corner
+3. Select which tools to enable:
+   - Heroku built-in tools (code execution, database queries)
+   - Your custom MCP tools
+4. Configure tool-specific parameters like `target_app_name`
+5. Start chatting - the agent will automatically call tools when needed
+
+**Example Agent Interaction:**
+
+```
+User: "How many users signed up yesterday?"
+
+Agent: I'll query the database to find that information.
+[Agent calls pg_psql tool]
+
+Agent: Based on the query results, 47 users signed up yesterday.
+```
+
+### Export Code
+
+Once you've validated a configuration:
+
+1. Click **View Code** in the interface
+2. Choose your preferred language (Python, JavaScript, cURL, etc.)
+3. Copy the generated code snippet
+4. Paste into your application
+
+The exported code includes:
+- Your validated system prompt
+- All parameter settings
+- Tool configurations
+- Authentication setup
+
+### Interface Controls
+
+- **Moon/Sun Icon** - Switch between dark and light modes
+- **Tools Button** - Configure agent tools
+- **Parameters Panel** - Adjust model settings
+- **New Chat** - Start a fresh conversation
+- **Model Selector** - Switch between available models
+
+## Best Practices
+
+### Start Simple, Then Iterate
+- Begin with basic prompts and parameters
+- Test with a few examples
+- Gradually add complexity as you understand model behavior
+
+### Use Agent Mode Strategically
+- Test tools individually before combining them
+- Verify tool responses match expectations
+- Set appropriate `max_calls` to prevent infinite loops
+
+### Document Your Findings
+- Note which prompts work best for your use case
+- Record optimal parameter settings
+- Save successful configurations via code export
+
+### Test Edge Cases
+- Try unusual inputs to understand model limitations
+- Test error handling scenarios
+- Verify behavior with empty or malformed inputs
+
+## Troubleshooting
+
+### Tool Not Responding
+- Verify your target app has the necessary resources (database, dynos)
+- Check that follower databases are properly configured
+- Ensure MCP servers are deployed and registered
+
+### Unexpected Responses
+- Review system prompt for clarity and specificity
+- Adjust temperature if responses are too random or too rigid
+- Consider adding stop sequences to prevent over-generation
+
+### Slow Performance
+- Try a faster model like Claude 3.5 Haiku
+- Reduce max_tokens for quicker responses
+- Check if tool execution is causing delays
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Integrate validated prompts into your code
+  </Card>
+  <Card title="Agents API" href="/inference-api/agents-heroku" icon="robot">
+    Deploy agent workflows to production
+  </Card>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    Learn about available tools
+  </Card>
+  <Card title="Model Cards" href="https://devcenter.heroku.com/articles/heroku-inference-api-model-cards" icon="book">
+    Compare model capabilities
+  </Card>
+</CardGroup>
