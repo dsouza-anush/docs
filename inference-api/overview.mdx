@@ -1,28 +1,186 @@
 ---
-title: "Heroku Managed Inference and Agents Add-on API"
-description: "The Heroku Managed Inference and Agents API offers an easy way to access various large foundational AI models. These include supported language (chat)..."
+title: "API Overview"
+description: "The Heroku Managed Inference and Agents API offers easy access to various large foundational AI models including language (chat), embedding, and diffusion (image) models."
 ---
 
-The Heroku Managed Inference and Agents API offers an easy way to access various large foundational AI models. These include supported language (chat), embedding, and diffusion (image) models.
+## Available Endpoints
 
-To learn more about the API endpoints, including parameters, usage examples, and responses, view the documentation linked below.
+The Heroku Managed Inference and Agents API provides the following endpoints for different AI capabilities:
 
-| [MCP Servers](https://devcenter.heroku.com/articles/heroku-inference-api-v1-mcp-servers) 
-| [Claude 4 Sonnet](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-4-sonnet),[Claude 3.7 Sonnet](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-7-sonnet),[Claude 3.5 Sonnet Latest](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-5-sonnet-latest),[Claude 3.5 Haiku](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-5-haiku),[Claude 3.0 Haiku](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-haiku),[Amazon Nova Lite](https://devcenter.heroku.com/articles/heroku-inference-api-model-amazon-nova-lite),[Amazon Nova Pro](https://devcenter.heroku.com/articles/heroku-inference-api-model-amazon-nova-pro),[OpenAI gpt-oss-120b](https://devcenter.heroku.com/articles/heroku-inference-api-model-openai-gpt-oss-120b) 
-|  
+### Chat & Agents
 
-| [Agents (Heroku)](https://devcenter.heroku.com/articles/heroku-inference-api-v1-agents-heroku) 
-| [Claude 4 Sonnet](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-4-sonnet),[Claude 3.7 Sonnet](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-7-sonnet),[Claude 3.5 Sonnet Latest](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-5-sonnet-latest),[Claude 3.5 Haiku](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-5-haiku),[Claude 3.0 Haiku](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-haiku),[Amazon Nova Lite](https://devcenter.heroku.com/articles/heroku-inference-api-model-amazon-nova-lite),[Amazon Nova Pro](https://devcenter.heroku.com/articles/heroku-inference-api-model-amazon-nova-pro),[OpenAI gpt-oss-120b](https://devcenter.heroku.com/articles/heroku-inference-api-model-openai-gpt-oss-120b) 
-|  
+<CardGroup cols={2}>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Generate conversational responses with language models
+  </Card>
+  <Card title="Agents (Heroku)" href="/inference-api/agents-heroku" icon="robot">
+    Autonomous agents that can execute tools and actions
+  </Card>
+</CardGroup>
 
-| [Chat Completions](https://devcenter.heroku.com/articles/heroku-inference-api-v1-chat-completions) 
-| [Claude 4 Sonnet](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-4-sonnet),[Claude 3.7 Sonnet](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-7-sonnet),[Claude 3.5 Sonnet Latest](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-5-sonnet-latest),[Claude 3.5 Haiku](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-5-haiku),[Claude 3.0 Haiku](https://devcenter.heroku.com/articles/heroku-inference-api-model-claude-3-haiku),[Amazon Nova Lite](https://devcenter.heroku.com/articles/heroku-inference-api-model-amazon-nova-lite),[Amazon Nova Pro](https://devcenter.heroku.com/articles/heroku-inference-api-model-amazon-nova-pro),[OpenAI gpt-oss-120b](https://devcenter.heroku.com/articles/heroku-inference-api-model-openai-gpt-oss-120b) 
-| [Python](https://devcenter.heroku.com/articles/heroku-inference-quickstart-python-v1-chat-completions), [JavaScript](https://devcenter.heroku.com/articles/heroku-inference-quickstart-javascript-v1-chat-completions), [Ruby](https://devcenter.heroku.com/articles/heroku-inference-quickstart-ruby-v1-chat-completions) 
+### Data & Images
 
-| [Embeddings](https://devcenter.heroku.com/articles/heroku-inference-api-v1-embeddings) 
-| [Cohere Embed Multilingual](https://devcenter.heroku.com/articles/heroku-inference-api-model-cohere-embed-multilingual) 
-| [Python](https://devcenter.heroku.com/articles/heroku-inference-quickstart-python-v1-embeddings), [JavaScript](https://devcenter.heroku.com/articles/heroku-inference-quickstart-javascript-v1-embeddings), [Ruby](https://devcenter.heroku.com/articles/heroku-inference-quickstart-ruby-v1-embeddings) 
+<CardGroup cols={2}>
+  <Card title="Embeddings" href="/inference-api/embeddings" icon="vector-square">
+    Generate vector embeddings for semantic search and ML tasks
+  </Card>
+  <Card title="Image Generation" href="/inference-api/images-generations" icon="image">
+    Create images from text prompts with diffusion models
+  </Card>
+</CardGroup>
 
-| [Image Generations](https://devcenter.heroku.com/articles/heroku-inference-api-v1-images-generations) 
-| [Stable Image Ultra](https://devcenter.heroku.com/articles/heroku-inference-api-model-stable-image-ultra) 
-| [Python](https://devcenter.heroku.com/articles/heroku-inference-quickstart-python-v1-images-generations), [JavaScript](https://devcenter.heroku.com/articles/heroku-inference-quickstart-javascript-v1-images-generations), [Ruby](https://devcenter.heroku.com/articles/heroku-inference-quickstart-ruby-v1-images-generations)
+### Tools & Management
+
+<CardGroup cols={2}>
+  <Card title="MCP Servers" href="/inference-api/mcp-servers" icon="server">
+    List and manage Model Context Protocol servers
+  </Card>
+  <Card title="CLI Commands" href="/inference-api/cli-commands" icon="terminal">
+    Manage AI models via Heroku CLI
+  </Card>
+</CardGroup>
+
+## Supported Models
+
+### Chat Models
+
+The following chat models support the Chat Completions and Agents endpoints:
+
+- **Claude 4 Sonnet** - Latest flagship model with extended thinking
+- **Claude 3.7 Sonnet** - High intelligence with extended thinking
+- **Claude 3.5 Sonnet** - Balance of intelligence and speed
+- **Claude 3.5 Haiku** - Fast and cost-effective
+- **Claude 3.0 Haiku** - Ultra-fast responses
+- **Amazon Nova Pro** - Amazon's advanced model
+- **Amazon Nova Lite** - Amazon's efficient model
+- **OpenAI GPT OSS 120B** - Open-source compatible model
+
+### Embedding Models
+
+- **Cohere Embed Multilingual** - Multilingual text embeddings
+
+### Image Models
+
+- **Stable Image Ultra** - High-quality image generation
+
+<Note>
+  View our [Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) for detailed information about each model's capabilities, pricing, and features.
+</Note>
+
+## Quick Start
+
+### 1. Create a Heroku App
+
+```bash
+heroku create my-ai-app
+```
+
+### 2. Provision a Model
+
+Create and attach a chat model to your app:
+
+```bash
+heroku ai:models:create -a my-ai-app claude-4-sonnet
+```
+
+### 3. Get Your Credentials
+
+```bash
+heroku config -a my-ai-app
+```
+
+This will show your `INFERENCE_KEY`, `INFERENCE_URL`, and `INFERENCE_MODEL_ID`.
+
+### 4. Make Your First Request
+
+<CodeGroup>
+
+```bash cURL
+curl $INFERENCE_URL/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'
+```
+
+```python Python
+import os
+import requests
+
+url = f"{os.getenv('INFERENCE_URL')}/v1/chat/completions"
+headers = {
+    "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": os.getenv("INFERENCE_MODEL_ID"),
+    "messages": [{"role": "user", "content": "Hello!"}]
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/chat/completions`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: process.env.INFERENCE_MODEL_ID,
+      messages: [{ role: 'user', content: 'Hello!' }]
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## Base URL
+
+All API requests use the following base URL:
+
+```
+https://us.inference.heroku.com
+```
+
+## Authentication
+
+All requests must include an `Authorization` header with your Heroku Inference API key:
+
+```bash
+Authorization: Bearer YOUR_INFERENCE_KEY
+```
+
+## Rate Limits & Quotas
+
+Rate limits and quotas vary by plan and model. See your [Heroku Dashboard](https://dashboard.heroku.com) for current usage and limits.
+
+## Additional Resources
+
+<CardGroup cols={2}>
+  <Card title="AI Studio" href="/heroku-inference/ai-studio" icon="palette">
+    Visual interface for testing models
+  </Card>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    Built-in tools for agents
+  </Card>
+  <Card title="Working with MCP" href="/tool-use/working-with-mcp" icon="plug">
+    Deploy custom MCP tools
+  </Card>
+  <Card title="AI Integrations" href="/ai-integrations/llamaindex" icon="puzzle-piece">
+    Framework integrations
+  </Card>
+</CardGroup>

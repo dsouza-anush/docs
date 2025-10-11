@@ -1,140 +1,81 @@
 ---
-title: "Managed Inference and Agents API /v1/mcp/servers"
-description: "The /v1/mcp/servers endpoint returns a list of MCP servers registered to your Heroku Managed Inference and Agents chat model. This list includes detai..."
+title: "MCP Servers"
+openapi: "GET /v1/mcp/servers"
 ---
+
+The `/v1/mcp/servers` endpoint returns a list of MCP servers registered to your Heroku Managed Inference and Agents chat model. This list includes details about each server's status, tools, and configuration.
+
+<Note>
+  View [Working with MCP on Heroku](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp) to learn how to deploy and register custom MCP servers.
+</Note>
+
+## Base URL
+
+```
+https://us.inference.heroku.com
+```
 
 ## Authentication
 
-The `/v1/mcp/servers` endpoint requires a valid `INFERENCE_KEY` for a Heroku chat model you have [provisioned](https://devcenter.heroku.com/articles/heroku-inference#provision-access-to-an-ai-model-resource).
-
-### Required Headers
-
-| `Authorization` 
-| string 
-| a bearer token with your `INFERENCE_KEY` 
-
-## Example Request
-
-Retrieve your `INFERENCE_URL` and `INFERENCE_KEY` values by running `heroku config -a $APP_NAME` against an app you’ve [attached](https://devcenter.heroku.com/articles/heroku-inference#provision-access-to-an-ai-model-resource) a chat model to.
+All requests must include an `Authorization` header with your Heroku Inference API key:
 
 ```bash
-curl $INFERENCE_URL/v1/mcp/servers -H "Authorization: Bearer $INFERENCE_KEY" | jq
+Authorization: Bearer YOUR_INFERENCE_KEY
 ```
 
-With example values filled in:
+You can get your API key from your Heroku app's `INFERENCE_KEY` config variable.
 
-```bash
-curl https://us.inference.heroku.com/v1/mcp/servers -H Authorization: Bearer inf-123abc9f-2a6c-441a-9f72-e2dc15cdcaaa | jq
-```
+## Request Parameters
 
-## Response Format
+This endpoint does not require any request parameters. It returns all MCP servers registered to your model.
 
-`v1/mcp/servers` requests return an array of [MCP Server Objects](#mcp-server-object), one per MCP server attached to your model.
+## Response
 
-Example response:
+Returns an array of MCP Server objects, one per MCP server attached to your model.
 
-```json
-[
-  {
-    "id": "15ac9382-5804-49ac-bf94-8bab2f4b62ce",
-    "app_id": "434eb878-6bc1-4677-928d-80d27047ad5a",
-    "process_type": "mcp",
-    "process_command": "python -m src.stdio_server",
-    "created_at": "2025-05-07T16:44:34.259Z",
-    "updated_at": "2025-05-07T16:44:38.291Z",
-    "namespace": "acute-partridge",
-    "server_status": "registered",
-    "primitives_status": "synced",
-    "tools": [ ... ]
-  }
-]
-```
+### MCP Server Object
 
-See a full example response [below](#full-example-response).
+**id** (string, uuid): Unique server ID
 
-## MCP Server Object
+**app_id** (string, uuid): Heroku app ID where server is running
 
-| id 
-| string (uuid) 
-| unique server ID 
-| `"15ac9382-..."` 
+**process_type** (string): Process type used to start server, specified in the MCP app's Procfile (must start with 'mcp')
 
-| app_id 
-| string (uuid) 
-| Heroku app ID where server is running 
-| `"434eb878-..."` 
+**process_command** (string): Command used to run MCP STDIO server, specified in the Procfile
 
-| process_type 
-| string 
-| process type used to start server, specified in the MCP app’s Procfile - must start with ‘mcp’ 
-| `"mcp-my-cool-server"` 
+**created_at** (string, ISO 8601): Timestamp when server was registered
 
-| process_command 
-| string 
-| command used to run MCP STDIO server, specified in the MCP app’s Profile (`process_type: process_command`) 
-| `"python -m src.stdio_server"` 
+**updated_at** (string, ISO 8601): Timestamp when server was last updated
 
-| created_at 
-| string (ISO 8601) 
-| timestamp when server was registered 
-| `"2025-05-07T16:44:34.259Z"` 
+**namespace** (string): Name used to namespace tools served by this server
 
-| updated_at 
-| string (ISO 8601) 
-| timestamp when server was last updated 
-| `"2025-05-07T16:44:38.291Z"` 
+**server_status** (enum): Status of server. Options: `registered`, `disconnected`
 
-| namespace 
-| string 
-| name used to namespace tools served by this server 
-| `"acute-partridge"` 
+**primitives_status** (enum): Status of the server's tools list. Options: `syncing`, `synced`, `error`
 
-| server_status 
-| enum 
-| status of serverone of: `registered`, `disconnected` 
-| `"registered"` 
+**tools** (array): List of tools exposed by this server
 
-| primitives_status 
-| enum 
-| status of the server’s tools list one of: `syncing`, `synced`, `error` 
-| `"synced"` 
-
-| tools 
-| array 
-| list of [tools](#tool-object) exposed by this server 
-|  
-
-## Tool Object
-
+<Accordion title="Tool Object">
 Each server can expose multiple MCP tools.
 
-| name 
-| string 
-| tool name that’s unique within its server namespace for the specified model resource 
-| `"code_exec_ruby"` 
+**name** (string): Tool name that's unique within its server namespace
 
-| namespaced_name 
-| string 
-| fully-qualified tool name, formatted as `namespace/tool_name` 
-| `"acute-partridge/code_exec_ruby"` 
+**namespaced_name** (string): Fully-qualified tool name, formatted as `namespace/tool_name`
 
-| description 
-| string 
-| (optional) plain-text description for model grounding 
-| `"Executes a Ruby code snippet..."` 
+**description** (string, optional): Plain-text description for model grounding
 
-| input_schema 
-| object 
-| input schema for tool call arguments, using [JSON Schema](https://json-schema.org/) 
-| see [input schema example](#input-schema-example) 
+**input_schema** (object): Input schema for tool call arguments, using JSON Schema
 
-| annotations 
-| object 
-| [annotations](#annotations-object) containing optional hints about the tool’s functionality and dangers (for example, `destructiveHint`) 
-| `{}` 
+**annotations** (object): Optional hints about the tool's functionality
 
-### Input Schema Example
+Annotations fields:
+- **title** (string, optional): UI-facing title for the tool
+- **readOnlyHint** (boolean): True if tool has no side effects
+- **destructiveHint** (boolean): True if the tool may delete or irreversibly modify data
+- **idempotentHint** (boolean): True if calling multiple times has no marginal effect
+- **openWorldHint** (boolean): True if the tool queries external or evolving real-world information
 
+Example input schema:
 ```json
 {
   "type": "object",
@@ -146,57 +87,71 @@ Each server can expose multiple MCP tools.
     "packages": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Optional list of gem names to install before execution."
-    },
-    "use_temp_dir": {
-      "type": "boolean",
-      "description": "If true, run code in an isolated temp directory."
+      "description": "Optional list of gem names to install."
     }
   },
   "required": ["code"]
 }
 ```
+</Accordion>
 
-### Annotations Object
+## Examples
 
-| title 
-| string 
-| (optional) UI-facing title for the tool 
-| `"Awesome Code Executor"` 
+<CodeGroup>
 
-| readOnlyHint 
-| boolean 
-| true if tool has no side effects 
-| `false` 
+```bash cURL
+curl $INFERENCE_URL/v1/mcp/servers \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  | jq
+```
 
-| destructiveHint 
-| boolean 
-| true if the tool may delete or irreversibly modify data 
-| `true` 
+```python Python
+import os
+import requests
 
-| idempotentHint 
-| boolean 
-| true if calling the tool multiple times with the same arguments will have no marginal effect 
-| `false` 
+url = f"{os.getenv('INFERENCE_URL')}/v1/mcp/servers"
+headers = {
+    "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}"
+}
 
-| openWorldHint 
-| boolean 
-| true if the tool queries external or evolving real-world information 
-| `true` 
+response = requests.get(url, headers=headers)
+print(response.json())
+```
 
-## Notes
+```javascript JavaScript
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/mcp/servers`,
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`
+    }
+  }
+);
 
-- Use [`/v1/agents/heroku`](https://devcenter.heroku.com/articles/heroku-inference-api-v1-agents-heroku) to invoke tools registered by this endpoint.
+const data = await response.json();
+console.log(data);
+```
 
-- Only tools from servers with `server_status: "registered"` and `primitives_status: "synced"` will be accessible in `/v1/agents/heroku` requests. Until you [deploy and register](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp#deploy-and-register-custom-mcp-servers) an MCP server, requests made to `/v1/mcp/servers` will return an empty list, and your tools will not be accessible in [`/v1/agents/heroku`](https://devcenter.heroku.com/articles/heroku-inference-api-v1-agents-heroku) requests.
+```ruby Ruby
+require 'net/http'
+require 'json'
 
-- MCP Tool and Server (Procfile process) names must be unique within a given add-on’s namespace.
+uri = URI("#{ENV['INFERENCE_URL']}/v1/mcp/servers")
+request = Net::HTTP::Get.new(uri)
+request['Authorization'] = "Bearer #{ENV['INFERENCE_KEY']}"
 
-- Tool input schemas must follow the [JSON Schema](https://json-schema.org/) format.
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
 
-### Full Example Response
+puts JSON.parse(response.body)
+```
 
-```bash
+</CodeGroup>
+
+### Response Example
+
+```json
 [
   {
     "id": "a3bda372-085b-458f-8b1e-6f5704d528fe",
@@ -205,58 +160,62 @@ Each server can expose multiple MCP tools.
     "process_command": "python -m src.stdio_server",
     "created_at": "2025-05-09T15:23:42.318541Z",
     "updated_at": "2025-05-09T15:23:45.890484Z",
+    "namespace": "mcp",
+    "server_status": "registered",
+    "primitives_status": "synced",
     "tools": [
       {
         "name": "code_exec_ruby",
         "namespaced_name": "mcp/code_exec_ruby",
-        "description": "Executes a Ruby code snippet with optional gem dependencies.\n\n    When `use_temp_dir` is True, the code and any installed gems are run in a throwaway temporary directory,\n    and gems are isolated. When False, gems are installed to ~/.gem.\n\n    The Ruby runtime has access to networking, the filesystem, and standard libraries.\n    A non-zero exit code is an error and should be fixed.\n\n    Returns:\n        JSON containing:\n            - 'returncode': Exit status of the execution.\n            - 'stdout': Captured standard output.\n            - 'stderr': Captured standard error or install failure messages.\n    ",
+        "description": "Executes a Ruby code snippet with optional gem dependencies.",
         "input_schema": {
           "type": "object",
           "properties": {
             "code": {
               "type": "string",
-              "title": "Code",
               "description": "The Ruby code to execute as a string."
             },
             "packages": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Packages",
-              "default": null,
-              "description": "Optional list of gem names to install before execution."
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional list of gem names to install."
             },
             "use_temp_dir": {
               "type": "boolean",
-              "title": "Use Temp Dir",
               "default": false,
-              "description": "If True, code and dependencies are run in a temporary working directory. Gems are installed in an isolated directory and will not affect or reuse the user's ~/.gem folder. Not a secure sandbox."
+              "description": "If True, code runs in a temporary directory."
             }
           },
-          "required": [
-            "code"
-          ]
+          "required": ["code"]
         },
         "annotations": {}
       }
-    ],
-    "server_status": "registered",
-    "primitives_status": "synced",
-    "namespace": "mcp"
+    ]
   }
 ]
 ```
 
-## Additional Reading
+## Important Notes
 
-- [`v1/agents/heroku`](https://devcenter.heroku.com/articles/heroku-inference-api-v1-agents-heroku)
+<Warning>
+  Only tools from servers with `server_status: "registered"` and `primitives_status: "synced"` will be accessible in `/v1/agents/heroku` requests.
+</Warning>
 
-- [`Working With MCP on Heroku`](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp)
+- Use the `/v1/agents/heroku` endpoint to invoke tools registered by this endpoint
+- Until you deploy and register an MCP server, requests will return an empty list
+- MCP Tool and Server (Procfile process) names must be unique within a given add-on's namespace
+- Tool input schemas must follow the JSON Schema format
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Agents (Heroku)" href="/inference-api/agents-heroku" icon="robot">
+    Invoke MCP tools with agents
+  </Card>
+  <Card title="Working with MCP" href="/tool-use/working-with-mcp" icon="plug">
+    Deploy custom MCP servers
+  </Card>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    Built-in Heroku tools
+  </Card>
+</CardGroup>

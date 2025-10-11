@@ -1,351 +1,448 @@
 ---
-title: "Managed Inference and Agents API /v1/agents/heroku"
-description: "The /v1/agents/heroku endpoint allows you to interact with an agentic system powered by large language models (LLMs) that can autonomously invoke tool..."
+title: "Agents (Heroku)"
+openapi: "POST /v1/agents/heroku"
 ---
 
-## Request Body Parameters
+The `/v1/agents/heroku` endpoint allows you to interact with an agentic system powered by large language models (LLMs) that can autonomously invoke tools and execute actions on your behalf. The agent uses a loop to reason, plan, and execute tasks using [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) and [MCP tools](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp).
 
-Use the following parameters to manage the behavior of the agent and which tools it can use.
+<Note>
+  View our [available agent models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) and [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) to see which models and tools are supported.
+</Note>
 
-### Required Parameters
+## Base URL
 
-| model 
-| string 
-| model used for inference, typically the value of your `INFERENCE_MODEL_ID` config var 
-|  
+```
+https://us.inference.heroku.com
+```
 
-| messages 
-| array 
-| array of [messages](#messages-array-of-objects) used by the agent to determine its response and next actions 
-| `[{"role": "user", "content": "Check my database schema."}]` 
+## Authentication
 
-### Optional Parameters
+All requests must include an `Authorization` header with your Heroku Inference API key:
 
-| max_tokens_per_inference_request 
-| integer 
-| max number of tokens the model can generate during each underlying inference request before stopping (a single call to `/v1/agents/heroku` can include multiple underlying inference requests)max value: 4096 for Haiku models, 8192 for Sonnet models 
-| varies 
-| `1024` 
+```bash
+Authorization: Bearer YOUR_INFERENCE_KEY
+```
 
-| stop 
-| array 
-| list of strings that stop the model from generating further tokens if any of the strings are in the response (for example, `["foo"]` causes the model to stop generating output only if it generated the string `"foo"`) 
-| `null` 
-| `["foo"]` 
+You can get your API key from your Heroku app's `INFERENCE_KEY` config variable.
 
-| temperature 
-| float 
-| controls randomness of the response: values closer to `0` make responses more focused by favoring high-probability tokens, while values closer to `1.0` encourage more diverse responses by sampling from a broader range of possibilities for each generated tokenrange: `0.0` to `1.0` 
-| `1.0` 
-| `0.2` 
+## Request Parameters
 
-| tools 
-| array 
-| list of [tools](#tools-array-of-objects) the agent is allowed to use 
-| `null` 
-| see tools field in the [example request](#example-request) 
+### model
+**string** · required
 
-| top_p 
-| float 
-| specifies the proportion of tokens to consider when generating the next token, in terms of cumulative probabilityrange: `0` to `1.0` 
-| `0.999` 
-| `0.95` 
+Model used for inference, typically the value of your `INFERENCE_MODEL_ID` config var.
 
-## tools Array of Objects
+Example: `"claude-4-sonnet"`, `"claude-3-5-haiku"`
 
-Each tool in the array allows the agent to call an action on your behalf. Heroku automatically executes tool calls via one-off dynos. The `/v1/agents/heroku` endpoint currently supports two types of tools:
+### messages
+**array** · required
 
-- [heroku_tool](https://devcenter.heroku.com/articles/heroku-inference-tools): 1st-party tools that Heroku Managed Inference and Agents natively supports
+Array of message objects used by the agent to determine its response and next actions.
 
-- [MCP tools](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp): custom [MCP](https://modelcontextprotocol.io/introduction) tools you deploy to Heroku, which Heroku automatically runs when called by your model. To learn more, see [Heroku MCP Tools](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp) about how to deploy your own custom MCP tools to Heroku.
+Supported roles: `system`, `user`, `assistant`, `tool`
 
-| type 
-| enum 
-| type of toolone of:`heroku_tool`, `mcp` 
-| `"heroku_tool"` 
-
-| name 
-| string 
-| name of tool (see [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) for available tools) 
-| `"code_exec_ruby"` 
-
-| description 
-| string 
-| (optional) hint text to inform the model when to use this tool 
-| `"Runs SQL query on a Heroku database"` 
-
-| runtime_params 
-| object 
-| configuration to control automatic execution of [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) and `mcp` tools (see [runtime parameters](#runtime-parameters)) 
-|  
-
-### Runtime Parameters
-
-The `v1/agents/heroku` endpoint passes certain settings to the specified `mcp` or `heroku_tool` tools at runtime The model can’t modify the settings.
-
-| target_app_name 
-| string 
-| (required) name of Heroku app to run the tool in 
-|  
-| `"my-heroku-app"` 
-
-| dyno_size 
-| string 
-| dyno size to use when running the tool 
-| `"standard-1x"` 
-| `"standard-1x"` 
-
-| ttl_seconds 
-| integer 
-| max seconds a dyno is allowed to runmax: `120` 
-| `120` 
-| `10` 
-
-| max_calls 
-| integer 
-| max number of times this tool can be called during the agent loop 
-| `3` 
-| `1` 
-
-| tool_params 
-| object 
-| additional parameters for tool (for example, `cmd`, `db_attachment`) (see tool-specific [docs](https://devcenter.heroku.com/articles/heroku-inference-tools)) 
-| (varies) 
-| `{}` 
-
-- `mcp` type tools allow optionally specifying `ttl_seconds`, `max_calls`, and `dyno_size`. The other parameters aren’t supported.
-
-- `heroku_tool` type tools require or allow certain parameters depending on the tool itself. See tool-specific [docs](https://devcenter.heroku.com/articles/heroku-inference-tools) for more information.
-
-## messages Array of Objects
-
-A `messages` object is an array of message objects.
-
-Each message must specify a `role` field that determines the message’s schema. Currently, the supported types are `user`, `assistant`, `system`, and `tool`.
-
-If the most recent message uses the `assistant` role, the model will continue its answer starting from the content in that most recent message.
-
-### role=user message
-
-`user` messages are the primary way to send queries to your model and prompt it to respond.
-
-| role 
-| string 
-| role of messagealways: `"user"` 
-| yes 
-| `"user"` 
-
-| content 
-| string 
-| contents of user message 
-| yes 
-| `"What is the weather?"` 
-
-### role=assistant message
-
-Typically, the model only generates `assistant` messages. However, you can create or prefill a partially completed `assistant` response to influence the content a model generates on its next turn.
-
-| role 
-| string 
-| role of messagealways: `"assistant"` 
-| yes 
-| `"assistant"` 
-
-| content 
-| string 
-| contents of assistant message 
-| yes, unless `tool_calls` is specified 
-| `"Here is the information"` 
-
-| refusal 
-| string or null 
-| (currently ignored in requests) refusal message by the assistant 
-| no 
-| `"I cannot answer that"` 
-
-| tool_calls 
-| array 
-| array of [tool call](#tool-call-object) request objects 
-| no 
-| `[{"id": "tool_call_12345", "type": "function", "function": {"name": "my_cool_tool", "arguments": {"some_input": 123}}}]` 
-
-#### Tool Call Object
-
-Represents the model’s request to execute a specific tool.
-
-| id 
-| string 
-| unique ID for the tool call 
-| `"tooluse_abc123"` 
-
-| type 
-| string 
-| type of callalways: `"function"` 
-| `"function"` 
-
-| function 
-| object 
-| [function](#function-object) call details 
-| see [tool call example](#tool-call-example) 
-
-Tool Call Example
-
-```json
-"tool_calls": [
+<CodeGroup>
+```json Example
+[
   {
-    "id": "tooluse_abc123",
-    "type": "function",
-    "function": {
-      "name": "dyno_run_command",
-      "arguments": "{}"
-    }
+    "role": "system",
+    "content": "You are a helpful DevOps assistant."
+  },
+  {
+    "role": "user",
+    "content": "Check my database schema and restart the web dynos."
   }
 ]
 ```
+</CodeGroup>
 
-#### Function Object
+### tools
+**array** · optional
 
-| name 
-| string 
-| name of tool to invoke 
-| `"dyno_run_command"` 
+List of tools the agent is allowed to use. Heroku automatically executes tool calls via one-off dynos.
 
-| arguments 
-| string 
-| JSON-encoded string of tool arguments 
-| `"{}"` 
+The `/v1/agents/heroku` endpoint supports two types of tools:
+- **heroku_tool**: 1st-party tools that Heroku natively supports
+- **mcp**: Custom MCP tools you deploy to Heroku
 
-### role=system message
+See [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) for available tools.
 
-A `system` message is a special prompt given to the model to guide its responses.
+<Accordion title="Tool Object Structure">
+**type** (enum): Type of tool. Options: `heroku_tool`, `mcp`
 
-| role 
-| string 
-| role of messagealways: `"system"` 
-| yes 
-| `"system"` 
+**name** (string): Name of tool (e.g., `"code_exec_ruby"`, `"pg_psql"`)
 
-| content 
-| string 
-| contents of system message 
-| yes 
-| `"You are a helpful assistant. You favor brevity and avoid hedging. You readily admit when you don't know an answer."` 
+**description** (string, optional): Hint text to inform the model when to use this tool
 
-### role=tool message
+**runtime_params** (object): Configuration to control automatic execution
 
-A `tool` message object representing a specified tool’s output.
+Runtime Parameters:
+- **target_app_name** (string, required): Name of Heroku app to run the tool in
+- **dyno_size** (string, optional): Dyno size to use when running the tool (default: `"standard-1x"`)
+- **ttl_seconds** (integer, optional): Max seconds a dyno is allowed to run (max: `120`, default: `120`)
+- **max_calls** (integer, optional): Max number of times this tool can be called during the agent loop (default: `3`)
+- **tool_params** (object, optional): Additional parameters for tool (see tool-specific docs)
 
-| role 
-| string 
-| role of messagealways: `"tool"` 
-| yes 
-| `"tool"` 
-
-| content 
-| string 
-| output of tool call 
-| yes 
-| `"Rainy and 84º"` 
-
-| tool_call_id 
-| string 
-| tool call the message is responding to 
-| yes 
-| `"toolu_02F9GXvY5MZAq8Lw3PTNQyJK"` 
-
-## Request Headers
-
-| `Authorization` 
-| string 
-| Bearer token containing your [Heroku Inference API key](https://devcenter.heroku.com/articles/heroku-inference#model-resource-config-vars) 
-
-All `/v1/agents/heroku` requests must include the following header:
-
-```bash
--H "Authorization: Bearer $INFERENCE_KEY"
+Example:
+```json
+{
+  "type": "heroku_tool",
+  "name": "pg_psql",
+  "description": "Runs SQL query on a Heroku database",
+  "runtime_params": {
+    "target_app_name": "my-heroku-app",
+    "dyno_size": "standard-1x",
+    "ttl_seconds": 30,
+    "max_calls": 2,
+    "tool_params": {
+      "db_attachment": "DATABASE_URL"
+    }
+  }
+}
 ```
+</Accordion>
+
+### temperature
+**float** · optional · default: `1.0`
+
+Controls randomness of the response. Range: `0.0` to `1.0`
+
+- Values closer to `0` make responses more focused and deterministic
+- Values closer to `1.0` encourage more creative and diverse responses
+
+### top_p
+**float** · optional · default: `0.999`
+
+Nucleus sampling threshold. Range: `0` to `1.0`. Specifies the cumulative probability of tokens to consider.
+
+### max_tokens_per_inference_request
+**integer** · optional
+
+Max number of tokens the model can generate during each underlying inference request before stopping. A single call to `/v1/agents/heroku` can include multiple underlying inference requests.
+
+- Max value: `4096` for Haiku models
+- Max value: `8192` for Sonnet models
+
+### stop
+**array of strings** · optional
+
+List of strings that stop the model from generating further tokens if encountered in the response.
 
 ## Response Format
 
-Agent responses are streamed back over Server-Sent Events (SSE). Each `event: message` includes a JSON payload representing a completion. The final event is `event: done` with the data `[DONE]`.
+Agent responses are streamed back over Server-Sent Events (SSE). Each `event: message` includes a JSON payload representing a completion. The final event is `event: done` with data `[DONE]`.
 
 ### Completion Object
 
-| id 
-| string 
-| unique ID for agent session 
-| `"chatcmpl-abc123"` 
+Each SSE message contains either a `chat.completion` or `tool.completion` object.
 
-| object 
-| enum 
-| type of completionone of: `chat.completion`, `tool.completion` 
-| `"tool.completion"` 
+**id** (string): Unique ID for agent session
 
-| created 
-| integer 
-| unix timestamp when chunk was created 
-| `1746546550` 
+**object** (enum): Type of completion. Options: `chat.completion`, `tool.completion`
 
-| model 
-| string 
-| model ID used to generate the message 
-| `"claude-4-sonnet"` 
+**created** (integer): Unix timestamp when chunk was created
 
-| system_fingerprint 
-| string 
-| fingerprint of system generating output 
-| `"heroku-inf-abc123"` 
+**model** (string): Model ID used to generate the message
 
-| choices 
-| array of objects 
-| array of length 1 containing a single [choice object](#choice-object) 
-| see [example response](#example-response) 
+**choices** (array): Array of length 1 containing a single choice object
 
-| usage 
-| object 
-| token [usage](#usage-object) statistics, empty for tool completions (no tokens consumed) 
-| `{"prompt_tokens":15,"completion_tokens":13,"total_tokens":28}` 
+**usage** (object): Token usage statistics (empty for tool completions)
 
-### Choice Object
+<Accordion title="Choice Object">
+**index** (integer): Index of the choice, always `0`
 
-| index 
-| integer 
-| index of the choicealways: `0` 
-| `0` 
+**message** (object): Message content with role `assistant` or `tool`
+- `role` (string): Message role
+- `content` (string): Text content
+- `tool_calls` (array, optional): Tool calls requested by the model
+- `tool_call_id` (string, for tool messages): ID of the tool call being responded to
 
-| message 
-| object 
-| [message](#messages-array-of-objects) content (response messages will always be of role [`assistant`](#role-assistant-message) or [`tool`](#role-tool-message)) 
-| see [example response](#example-response) 
+**finish_reason** (enum): Reason model stopped. Options: `stop`, `length`, `tool_calls`, `""`
+</Accordion>
 
-| finish_reason 
-| enum 
-| reason model stoppedone of: `stop`, `length`, `tool_calls`, `""` 
-| `"tool_calls"` 
+<Accordion title="Usage Object">
+**prompt_tokens** (integer): Tokens used in prompt
 
-### Usage Object
+**completion_tokens** (integer): Tokens used in response
 
-| prompt_tokens 
-| integer 
-| tokens used in prompt 
-| `397` 
+**total_tokens** (integer): Sum of prompt and completion tokens
+</Accordion>
 
-| completion_tokens 
-| integer 
-| tokens used in response 
-| `65` 
+## Examples
 
-| total_tokens 
-| integer 
-| sum of prompt and completion tokens 
-| `462` 
+<CodeGroup>
 
-Each `event: message` streamed over SSE contains a single completion object: either a `chat.completion` or a `tool.completion`. The final message is `event: done` with `data: [DONE]`.
-
-## Example Request
-
-```bash
+```bash cURL
 curl --location $INFERENCE_URL/v1/agents/heroku \
   --header 'Content-Type: application/json' \
   --header "Authorization: Bearer $INFERENCE_KEY" \
-  --data @-
+  --data '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful DevOps assistant."
+      },
+      {
+        "role": "user",
+        "content": "Run a database query to show all tables in my database."
+      }
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "pg_psql",
+        "runtime_params": {
+          "target_app_name": "my-app",
+          "tool_params": {
+            "db_attachment": "DATABASE_URL"
+          }
+        }
+      }
+    ]
+  }'
+```
+
+```python Python
+import os
+import requests
+import json
+
+url = f"{os.getenv('INFERENCE_URL')}/v1/agents/heroku"
+headers = {
+    "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": os.getenv("INFERENCE_MODEL_ID"),
+    "messages": [
+        {"role": "system", "content": "You are a helpful DevOps assistant."},
+        {"role": "user", "content": "Run a database query to show all tables."}
+    ],
+    "tools": [
+        {
+            "type": "heroku_tool",
+            "name": "pg_psql",
+            "runtime_params": {
+                "target_app_name": "my-app",
+                "tool_params": {
+                    "db_attachment": "DATABASE_URL"
+                }
+            }
+        }
+    ]
+}
+
+response = requests.post(url, headers=headers, json=data, stream=True)
+
+# Stream SSE responses
+for line in response.iter_lines():
+    if line:
+        decoded_line = line.decode('utf-8')
+        if decoded_line.startswith('data: '):
+            data = decoded_line[6:]
+            if data != '[DONE]':
+                print(json.loads(data))
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/agents/heroku`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: process.env.INFERENCE_MODEL_ID,
+      messages: [
+        { role: 'system', content: 'You are a helpful DevOps assistant.' },
+        { role: 'user', content: 'Run a database query to show all tables.' }
+      ],
+      tools: [
+        {
+          type: 'heroku_tool',
+          name: 'pg_psql',
+          runtime_params: {
+            target_app_name: 'my-app',
+            tool_params: {
+              db_attachment: 'DATABASE_URL'
+            }
+          }
+        }
+      ]
+    })
+  }
+);
+
+// Handle SSE stream
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { value, done } = await reader.read();
+  if (done) break;
+
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n');
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = line.slice(6);
+      if (data !== '[DONE]') {
+        console.log(JSON.parse(data));
+      }
+    }
+  }
+}
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+
+uri = URI("#{ENV['INFERENCE_URL']}/v1/agents/heroku")
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV['INFERENCE_KEY']}"
+request['Content-Type'] = 'application/json'
+
+request.body = {
+  model: ENV['INFERENCE_MODEL_ID'],
+  messages: [
+    { role: 'system', content: 'You are a helpful DevOps assistant.' },
+    { role: 'user', content: 'Run a database query to show all tables.' }
+  ],
+  tools: [
+    {
+      type: 'heroku_tool',
+      name: 'pg_psql',
+      runtime_params: {
+        target_app_name: 'my-app',
+        tool_params: {
+          db_attachment: 'DATABASE_URL'
+        }
+      }
+    }
+  ]
+}.to_json
+
+Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request) do |response|
+    response.read_body do |chunk|
+      chunk.split("\n").each do |line|
+        if line.start_with?('data: ')
+          data = line[6..-1]
+          puts JSON.parse(data) unless data == '[DONE]'
+        end
+      end
+    end
+  end
+end
+```
+
+</CodeGroup>
+
+### Response Example
+
+```
+event: message
+data: {"id":"chatcmpl-abc123","object":"chat.completion","created":1746546550,"model":"claude-4-sonnet","choices":[{"index":0,"message":{"role":"assistant","content":"I'll query your database to show all tables.","tool_calls":[{"id":"toolu_abc123","type":"function","function":{"name":"pg_psql","arguments":"{\"query\":\"SELECT tablename FROM pg_tables WHERE schemaname='public';\"}"}}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":150,"completion_tokens":45,"total_tokens":195}}
+
+event: message
+data: {"id":"chatcmpl-abc123","object":"tool.completion","created":1746546552,"model":"claude-4-sonnet","choices":[{"index":0,"message":{"role":"tool","content":"tablename\n---------\nusers\nproducts\norders","tool_call_id":"toolu_abc123"},"finish_reason":""}],"usage":{}}
+
+event: message
+data: {"id":"chatcmpl-abc123","object":"chat.completion","created":1746546553,"model":"claude-4-sonnet","choices":[{"index":0,"message":{"role":"assistant","content":"Your database has 3 tables: users, products, and orders."},"finish_reason":"stop"}],"usage":{"prompt_tokens":180,"completion_tokens":18,"total_tokens":198}}
+
+event: done
+data: [DONE]
+```
+
+## Message Types
+
+<Accordion title="User Message">
+**role** (string): Always `"user"`
+
+**content** (string): Contents of user message
+
+Example:
+```json
+{
+  "role": "user",
+  "content": "What is the weather?"
+}
+```
+</Accordion>
+
+<Accordion title="Assistant Message">
+**role** (string): Always `"assistant"`
+
+**content** (string): Contents of assistant message
+
+**tool_calls** (array, optional): Array of tool call request objects
+
+Example:
+```json
+{
+  "role": "assistant",
+  "content": "I'll check that for you.",
+  "tool_calls": [
+    {
+      "id": "toolu_123",
+      "type": "function",
+      "function": {
+        "name": "dyno_run_command",
+        "arguments": "{}"
+      }
+    }
+  ]
+}
+```
+</Accordion>
+
+<Accordion title="System Message">
+**role** (string): Always `"system"`
+
+**content** (string): System prompt to guide the model's behavior
+
+Example:
+```json
+{
+  "role": "system",
+  "content": "You are a helpful assistant. You favor brevity and avoid hedging."
+}
+```
+</Accordion>
+
+<Accordion title="Tool Message">
+**role** (string): Always `"tool"`
+
+**content** (string): Output of tool call
+
+**tool_call_id** (string): ID of the tool call this message is responding to
+
+Example:
+```json
+{
+  "role": "tool",
+  "content": "Command executed successfully.",
+  "tool_call_id": "toolu_02F9GXvY5MZAq8Lw3PTNQyJK"
+}
+```
+</Accordion>
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Generate conversational responses without automatic tool execution
+  </Card>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    Available tools for agents
+  </Card>
+  <Card title="Working with MCP" href="/tool-use/working-with-mcp" icon="plug">
+    Create custom MCP tools
+  </Card>
+</CardGroup>

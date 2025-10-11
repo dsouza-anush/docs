@@ -1,107 +1,257 @@
 ---
-title: "Managed Inference and Agents API /v1/embeddings"
-description: "The /v1/embeddings endpoint generates vector embeddings (basically, a list of numbers) for a provided set of input texts. These embeddings are optimiz..."
+title: "Embeddings"
+openapi: "POST /v1/embeddings"
 ---
 
-## Request Body Parameters
+The `/v1/embeddings` endpoint generates vector embeddings (numerical representations) for a provided set of input texts. These embeddings are optimized for semantic search, classification, clustering, and other machine learning tasks.
 
-### Required Parameters
+<Note>
+  View our [available embedding models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
+</Note>
 
-| model 
-| string 
-| ID of the embedding model to use 
-| `"cohere-embed-multilingual"` 
+## Base URL
 
-| input 
-| array 
-| single string or an array of strings for the model to embedmax of: `96` strings, `2048` characters eachrecommended: length less than `512` tokens per string 
-| `["example string 1", "example string 2"]` 
-
-### Optional Parameters
-
-| input_type 
-| enum 
-| specifies the type of input passed to the model (prepends special tokens to the input)one of:`search_document`, `search_query`, `classification`, `clustering` 
-| `"search_document"` 
-| `"search_query"` 
-
-| encoding_format 
-| enum 
-| determines the encoding format of the outputone of: `raw` or `base64` 
-| `"raw"` 
-| `"base64"` 
-
-| embedding_type 
-| enum 
-| specifies the type(s) of embeddings to return (`float`, `int8`, `uint8`, `binary`, `ubinary`) 
-| `"float"` 
-| `"int8"` 
-
-| allow_ignored_params 
-| boolean 
-| ignore unsupported parameters in request instead of throwing an error 
-| `false` 
-| `true` 
-
-## Request Headers
-
-In the following example, we assume your model resource has an alias of `"EMBEDDING"` (meaning you created the model resource with an `--as EMBEDDING` flag).
-
-| `Authorization` 
-| string 
-| your AI add-on’s ‘EMBEDDING_KEY’ value (API bearer token) 
-
-Inference `curl` requests must include an `Authorization` header containing your Heroku Inference key for the specified model.
-
-## Response Format
-
-When a request is successful, the API returns a JSON object with the following structure:
-
-| object 
-| string 
-| outer structure of the responsealways: `"list"` 
-
-| data 
-| array of objects 
-| list of [embeddings](#embedding-object) generated, one per input 
-
-| model 
-| string 
-| ID of the model that generated the embeddings 
-
-| usage 
-| object 
-| metadata about token usage (`prompt_tokens`, `total_tokens`) 
-
-### Embedding Object
-
-Each object inside the `data` array includes:
-
-| object 
-| string 
-| type of objectalways: `"embedding"` 
-
-| index 
-| integer 
-| index of the input string this embedding corresponds to (starting from 0) 
-
-| embedding 
-| array or string 
-| embedding vector (of type `embedding_type`) 
-
-## Example Request
-
-Let’s walk through an example `/v1/embeddings` `curl` request.
-
-First, use this command to set your Heroku environment variables as local variables.
-
-```bash
-eval $(heroku config -a $APP_NAME --shell | grep '^EMBEDDING_' | sed 's/^/export /' | tee >(cat >&2))
+```
+https://us.inference.heroku.com
 ```
 
-Next, send the `curl` request:
+## Authentication
+
+All requests must include an `Authorization` header with your Heroku Inference API key:
 
 ```bash
+Authorization: Bearer YOUR_EMBEDDING_KEY
+```
+
+You can get your API key from your Heroku app's `EMBEDDING_KEY` config variable (assuming you created the model resource with an `--as EMBEDDING` flag).
+
+## Request Parameters
+
+### model
+**string** · required
+
+ID of the embedding model to use.
+
+Example: `"cohere-embed-multilingual"`
+
+### input
+**array or string** · required
+
+Single string or an array of strings for the model to embed.
+
+- Max: `96` strings
+- Max: `2048` characters each
+- Recommended: Less than `512` tokens per string
+
+<CodeGroup>
+```json Example
+["example string 1", "example string 2"]
+```
+</CodeGroup>
+
+### input_type
+**enum** · optional
+
+Specifies the type of input passed to the model. This prepends special tokens to the input for optimal embeddings.
+
+Options: `search_document`, `search_query`, `classification`, `clustering`
+
+Example: `"search_document"` for indexing documents, `"search_query"` for search queries
+
+### encoding_format
+**enum** · optional · default: `"raw"`
+
+Determines the encoding format of the output.
+
+Options: `raw`, `base64`
+
+### embedding_type
+**enum** · optional · default: `"float"`
+
+Specifies the type(s) of embeddings to return.
+
+Options: `float`, `int8`, `uint8`, `binary`, `ubinary`
+
+### allow_ignored_params
+**boolean** · optional · default: `false`
+
+Ignore unsupported parameters in request instead of throwing an error.
+
+## Response
+
+### object
+**string**
+
+Always returns `"list"`.
+
+### data
+**array**
+
+List of embedding objects generated, one per input string.
+
+<Accordion title="Embedding Object">
+Each object in the data array includes:
+
+**object** (string): Type of object, always `"embedding"`
+
+**index** (integer): Index of the input string this embedding corresponds to (starting from 0)
+
+**embedding** (array or string): The embedding vector of the specified `embedding_type`
+</Accordion>
+
+### model
+**string**
+
+ID of the model that generated the embeddings.
+
+### usage
+**object**
+
+Token usage statistics.
+
+- `prompt_tokens` (integer): Tokens in the input
+- `total_tokens` (integer): Total tokens used
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+eval $(heroku config -a $APP_NAME --shell | grep '^EMBEDDING_' | sed 's/^/export /' | tee >(cat >&2))
+
 curl $EMBEDDING_URL/v1/embeddings \
- -H "Authorization: Bearer $EMBEDDING_KEY" \
- -d @-
+  -H "Authorization: Bearer $EMBEDDING_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere-embed-multilingual",
+    "input": [
+      "What is the capital of France?",
+      "Paris is the capital of France."
+    ],
+    "input_type": "search_document"
+  }'
+```
+
+```python Python
+import os
+import requests
+
+url = f"{os.getenv('EMBEDDING_URL')}/v1/embeddings"
+headers = {
+    "Authorization": f"Bearer {os.getenv('EMBEDDING_KEY')}",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": "cohere-embed-multilingual",
+    "input": [
+        "What is the capital of France?",
+        "Paris is the capital of France."
+    ],
+    "input_type": "search_document"
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${process.env.EMBEDDING_URL}/v1/embeddings`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.EMBEDDING_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'cohere-embed-multilingual',
+      input: [
+        'What is the capital of France?',
+        'Paris is the capital of France.'
+      ],
+      input_type: 'search_document'
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+
+uri = URI("#{ENV['EMBEDDING_URL']}/v1/embeddings")
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV['EMBEDDING_KEY']}"
+request['Content-Type'] = 'application/json'
+
+request.body = {
+  model: 'cohere-embed-multilingual',
+  input: [
+    'What is the capital of France?',
+    'Paris is the capital of France.'
+  ],
+  input_type: 'search_document'
+}.to_json
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+puts JSON.parse(response.body)
+```
+
+</CodeGroup>
+
+### Response Example
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [0.123, -0.456, 0.789, ...]
+    },
+    {
+      "object": "embedding",
+      "index": 1,
+      "embedding": [0.234, -0.567, 0.890, ...]
+    }
+  ],
+  "model": "cohere-embed-multilingual",
+  "usage": {
+    "prompt_tokens": 15,
+    "total_tokens": 15
+  }
+}
+```
+
+## Use Cases
+
+### Semantic Search
+Use `input_type: "search_document"` when embedding documents for your search index, and `input_type: "search_query"` when embedding user queries.
+
+### Classification
+Use `input_type: "classification"` when creating embeddings for text classification tasks.
+
+### Clustering
+Use `input_type: "clustering"` when grouping similar texts together.
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Generate conversational responses
+  </Card>
+  <Card title="Image Generation" href="/inference-api/images-generations" icon="image">
+    Create images with AI
+  </Card>
+  <Card title="Vector Database" href="/vector-database/pgvector" icon="database">
+    Store embeddings in Postgres
+  </Card>
+</CardGroup>

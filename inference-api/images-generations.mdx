@@ -1,109 +1,256 @@
 ---
-title: "Managed Inference and Agents API /v1/images/generations"
-description: "The /v1/images/generations endpoint generates images based on a descriptive text prompt. You can control the aspect ratio, image format, and even prov..."
+title: "Image Generation"
+openapi: "POST /v1/images/generations"
 ---
 
-## Request Body Parameters
+The `/v1/images/generations` endpoint generates images based on a descriptive text prompt. You can control the aspect ratio, image format, size, and provide negative prompts to refine the output.
 
-Use parameters to control details, such as the size and format of images you generate.
+<Note>
+  View our [available image models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
+</Note>
 
-### Required Parameters
+## Base URL
 
-| model 
-| string 
-| ID of the image generation model to use 
-| `"stable-image-ultra"` 
-
-| prompt 
-| string 
-| text prompt describing the image to generate (max length of 10,000 characters) 
-| `"A beautiful sunset over the mountains."` 
-
-### Optional Parameters
-
-| aspect_ratio 
-| enum 
-| controls the aspect ratio of the generated imageone of:`"16:9"`, `"1:1"`, `"21:9"`, `"2:3"`, `"3:2"`, `"4:5"`, `"5:4"`, `"9:16"`, or `"9:21"` 
-| `"1:1"` 
-| `"16:9"` 
-
-| negative_prompt 
-| string 
-| keywords or phrases to avoid in the image (for example, `"crowded"` will help prevent a crowded scene)max length:10,000 characters 
-| `""` 
-| `"crowded"` 
-
-| output_format 
-| enum 
-| format of the output imageone of:`"jpeg"` or `"png"` 
-| `"png"` 
-| `"jpeg"` 
-
-| size 
-| enum 
-| size, in pixels, of the output imageone of: `"1344x768"`, `"1024x1024"`, `"1536x640"`, `"832x1216"`, `"1216x832"`, `"896x1088"`, `"1088x896"`, `"768x1344"`, `"640x1536"` 
-| `"1024x1024"` 
-| `"640x1536"` 
-
-| seed 
-| number 
-| a starting value used as a base to generate the image from (if all parameters remain the same, images generated with the same seed will be identical, while images generated with different seeds will be similar, but not identical)range: `0`(random) to `4294967295` 
-| `0` 
-| `123` 
-
-| allow_ignored_params 
-| boolean 
-| ignore unsupported parameters in request instead of throwing an error 
-| `false` 
-| `true` 
-
-## Request Headers
-
-In the following example, we assume your model resource has an alias of `"DIFFUSION"` (meaning you created the model resource with an `--as DIFFUSION` flag).
-
-| `Authorization` 
-| string 
-| your AI add-on’s ‘DIFFUSION’ value (API bearer token) 
-
-All inference `curl` requests must include an `Authorization` header containing your Heroku Inference key for the specified model.
-
-## Response Format
-
-When a request is successful, the API returns a JSON object with the following structure:
-
-| created 
-| integer 
-| unix timestamp of when image was created 
-
-| data 
-| array of objects 
-| list of generated images (always length of 1) 
-
-### Data Object
-
-Each object inside the `data` array includes:
-
-| b64_json 
-| string 
-| (optional) generated image, encoded in `base64` 
-
-| revised_prompt 
-| string 
-| included for compatibility with OpenAI-style responsesalways: `""` 
-
-## Example Request
-
-Let’s walk through an example `/v1/images/generations` `curl` request.
-
-First, use this command to set your Heroku environment variables as local variables.
-
-```bash
-eval $(heroku config -a $APP_NAME --shell | grep '^DIFFUSION_' | sed 's/^/export /' | tee >(cat >&2))
+```
+https://us.inference.heroku.com
 ```
 
-Next, send the `curl` request:
+## Authentication
+
+All requests must include an `Authorization` header with your Heroku Inference API key:
 
 ```bash
+Authorization: Bearer YOUR_DIFFUSION_KEY
+```
+
+You can get your API key from your Heroku app's `DIFFUSION_KEY` config variable (assuming you created the model resource with an `--as DIFFUSION` flag).
+
+## Request Parameters
+
+### model
+**string** · required
+
+ID of the image generation model to use.
+
+Example: `"stable-image-ultra"`
+
+### prompt
+**string** · required
+
+Text prompt describing the image to generate.
+
+- Max length: `10,000` characters
+
+Example: `"A beautiful sunset over the mountains with vibrant orange and purple colors"`
+
+### aspect_ratio
+**enum** · optional · default: `"1:1"`
+
+Controls the aspect ratio of the generated image.
+
+Options: `16:9`, `1:1`, `21:9`, `2:3`, `3:2`, `4:5`, `5:4`, `9:16`, `9:21`
+
+### size
+**enum** · optional · default: `"1024x1024"`
+
+Size, in pixels, of the output image.
+
+Options: `1344x768`, `1024x1024`, `1536x640`, `832x1216`, `1216x832`, `896x1088`, `1088x896`, `768x1344`, `640x1536`
+
+### negative_prompt
+**string** · optional
+
+Keywords or phrases to avoid in the image. This helps prevent unwanted elements in the generated image.
+
+- Max length: `10,000` characters
+
+Example: `"crowded, blurry, low quality"`
+
+### output_format
+**enum** · optional · default: `"png"`
+
+Format of the output image.
+
+Options: `jpeg`, `png`
+
+### seed
+**number** · optional · default: `0`
+
+A starting value used as a base to generate the image from. If all parameters remain the same, images generated with the same seed will be identical, while images generated with different seeds will be similar but not identical.
+
+- Range: `0` (random) to `4294967295`
+
+Example: `123` for reproducible results
+
+### allow_ignored_params
+**boolean** · optional · default: `false`
+
+Ignore unsupported parameters in request instead of throwing an error.
+
+## Response
+
+### created
+**integer**
+
+Unix timestamp of when the image was created.
+
+### data
+**array**
+
+List of generated images (always length of 1).
+
+<Accordion title="Data Object">
+Each object in the data array includes:
+
+**b64_json** (string): Generated image, encoded in base64
+
+**revised_prompt** (string): Included for compatibility with OpenAI-style responses, always empty string `""`
+</Accordion>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+eval $(heroku config -a $APP_NAME --shell | grep '^DIFFUSION_' | sed 's/^/export /' | tee >(cat >&2))
+
 curl $DIFFUSION_URL/v1/images/generations \
- -H "Authorization: Bearer $DIFFUSION_KEY" \
- -d @-
+  -H "Authorization: Bearer $DIFFUSION_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "stable-image-ultra",
+    "prompt": "A serene mountain landscape at sunset with vibrant colors",
+    "aspect_ratio": "16:9",
+    "output_format": "png",
+    "size": "1344x768"
+  }'
+```
+
+```python Python
+import os
+import requests
+import base64
+
+url = f"{os.getenv('DIFFUSION_URL')}/v1/images/generations"
+headers = {
+    "Authorization": f"Bearer {os.getenv('DIFFUSION_KEY')}",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": "stable-image-ultra",
+    "prompt": "A serene mountain landscape at sunset with vibrant colors",
+    "aspect_ratio": "16:9",
+    "output_format": "png",
+    "size": "1344x768"
+}
+
+response = requests.post(url, headers=headers, json=data)
+result = response.json()
+
+# Save the image
+image_data = base64.b64decode(result['data'][0]['b64_json'])
+with open('generated_image.png', 'wb') as f:
+    f.write(image_data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${process.env.DIFFUSION_URL}/v1/images/generations`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.DIFFUSION_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'stable-image-ultra',
+      prompt: 'A serene mountain landscape at sunset with vibrant colors',
+      aspect_ratio: '16:9',
+      output_format: 'png',
+      size: '1344x768'
+    })
+  }
+);
+
+const result = await response.json();
+
+// Decode and save the image
+const imageBuffer = Buffer.from(result.data[0].b64_json, 'base64');
+require('fs').writeFileSync('generated_image.png', imageBuffer);
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+require 'base64'
+
+uri = URI("#{ENV['DIFFUSION_URL']}/v1/images/generations")
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV['DIFFUSION_KEY']}"
+request['Content-Type'] = 'application/json'
+
+request.body = {
+  model: 'stable-image-ultra',
+  prompt: 'A serene mountain landscape at sunset with vibrant colors',
+  aspect_ratio: '16:9',
+  output_format: 'png',
+  size: '1344x768'
+}.to_json
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+result = JSON.parse(response.body)
+
+# Save the image
+File.open('generated_image.png', 'wb') do |f|
+  f.write(Base64.decode64(result['data'][0]['b64_json']))
+end
+```
+
+</CodeGroup>
+
+### Response Example
+
+```json
+{
+  "created": 1746546789,
+  "data": [
+    {
+      "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "revised_prompt": ""
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### Writing Effective Prompts
+- Be specific and descriptive about what you want to see
+- Include details about style, lighting, composition, and mood
+- Mention colors, textures, and atmosphere
+
+### Using Negative Prompts
+- Use negative prompts to exclude unwanted elements
+- Common negative prompts: "blurry", "low quality", "distorted", "watermark"
+
+### Reproducibility
+- Use the same `seed` value to generate consistent results
+- Useful for iterating on a design or creating variations
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Generate text with AI
+  </Card>
+  <Card title="Embeddings" href="/inference-api/embeddings" icon="vector-square">
+    Generate text embeddings
+  </Card>
+  <Card title="AI Studio" href="/heroku-inference/ai-studio" icon="palette">
+    Visual interface for image generation
+  </Card>
+</CardGroup>
