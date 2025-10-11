@@ -1,469 +1,441 @@
 ---
-title: "Managed Inference and Agents API /v1/chat/completions"
-description: "The /v1/chat/completions endpoint generates conversational completions for a provided set of input messages. You can specify the model, adjust generat..."
+title: "Chat Completions"
+openapi: "POST /v1/chat/completions"
 ---
 
-## Request Body Parameters
+The `/v1/chat/completions` endpoint generates conversational completions for a provided set of input messages. You can specify the model, adjust generation settings such as temperature, and optionally stream responses or enable tool calling.
 
-Use parameters to manage how conversational completions are generated.
+<Note>
+  View our [available chat models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
+</Note>
 
-### Required Parameters
+## Base URL
 
-| model 
-| string 
-| model used for completion, typically the value of your `INFERENCE_MODEL_ID` config var 
-| `"claude-4-sonnet"` 
-
-| messages 
-| array 
-| array of [messages](#messages-array-of-objects) objects (user-assistant conversational turns) used by the model to generate the next response 
-| `[{"role": "user", "content": "Why is Heroku so awesome?"}]` 
-
-### Optional Parameters
-
-| extended_thinking 
-| object 
-| (Claude Sonnet 3.7 & 4 only) enable [extended thinking](#extended_thinking-object) to perform internal reasoning steps (see Anthropic’s [extended thinking docs](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking)) 
-| `null` 
-| `{"enabled": true, "budget_tokens": 1024, "include_reasoning": true}` 
-
-| max_completion_tokens 
-| integer 
-| maximum tokens the model can generate before stopping (each token typically represents around 4 characters of text)*max value: `4096` for Haiku models, `8192` for Sonnet models 
-| varies 
-| `1024` 
-
-| modalities 
-| array 
-| output types that you want the model to generate (currently only text is supported) 
-| `["text"]` 
-| `["text"]` 
-
-| stop 
-| array 
-| list of strings that stop the model from generating further tokens if any of the strings are in the response 
-| `null` 
-| `["foo"]` 
-
-| stream 
-| boolean 
-| stream responses incrementally via server-sent events (useful for chat interfaces and avoiding timeout errors) 
-| `false` 
-| `true` 
-
-| temperature 
-| float 
-| controls the randomness of the response—values closer to `0` make the response more focused by favoring high-probability tokens, while values closer to `1.0` encourage more diverse responses by sampling from a broader range of possibilities for each generated tokenrange: `0.0` to `1.0` 
-| `1.0` 
-| `0.2` 
-
-| top_k 
-| integer 
-| sample from the top K options for each subsequent token, lower values limit long-tail responses 
-| 0 
-| 100 
-
-| tool_choice 
-| enum or object 
-| force the model to use one or more of the tools listed in `tools` (see [tool_choice](#tool_choice-object)) 
-| `"required"` 
-| `"auto"` 
-
-| tools 
-| array 
-| list of tools the model may call (see [tools](#tools-array-of-objects)) 
-| `[]` 
-| refer to the [JSON example in the tools section](#example-tools-array) 
-
-| top_p 
-| float 
-| specifies the proportion of tokens to consider when generating the next token, in terms of cumulative probabilityrange: `0` to `1.0` 
-| `0.999` 
-| `0.95` 
-
-| allow_ignored_params 
-| boolean 
-| ignore unsupported parameters in request instead of throwing an error 
-| `false` 
-| `true` 
-
-* equivalent to deprecated `max_tokens` parameter, only use one of these per request
-
-Heroku doesn’t support OpenAI’s `frequency_penalty` and `logprobs` parameters, but won’t return an error if you include them in requests.
-
-## extended_thinking Object
-
-[Extended thinking](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking) is only supported for Claude 3.7 Sonnet and Claude 4 Sonnet. Requests that include `extended_thinking` for unsupported models fail.
-
-The `extended_thinking` object lets you request that the model use additional internal tokens for reasoning steps before producing its final output. Enabling extended thinking typically improves reasoning ability on complex tasks.
-
-| enabled 
-| boolean 
-| indicates if extended thinking is enabled 
-| `false` 
-
-| budget_tokens 
-| integer 
-| maximum number of internal “thinking” tokens to use during internal reasoningmust be >= `1024` and  
-| type of tool always: [`"function"`](https://devcenter.heroku.com/articles/heroku-inference-tools)) 
-| `"function"` 
-
-| function 
-| object 
-| details about the [function](#tools-array-of-objects-function-object) to call 
-| [example](#example-tools-array)) 
-
-### function Object
-
-| description 
-| string 
-| description of what the function does, used by the model to choose when and how to call the function 
-| `"This function calculates X"` 
-
-| name 
-| string 
-| name of the function to be called 
-| `"example_function"` 
-
-| parameters 
-| object 
-| parameters the function accepts as a JSON Schema object 
-| `{"type": "object", "properties": {}}` 
-
-### Example tools Array
-
-```json
-[
-    {
-      "type": "function",
-      "function": {
-        "name": "get_current_weather",
-        "description": "Get the current weather in a given location",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "location": {
-              "type": "string",
-              "description": "The city and state, e.g. Portland, OR"
-            }
-          },
-          "required": ["location"]
-        }
-      }
-    }
-  ]
+```
+https://us.inference.heroku.com
 ```
 
-## tool_choice Object
+## Authentication
 
-The `tool_choice` object specifies how the model should use the provided [`tools`](#tools-array-of-objects).
+All requests must include an `Authorization` header with your Heroku Inference API key:
 
-It can either be a string (`none`, `auto`, or `required`), or a `tool_choice` object.
-`none` will mean the model will call no tools. `auto` allows the model to call zero to many of the provided tools, and `required` forces the model to call at least one or more tools before responding to the user.
+```bash
+Authorization: Bearer YOUR_INFERENCE_KEY
+```
 
-To force the model to call a specific tool, you may simply specify a single tool in the `tools` object and pass `"tools": "required"`, or you can force the tool selection by passing a `tool_choice` object that specifies the required function.
+You can get your API key from your Heroku app's `INFERENCE_KEY` config variable.
 
-| type 
-| enum 
-| type of tool always: `"function"` 
-| `"function"` 
+## Request Parameters
 
-| function 
-| object 
-| JSON object containing the function’s name 
-| `{"name": "example_function"}` 
+### model
+**string** · required
 
-## messages Array of Objects
+Model ID to use for completion, typically the value of your `INFERENCE_MODEL_ID` config var.
 
-The `messages` object is an array of message objects.
+Example: `"claude-4-sonnet"`, `"claude-3-5-haiku"`
 
-Each message must specify a `role` field that determines the messages’s schema (see below).
+### messages
+**array** · required
 
-Currently, the supported types are `user`, `assistant`, `system`, and `tool`.
+Array of message objects representing the conversation history. Each message must have a `role` and `content`.
 
-If the most recent message uses the `assistant` role, the model will continue its answer starting from the content in that most recent message.
+Supported roles: `system`, `user`, `assistant`, `tool`
 
-### role=user message
-
-`user` messages are the primary way to send queries to your model and prompt it to respond.
-
-| role 
-| string 
-| role of the message (`user`) 
-| yes 
-| `"user"` 
-
-| content 
-| string, object, array of objects 
-| contents of the user message 
-| yes 
-| `"What is the weather?"` 
-
-### role=assistant message
-
-Typically, `assistant` messages are only generated by the model, however you can create your own or pre-fill a partially completed `assistant` response to help influence the content that the model will generate on its next turn.
-
-| role 
-| string 
-| role of messagealways: `"assistant"` 
-| yes 
-| `"assistant"` 
-
-| content 
-| string, object, array of objects 
-| contents of assistant message 
-| yes 
-| `"Here is the information"` 
-
-| tool_calls 
-| array 
-| array of [tool call](#tool-call-object) request objects 
-| no 
-| `[{"id": "tool_call_12345", "type": "function", "function": {"name": "my_cool_tool", "arguments": {"some_input": 123}}}]` 
-
-Heroku doesn’t support OpenAI’s `refusal` parameter, but won’t return an error if you include it in requests.
-
-#### Tool Call Object
-
-| id 
-| string 
-| unique ID for the tool call 
-| `"tooluse_abc123"` 
-
-| type 
-| string 
-| type of call, currently always `"function"` 
-| `"function"` 
-
-| function 
-| object 
-| [function](#tools-array-of-objects-function-object) call details 
-| see [tool call example](#tool-call-example) 
-
-Tool Call Example
-
-Here’s an example of what a `tool_calls` object might look like, when your model has decided to call a tool you’ve given to it as an option via [tools](#tools-array-of-objects).
-
-```json
-"tool_calls": [
+<CodeGroup>
+```json Example
+[
   {
-    "id": "toolu_02F9GXvY5MZAq8Lw3PTNQyJK",
-    "type": "function",
-    "function": {
-        "name": "get_weather",
-        "arguments": "{\"location\":\"Portland, OR\"}"
-    }
+    "role": "system",
+    "content": "You are a helpful assistant."
+  },
+  {
+    "role": "user",
+    "content": "What is Heroku?"
   }
 ]
 ```
+</CodeGroup>
 
-#### Function Object
+### max_completion_tokens
+**integer** · optional
 
-| name 
-| string 
-| name of the tool to invoke 
-| `"your_cool_tool"` 
+Maximum number of tokens the model can generate before stopping.
 
-| arguments 
-| string 
-| JSON-encoded string of tool arguments 
-| `"{}"` 
+- Max value: `4096` for Haiku models
+- Max value: `8192` for Sonnet models
 
-### role=system message
+### temperature
+**float** · optional · default: `1.0`
 
-A `system` message is sort of a prompt ‘prefix’ that is given to the model to help influence its responses.
+Controls randomness of the response. Range: `0.0` to `1.0`
 
-| role 
-| string 
-| role of the message (`system`) 
-| yes 
-| `"system"` 
+- Values closer to `0` make responses more focused and deterministic
+- Values closer to `1.0` encourage more creative and diverse responses
 
-| content 
-| string, object, array of objects 
-| contents of the system message 
-| yes 
-| `"You are a helpful assistant. You favor brevity and avoid hedging. You readily admit when you don't know an answer."` 
+### top_p
+**float** · optional · default: `0.999`
 
-### role=tool message
+Nucleus sampling threshold. Range: `0` to `1.0`. Specifies the cumulative probability of tokens to consider.
 
-A `tool` message object lets you communicate a specified tool’s result (output) to the model.
+### stream
+**boolean** · optional · default: `false`
 
-| role 
-| string 
-| role of the message (`tool`) 
-| yes 
-| `"get_weather"` 
+Stream responses incrementally via server-sent events. Useful for chat interfaces and avoiding timeout errors.
 
-| content 
-| string, object, array of objects 
-| tool call result (output) 
-| yes 
-| `"Rainy and 84º"` 
+### stop
+**array of strings** · optional
 
-| tool_call_id 
-| string 
-| tool call that this message is responding to 
-| yes 
-| `"toolu_02F9GXvY5MZAq8Lw3PTNQyJK"` 
+List of strings that stop the model from generating further tokens if encountered in the response.
 
-## Request Headers
+### tools
+**array of objects** · optional
 
-In the following example, we assume your model resource has an alias of “`INFERENCE`” (the default).
+List of tools the model may call. See [Tool Use Guide](/tool-use/heroku-tools) for details.
 
-| `Authorization` 
-| string 
-| your AI add-on’s `'INFERENCE_KEY'` value (API bearer token) 
+<Accordion title="Tool Object Structure">
+```json
+{
+  "type": "function",
+  "function": {
+    "name": "get_weather",
+    "description": "Get current weather for a location",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "City and state, e.g. Portland, OR"
+        }
+      },
+      "required": ["location"]
+    }
+  }
+}
+```
+</Accordion>
 
-All inference `curl` requests must include an `Authorization` header containing your Heroku Inference key.
+### tool_choice
+**string or object** · optional · default: `"required"`
 
-## Response Format
+Controls how the model uses provided tools.
 
-When a request is successful, the API returns a JSON object with the following structure:
+- `"none"` - Model will not call any tools
+- `"auto"` - Model can call zero or more tools
+- `"required"` - Model must call at least one tool
 
-| id 
-| string 
-| unique identifier for the chat completion 
-| `"chatcmpl-12345"` 
+### extended_thinking
+**object** · optional
 
-| object 
-| string 
-| the response object typealways: `"chat.completion"` 
-| `"chat.completion"` 
+Enable extended thinking for Claude 3.7 Sonnet and Claude 4 Sonnet only. Allows the model to use additional internal tokens for reasoning steps.
 
-| created 
-| integer 
-| unix timestamp when the completion was created 
-| `1745623456` 
+<Accordion title="Extended Thinking Object">
+```json
+{
+  "enabled": true,
+  "budget_tokens": 1024,
+  "include_reasoning": true
+}
+```
 
-| model 
-| string 
-| model ID used to generate the response 
-| `"claude-4-sonnet"` 
+**Fields:**
+- `enabled` (boolean): Enable extended thinking
+- `budget_tokens` (integer): Minimum 1024, maximum varies by model
+- `include_reasoning` (boolean): Include reasoning trace in response
+</Accordion>
 
-| system_fingerprint 
-| string 
-| (optional) fingerprint of the system version that generated the output 
-| `"heroku-inf-abc123"` 
+<Warning>
+Extended thinking is only supported for Claude 3.7 Sonnet and Claude 4 Sonnet. Requests with `extended_thinking` for other models will fail.
+</Warning>
 
-| choices 
-| array of objects 
-| list of generated message [choices](#choice-object) (always length 1) 
-| see [example response](#example-response) 
+## Response
 
-| usage 
-| object 
-| token [usage](#usage-object) statistics 
-| `{"prompt_tokens":15,"completion_tokens":13,"total_tokens":28}` 
+### id
+**string**
 
-### Choice Object
+Unique identifier for the chat completion.
 
-The object inside the `choices` array (length 1) has the following structure:
+### object
+**string**
 
-| index 
-| integer 
-| index of the choicealways:`0` 
-| `0` 
+Always returns `"chat.completion"`.
 
-| message 
-| object 
-| generated [message](#message-object) content 
-| see [example response](#example-response) 
+### created
+**integer**
 
-| finish_reason 
-| enum 
-| reason the model stoppedone of: `"stop"`, `"length"`, `"tool_calls"` 
-| `"stop"` 
+Unix timestamp when the completion was created.
 
-### Message Object
+### model
+**string**
 
-| role 
-| enum 
-| role of the message senderone of: `assistant`, `tool` 
-| `assistant` 
+Model ID used to generate the response.
 
-| content 
-| string, object, array of objects 
-| text content of the message 
-| `"hello! how can I help you today?"` 
+### choices
+**array**
 
-| reasoning 
-| object 
-| internal [reasoning](#reasoning-object) trace generated if `extended_thinking.include_reasoning` is true 
-|  
+Array containing the generated message (always length 1).
 
-| refusal 
-| string 
-| (currently always null) refusal message if the model declines to answer 
-| `null` 
+<Accordion title="Choice Object">
+**index** (integer): Index of the choice (always 0)
 
-| tool_calls 
-| array of objects 
-| (optional) tool call requests generated by the model 
-| see [example response](#example-response-with-tools) 
+**message** (object): Generated message content
+- `role` (string): Always `"assistant"`
+- `content` (string): Text content of the response
+- `tool_calls` (array, optional): Tool calls requested by the model
+- `reasoning` (object, optional): Reasoning trace if extended thinking enabled
 
-### Content Object
+**finish_reason** (string): Reason the model stopped
+- `"stop"` - Natural stopping point
+- `"length"` - Reached max tokens
+- `"tool_calls"` - Made tool calls
+</Accordion>
 
-Message contents may be in the form of a content object.
+### usage
+**object**
 
-| type 
-| enum 
-| The type/classification of message contentone of: `text`, `image_url` 
-| `text` 
+Token usage statistics.
 
-| content 
-| string or array 
-| content of the message 
-| `"hello! how can I help you today?"``[{"type":"text", "text":"tell me about this image"}, {"type":"image_url", "image_url":"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"}]` 
+- `prompt_tokens` (integer): Tokens in the input
+- `completion_tokens` (integer): Tokens in the output
+- `total_tokens` (integer): Total tokens used
 
-#### Reasoning Object
+## Examples
 
-If `extended_thinking.include_reasoning` is set to true, the model returns a `reasoning` object inside the `message`.
+<CodeGroup>
 
-| thinking 
-| string 
-| internal chain-of-thought reasoning used to form the model’s response (summarized for `claude-4-sonnet`) 
-| `"The user is asking about the weather. I should call the get_weather function with Portland, Oregon."` 
+```bash cURL
+curl https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant."
+      },
+      {
+        "role": "user",
+        "content": "What is Heroku?"
+      }
+    ],
+    "max_completion_tokens": 1024,
+    "temperature": 0.7
+  }'
+```
 
-| signature 
-| string 
-| cryptographic signature verifying the reasoning contents 
-| `"ErcBCkgIAxABGAIi..."` 
+```python Python
+import os
+import requests
 
-| redacted_thinking 
-| string 
-| (optional, typically omitted in response) redacted version of `thinking` if any parts were removed for safety or privacy (only relevant for `claude-3-7-sonnet`) 
-| `null` 
+url = f"{os.getenv('INFERENCE_URL')}/v1/chat/completions"
+headers = {
+    "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}",
+    "Content-Type": "application/json"
+}
 
-### Usage Object
+data = {
+    "model": os.getenv("INFERENCE_MODEL_ID"),
+    "messages": [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ],
+    "max_completion_tokens": 1024,
+    "temperature": 0.7
+}
 
-Information about token consumption.
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
 
-| prompt_tokens 
-| integer 
-| number of tokens used in the input prompt 
-| `407` 
+```javascript JavaScript
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/chat/completions`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: process.env.INFERENCE_MODEL_ID,
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: 'What is Heroku?' }
+      ],
+      max_completion_tokens: 1024,
+      temperature: 0.7
+    })
+  }
+);
 
-| completion_tokens 
-| integer 
-| number of tokens generated in the response 
-| `107` 
+const data = await response.json();
+console.log(data);
+```
 
-| total_tokens 
-| integer 
-| total number of tokens used (prompt + completion) 
-| `514` 
+```ruby Ruby
+require 'net/http'
+require 'json'
 
-## Example Request
+uri = URI("#{ENV['INFERENCE_URL']}/v1/chat/completions")
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV['INFERENCE_KEY']}"
+request['Content-Type'] = 'application/json'
 
-Let’s walk through an example `/v1/chat/completions` curl request.
+request.body = {
+  model: ENV['INFERENCE_MODEL_ID'],
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'What is Heroku?' }
+  ],
+  max_completion_tokens: 1024,
+  temperature: 0.7
+}.to_json
 
-First, use this command to set your Heroku environment variables as local variables.
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+puts JSON.parse(response.body)
+```
+
+</CodeGroup>
+
+### Response Example
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1745623456,
+  "model": "claude-4-sonnet",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Heroku is a cloud platform as a service (PaaS) that enables developers to build, run, and operate applications entirely in the cloud. It supports multiple programming languages and provides tools for deployment, scaling, and management of applications."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 28,
+    "completion_tokens": 45,
+    "total_tokens": 73
+  }
+}
+```
+
+## Tool Calling Example
+
+<CodeGroup>
+
+```bash Request with Tools
+curl https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type": "application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "user", "content": "What is the weather in Portland?"}
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather for a location",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "City and state, e.g. Portland, OR"
+              }
+            },
+            "required": ["location"]
+          }
+        }
+      }
+    ],
+    "tool_choice": "required"
+  }'
+```
+
+```json Tool Call Response
+{
+  "id": "chatcmpl-def456",
+  "object": "chat.completion",
+  "created": 1745623500,
+  "model": "claude-4-sonnet",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "toolu_abc123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Portland, OR\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 120,
+    "completion_tokens": 25,
+    "total_tokens": 145
+  }
+}
+```
+
+</CodeGroup>
+
+## Streaming
+
+Enable streaming to receive incremental responses as server-sent events (SSE):
+
 ```bash
-eval $(heroku config -a $APP_NAME --shell | grep '^INFERENCE_' | sed 's/^/export /' | tee >(cat >&2))`
-Next, send the `curl` request:
+curl https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [{"role": "user", "content": "Tell me a story"}],
+    "stream": true
+  }'
+```
 
-```bash
-curl $INFERENCE_URL/v1/chat/completions \
- -H "Authorization: Bearer $INFERENCE_KEY" \
- -d @-
+Each chunk contains a delta of the completion:
+
+```json
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456,"model":"claude-4-sonnet","choices":[{"index":0,"delta":{"role":"assistant","content":"Once"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456,"model":"claude-4-sonnet","choices":[{"index":0,"delta":{"content":" upon"},"finish_reason":null}]}
+
+data: [DONE]
+```
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Agents Endpoint" href="/inference-api/agents-heroku" icon="robot">
+    Automatically execute Heroku tools
+  </Card>
+  <Card title="Embeddings" href="/inference-api/embeddings" icon="vector-square">
+    Generate text embeddings
+  </Card>
+  <Card title="Image Generation" href="/inference-api/images-generations" icon="image">
+    Create images with AI
+  </Card>
+  <Card title="Tool Use Guide" href="/tool-use/heroku-tools" icon="wrench">
+    Available Heroku tools
+  </Card>
+</CardGroup>
