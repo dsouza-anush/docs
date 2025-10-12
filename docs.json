@@ -11,41 +11,15 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Start",
+        "tab": "Heroku AI",
         "groups": [
           {
-            "group": "Welcome",
+            "group": "Getting started",
             "pages": [
-              "index",
               "quickstart",
-              "development",
               "inference-api/cli-commands"
             ]
           },
-          {
-            "group": "Customize docs",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Heroku AI",
-        "groups": [
           {
             "group": "Overview",
             "pages": [
@@ -87,26 +61,6 @@
             "pages": [
               "ai-integrations/llamaindex",
               "ai-integrations/pydantic"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
             ]
           }
         ]

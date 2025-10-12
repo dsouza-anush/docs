@@ -1,43 +1,34 @@
-# Mintlify Starter Kit
+# Heroku AI Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+This repository hosts the product documentation for the Heroku AI platform. The site covers model provisioning, API usage, CLI workflows, and integrations so teams can build and run AI features on Heroku.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Directory guide
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+- `quickstart.mdx` – first-call walkthrough for the inference API
+- `inference-api/` – REST and SDK guides, model catalog details, pricing, and CLI reference
+- `heroku-inference/` – AI Studio and Model Context Protocol (MCP) runtime guides
+- `tool-use/` – instructions for connecting external toolchains to MCP servers
+- `vector-database/` – PostgreSQL + pgvector setup guidance
+- `ai-integrations/` – examples for popular frameworks and partner libraries
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+## Preview the docs
 
-## Development
+The site is built with Mintlify. Install the CLI globally, then run a local preview from the `docs/` directory:
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
-npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
+```bash
+npm install -g mint
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+Your preview is available at `http://localhost:3000`. Changes are hot-reloaded while the dev server runs.
 
-## Publishing changes
+## Contribution workflow
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+1. Create a feature branch for your update.
+2. Edit or add MDX files; keep frontmatter (`title`, `description`) up to date.
+3. Run `mint dev` to verify navigation links and embedded components.
+4. Open a pull request and include screenshots or notes for reviewer validation.
 
-## Need help?
+## Support
 
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+For questions about the Heroku AI product or this documentation, reach out through the Heroku support portal or your account representative. For updates to the site generator, consult the Mintlify release notes before upgrading the CLI.
