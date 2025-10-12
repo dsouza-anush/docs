@@ -33,6 +33,25 @@ Heroku Managed Inference and Agents provides access to state-of-the-art AI model
   </Card>
 </CardGroup>
 
+## Model quick reference
+
+| Model | Category | Strength | Pricing tier* | Pricing details |
+| --- | --- | --- | --- | --- |
+| Claude 4 Sonnet | Chat | Deep reasoning with extended thinking | Premium | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Claude 3.7 Sonnet | Chat | High intelligence with extended thinking | High | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Claude 3.5 Sonnet | Chat | Balanced quality and speed | Balanced | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Claude 3.5 Haiku | Chat | Fastest Claude model | Low | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Claude 3.0 Haiku | Chat | Lowest cost Claude option | Low | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Amazon Nova Pro | Chat | Enterprise-focused generalist | High | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Amazon Nova Lite | Chat | Cost-efficient AWS-native model | Low | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| OpenAI GPT OSS 120B | Chat | Open-source experimentation | Self-managed | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Cohere Embed Multilingual | Embeddings | Multilingual semantic search | Per 1M tokens | [See pricing](/inference-api/pricing#model-pricing-overview) |
+| Stable Image Ultra | Image | High-quality diffusion imaging | Per image | [See pricing](/inference-api/pricing#model-pricing-overview) |
+
+<Note>
+  *Pricing tiers align with the relative costs described on the [pricing page](/inference-api/pricing). Use the links above for current token and image rates.
+</Note>
+
 ## Chat Models
 
 Advanced language models for conversational AI, content generation, coding assistance, and complex reasoning tasks.
@@ -55,6 +74,12 @@ Anthropic's most advanced model with extended thinking for complex reasoning.
 - Multi-step problem solving
 - Long document processing
 - Strategic planning and decision making
+</Accordion>
+
+<Accordion title="Pricing insight">
+- Matches [Anthropic's published rate](/inference-api/pricing#model-pricing-overview) for input and output tokens.
+- Extended thinking generates additional output tokens—factor them into forecasts.
+- Track spend per app in the Heroku Dashboard.
 </Accordion>
 
 <Accordion title="Model ID">
@@ -85,6 +110,12 @@ High-intelligence model with extended thinking capabilities at a lower price poi
 - Content creation with research
 </Accordion>
 
+<Accordion title="Pricing insight">
+- Matches [Anthropic's standard rate](/inference-api/pricing#model-pricing-overview) for Claude Sonnet models.
+- Extended thinking charges apply when enabled.
+- Monitor token mix (input vs. output) to keep forecasts accurate.
+</Accordion>
+
 <Accordion title="Model ID">
 ```
 claude-3-7-sonnet
@@ -111,6 +142,12 @@ Balanced model offering strong intelligence with excellent speed.
 - Content creation and editing
 - Customer support automation
 - Data analysis
+</Accordion>
+
+<Accordion title="Pricing insight">
+- Balanced tier on the [pricing page](/inference-api/pricing#model-pricing-overview); costs roughly mid-way between Claude Haiku and Claude 4.
+- Extended thinking is available—enable it selectively to control output spend.
+- Ideal default choice when you need quality without premium pricing.
 </Accordion>
 
 <Accordion title="Model ID">
@@ -141,6 +178,12 @@ Fastest and most cost-effective Claude model for high-volume applications.
 - API integrations requiring speed
 </Accordion>
 
+<Accordion title="Pricing insight">
+- Lowest-cost Claude option on the [pricing page](/inference-api/pricing#model-pricing-overview).
+- Extended thinking is not available, keeping output costs predictable.
+- Great default for pilots and production workloads that prioritize throughput.
+</Accordion>
+
 <Accordion title="Model ID">
 ```
 claude-3-5-haiku
@@ -165,6 +208,12 @@ Original Haiku model offering ultra-fast responses.
 - High-frequency API calls
 - Basic content generation
 - Quick data parsing
+</Accordion>
+
+<Accordion title="Pricing insight">
+- Legacy Haiku pricing remains the lowest tier for Claude models.
+- Choose this version when latency and cost trump advanced features.
+- Verify token usage trends before migrating to newer Haiku releases.
 </Accordion>
 
 <Accordion title="Model ID">
@@ -193,6 +242,12 @@ Amazon's advanced reasoning model for complex tasks.
 - AWS ecosystem integration
 </Accordion>
 
+<Accordion title="Pricing insight">
+- Billed through AWS Bedrock—Heroku mirrors the [Bedrock rates](/inference-api/pricing#model-pricing-overview).
+- Align usage with existing AWS cost controls for easier forecasting.
+- Extended thinking is not available; pricing is driven solely by token counts.
+</Accordion>
+
 <Accordion title="Model ID">
 ```
 amazon-nova-pro
@@ -219,6 +274,12 @@ Amazon's efficient model for everyday tasks.
 - High-volume requests
 </Accordion>
 
+<Accordion title="Pricing insight">
+- Uses the lower Bedrock pricing tier—ideal when you already operate within AWS billing.
+- No extended thinking premium, keeping spend proportional to tokens.
+- Consider upgrading to Nova Pro if prompts require more reasoning.
+</Accordion>
+
 <Accordion title="Model ID">
 ```
 amazon-nova-lite
@@ -243,6 +304,12 @@ Open-source compatible large language model.
 - Custom model development
 - Open-source projects
 - Educational purposes
+</Accordion>
+
+<Accordion title="Pricing insight">
+- Heroku bills tokens at the same rate shown on the [pricing page](/inference-api/pricing#model-pricing-overview); infrastructure usage is included.
+- Bring-your-own fine-tunes or adapters without separate hosting fees.
+- Monitor GPU utilization and token mix to avoid unexpected spikes.
 </Accordion>
 
 <Accordion title="Model ID">
@@ -273,6 +340,12 @@ Multilingual embedding model supporting 100+ languages.
 - Content recommendation systems
 - RAG (Retrieval-Augmented Generation)
 - Classification and clustering
+</Accordion>
+
+<Accordion title="Pricing insight">
+- Billed per 1M tokens as shown on the [pricing page](/inference-api/pricing#model-pricing-overview).
+- Batch up to 96 strings to keep cost per embedding low.
+- Cache embeddings for frequently queried content to avoid reprocessing charges.
 </Accordion>
 
 <Accordion title="Model ID">
@@ -311,6 +384,12 @@ State-of-the-art image generation with exceptional quality and prompt adherence.
 - Social media content
 - Concept art and design
 - Creative projects
+</Accordion>
+
+<Accordion title="Pricing insight">
+- Priced per generated image as outlined on the [pricing page](/inference-api/pricing#model-pricing-overview).
+- Resolution affects price; aspect ratio alone does not when resolution stays constant.
+- Failed generations are not billed, but retries still consume time—validate prompts with draft renders first.
 </Accordion>
 
 <Accordion title="Model ID">

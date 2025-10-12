@@ -3,15 +3,15 @@ title: "Pricing"
 description: "Understand costs for Heroku Managed Inference and Agents models"
 ---
 
-Heroku Managed Inference and Agents uses token-based pricing that aligns with the standard pricing from each model provider. You pay only for what you use, with no upfront costs or minimum commitments.
+Heroku Managed Inference and Agents uses token-based pricing that matches the standard rates from each model provider. You pay only for what you use, with no upfront costs or minimum commitments.
 
 <Note>
   **Heroku Standard Pricing**: Heroku charges the same standard rates as the model providers (Anthropic, Cohere, Stability AI). There are no additional markups or hidden fees.
 </Note>
 
-## How Pricing Works
+## How pricing works
 
-### Token-Based Billing
+### Token-based billing
 
 All models are priced based on tokens processed:
 
@@ -19,7 +19,7 @@ All models are priced based on tokens processed:
 - **Output tokens**: Content the model generates (responses, completions)
 - **Cached tokens**: When available, cached inputs cost less
 
-### What is a Token?
+### What counts as a token?
 
 Tokens are pieces of text that models process:
 
@@ -27,17 +27,17 @@ Tokens are pieces of text that models process:
 - **~100 tokens** = 75 words
 - **1,000 tokens** = ~750 words
 
-**Example**:
+**Example**
 ```
-"Hello, how are you today?" = ~6 tokens
+"Hello, how are you today?" ≈ 6 tokens
 ```
 
-### Billing Cycle
+### Billing cycle
 
-- Charges are calculated per API request
-- Aggregated and billed monthly to your Heroku account
-- View usage in real-time via Heroku Dashboard
-- No minimum usage requirements
+- Charges are calculated per API request.
+- Usage is aggregated and billed monthly to your Heroku account.
+- View usage in real time in the Heroku Dashboard.
+- There are no minimum usage requirements.
 
 ## Model Pricing Overview
 
@@ -45,87 +45,48 @@ Tokens are pieces of text that models process:
   <Tab title="Chat Models">
     Pricing is based on input and output tokens. Extended thinking (when enabled) incurs additional costs.
 
-    ### Sonnet Models
+    | Model | Input pricing | Output pricing | Extended thinking | Provider reference |
+    | --- | --- | --- | --- | --- |
+    | Claude 4 Sonnet | Matches Anthropic published rate | Matches Anthropic published rate | Supported | [Anthropic pricing](https://www.anthropic.com/pricing) |
+    | Claude 3.7 Sonnet | Matches Anthropic published rate | Matches Anthropic published rate | Supported | [Anthropic pricing](https://www.anthropic.com/pricing) |
+    | Claude 3.5 Sonnet | Matches Anthropic published rate | Matches Anthropic published rate | Supported | [Anthropic pricing](https://www.anthropic.com/pricing) |
+    | Claude 3.5 Haiku | Matches Anthropic published rate | Matches Anthropic published rate | Not available | [Anthropic pricing](https://www.anthropic.com/pricing) |
+    | Claude 3.0 Haiku | Matches Anthropic published rate | Matches Anthropic published rate | Not available | [Anthropic pricing](https://www.anthropic.com/pricing) |
+    | Amazon Nova Pro | Matches AWS Bedrock rate | Matches AWS Bedrock rate | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | Amazon Nova Lite | Matches AWS Bedrock rate | Matches AWS Bedrock rate | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | OpenAI GPT OSS 120B | Matches published open-source rate | Matches published open-source rate | Not available | [Monitor in Heroku Dashboard](https://dashboard.heroku.com/) |
 
-    **Claude 4 Sonnet**
-    - Input: Premium pricing per 1M tokens
-    - Output: Premium pricing per 1M tokens
-    - Extended Thinking: Additional cost per 1M tokens
-    - Best for: Complex reasoning, coding, analysis
+    **Best-fit guidance**
+    - Claude Sonnet models: balanced or advanced reasoning with extended thinking support.
+    - Claude Haiku models: latency-sensitive, cost-optimized workloads.
+    - Amazon Nova: workloads standardized on AWS Bedrock billing.
+    - GPT OSS 120B: experimentation and custom deployments with open-source weights.
 
-    **Claude 3.7 Sonnet**
-    - Input: High pricing per 1M tokens
-    - Output: High pricing per 1M tokens
-    - Extended Thinking: Additional cost per 1M tokens
-    - Best for: Research, advanced tasks
-
-    **Claude 3.5 Sonnet**
-    - Input: Moderate pricing per 1M tokens
-    - Output: Moderate pricing per 1M tokens
-    - Best for: General purpose, balanced quality
-
-    ### Haiku Models
-
-    **Claude 3.5 Haiku**
-    - Input: Low pricing per 1M tokens
-    - Output: Low pricing per 1M tokens
-    - Best for: High volume, cost-sensitive applications
-
-    **Claude 3.0 Haiku**
-    - Input: Lowest pricing per 1M tokens
-    - Output: Lowest pricing per 1M tokens
-    - Best for: Maximum cost efficiency
-
-    ### Amazon Nova Models
-
-    **Amazon Nova Pro**
-    - Input: Moderate pricing per 1M tokens
-    - Output: Moderate pricing per 1M tokens
-    - Best for: Enterprise applications
-
-    **Amazon Nova Lite**
-    - Input: Low pricing per 1M tokens
-    - Output: Low pricing per 1M tokens
-    - Best for: High-volume efficient processing
-
-    ### OpenAI GPT OSS
-
-    **OpenAI GPT OSS 120B**
-    - Input: Moderate pricing per 1M tokens
-    - Output: Moderate pricing per 1M tokens
-    - Best for: Open-source projects
-
-    <Note>
-      **Exact pricing**: Contact Heroku sales or check your Heroku Dashboard for current per-token rates. Pricing follows the standard rates published by Anthropic, Amazon, and OpenAI.
-    </Note>
+    <Tip>
+      Extended thinking increases output token usage. Enable it only for prompts that benefit from deeper reasoning.
+    </Tip>
   </Tab>
 
   <Tab title="Embedding Models">
-    **Cohere Embed Multilingual**
-    - Pricing per 1M tokens
-    - Batch processing available (up to 96 strings)
-    - Same cost regardless of language
-    - Optimized for semantic search and RAG
+    | Model | Pricing unit | Notes | Provider reference |
+    | --- | --- | --- | --- |
+    | Cohere Embed Multilingual | Matches Cohere rate per 1M tokens | Batch up to 96 strings per request | [Cohere pricing](https://cohere.com/pricing) |
 
-    **Cost Optimization Tips**:
-    - Batch multiple texts in single requests
-    - Cache frequently used embeddings
-    - Use appropriate input types for your use case
+    **Cost optimization**
+    - Batch multiple strings to reduce request overhead.
+    - Cache frequently accessed embeddings.
+    - Use the appropriate input type (`search_document`, `search_query`, `classification`, `clustering`) for the task.
   </Tab>
 
   <Tab title="Image Models">
-    **Stable Image Ultra**
-    - Pricing per image generated
-    - Cost varies by resolution
-    - All aspect ratios same price for equivalent resolution
-    - No charge for failed generations
+    | Model | Pricing unit | Resolution impact | Provider reference |
+    | --- | --- | --- | --- |
+    | Stable Image Ultra | Matches Stability rate per generated image | Higher resolutions cost more; aspect ratio does not change price at a given resolution | [Stability pricing](https://platform.stability.ai/pricing) |
 
-    **Resolution Pricing**:
-    - Standard resolutions (1024x1024): Base rate
-    - Larger resolutions (1536x640): Higher rate
-    - Smaller resolutions (768x1344): Lower rate
-
-    **Cost per Image**: Fixed rate per successfully generated image
+    **Cost optimization**
+    - Test prompts with draft-quality renders before generating production assets.
+    - Reuse negative prompts to avoid generating unusable images.
+    - Standardize on a small set of resolutions for easier budgeting.
   </Tab>
 </Tabs>
 
@@ -145,74 +106,81 @@ Claude 3.7 Sonnet    ███████████████░░░░�
 Claude 4 Sonnet      ████████████████████ Premium
 ```
 
-### Example Costs
+### Example costs
 
 <AccordionGroup>
-  <Accordion title="Customer Support Chatbot (10,000 conversations/month)">
-    **Assumptions**:
-    - Average 200 tokens input per conversation
-    - Average 150 tokens output per conversation
-    - 3.5M total tokens per month
+  <Accordion title="Customer support chatbot (10,000 conversations/month)">
+    **Assumptions**
+    - 200 input tokens per conversation
+    - 150 output tokens per conversation
+    - 3.5M total tokens per month (2.0M input + 1.5M output)
 
-    **Using Claude 3.5 Haiku** (recommended):
-    - Optimized for high-volume, fast responses
-    - Cost-effective for production scale
-    - Estimated cost: Low monthly rate
+    **Claude 3.5 Haiku (recommended)**
+    - Lowest latency and cost within the Claude lineup.
+    - Monthly cost ≈ provider token rates × (2.0M input + 1.5M output).
 
-    **Using Claude 3.5 Sonnet**:
-    - Better reasoning, still reasonable cost
-    - 3-4x cost of Haiku
-    - Estimated cost: Moderate monthly rate
+    **Claude 3.5 Sonnet (upgrade path)**
+    - Improves reasoning for complex conversations.
+    - Expect roughly 3–4× the Haiku cost for the same workload.
   </Accordion>
 
-  <Accordion title="Document Analysis (1,000 documents/month)">
-    **Assumptions**:
-    - Average 50,000 tokens input per document
-    - Average 2,000 tokens output (summary)
-    - 52M total tokens per month
+  <Accordion title="Document analysis (1,000 documents/month)">
+    **Assumptions**
+    - 50,000 input tokens per document
+    - 2,000 output tokens (summary)
+    - 52M total tokens per month (50M input + 2M output)
 
-    **Using Claude 3.5 Sonnet** (recommended):
-    - Vision capabilities for PDFs
-    - Large context window
-    - Estimated cost: Moderate monthly rate
+    **Claude 3.5 Sonnet (recommended)**
+    - Handles long documents with a 200K context window and vision support.
+    - Apply provider token rates to 50M input + 2M output.
 
-    **Using Claude 4 Sonnet**:
-    - Extended thinking for complex analysis
-    - 2-3x cost of Sonnet 3.5
-    - Estimated cost: Higher monthly rate
+    **Claude 4 Sonnet (extended thinking)**
+    - Use when documents require deeper analysis.
+    - Add extended thinking output tokens to your cost forecast.
   </Accordion>
 
-  <Accordion title="Semantic Search Application (100,000 queries/month)">
-    **Assumptions**:
+  <Accordion title="Semantic search application (100,000 queries/month)">
+    **Assumptions**
     - 100,000 query embeddings
     - 10,000 document embeddings (indexed once)
-    - Average 100 tokens per embedding
+    - 100 tokens per embedding
 
-    **Embedding costs** (Cohere Embed Multilingual):
-    - One-time indexing of documents
-    - Ongoing query embeddings
-    - Estimated cost: Low monthly rate
+    **Embedding costs (Cohere Embed Multilingual)**
+    - One-time document indexing + ongoing query embeddings.
+    - Monthly cost ≈ provider rate × total embedding tokens.
 
-    **Plus retrieval + generation** (Claude 3.5 Haiku):
-    - 3 documents retrieved per query
-    - 500 tokens input, 200 tokens output per query
-    - Estimated cost: Moderate monthly rate
-
-    **Total**: Combined moderate monthly cost
+    **Retrieval + generation (Claude 3.5 Haiku)**
+    - 3 documents retrieved per query (RAG).
+    - 500 input + 200 output tokens per answer.
+    - Multiply provider token rates by monthly token totals to project spend.
   </Accordion>
 
-  <Accordion title="Image Generation (500 images/month)">
-    **Using Stable Image Ultra**:
-    - Fixed cost per successful image
-    - Various resolutions supported
-    - Estimated cost: Based on resolution and quantity
+  <Accordion title="Image generation (500 images/month)">
+    **Assumptions**
+    - 500 successful generations at 1024×1024 resolution
+    - Occasional reruns for prompt refinement
 
-    **Cost Optimization**:
-    - Use appropriate resolution for use case
-    - Leverage negative prompts to reduce regenerations
-    - Use seed for reproducibility
+    **Stable Image Ultra**
+    - Cost per image matches Stability’s published rate.
+    - Increase resolution (for example 1536×640) when you need higher fidelity; expect a proportional cost increase.
+
+    **Optimization tips**
+    - Validate prompts with draft-quality renders.
+    - Reuse seeds and negative prompts to reduce retries.
   </Accordion>
 </AccordionGroup>
+
+## Build a forecast
+
+1. **Retrieve current rates** from the provider links in the tables above.
+2. **Estimate monthly tokens**: add input + output + cached tokens (if applicable).
+3. **Apply the rates** to each token bucket and sum the results.
+4. **Include feature surcharges** such as extended thinking or higher image resolutions.
+5. **Validate in production** using the Heroku Dashboard (`Resources` → `Heroku Inference` → `View Metrics`).
+
+<Tip>
+  Keep prompts concise and set `max_tokens` to control output length—small tweaks can meaningfully reduce spend at scale.
+</Tip>
 
 ## Cost Optimization Strategies
 
