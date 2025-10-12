@@ -69,84 +69,33 @@ The following chat models support the Chat Completions and Agents endpoints:
 
 ## Quick Start
 
-### 1. Create a Heroku App
+<Steps>
+<Step title="Create a Heroku app">
+  ```bash
+  heroku create my-ai-app
+  ```
+</Step>
+<Step title="Provision a model">
+  ```bash
+  heroku ai:models:create claude-4-sonnet --app my-ai-app
+  ```
+  Attach the model to the app and generate an alias you can reuse.
+</Step>
+<Step title="Get your credentials">
+  ```bash
+  heroku config --app my-ai-app
+  ```
+  Copy the `INFERENCE_KEY`, `INFERENCE_URL`, and `INFERENCE_MODEL_ID`.
+</Step>
+<Step title="Call the API">
+  Use your preferred language or cURL to hit the Chat Completions endpoint.
+</Step>
+</Steps>
 
-```bash
-heroku create my-ai-app
-```
-
-### 2. Provision a Model
-
-Create and attach a chat model to your app:
-
-```bash
-heroku ai:models:create -a my-ai-app claude-4-sonnet
-```
-
-### 3. Get Your Credentials
-
-```bash
-heroku config -a my-ai-app
-```
-
-This will show your `INFERENCE_KEY`, `INFERENCE_URL`, and `INFERENCE_MODEL_ID`.
-
-### 4. Make Your First Request
-
-<CodeGroup>
-
-```bash cURL
-curl $INFERENCE_URL/v1/chat/completions \
-  -H "Authorization: Bearer $INFERENCE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-4-sonnet",
-    "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
-  }'
-```
-
-```python Python
-import os
-import requests
-
-url = f"{os.getenv('INFERENCE_URL')}/v1/chat/completions"
-headers = {
-    "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}",
-    "Content-Type": "application/json"
-}
-
-data = {
-    "model": os.getenv("INFERENCE_MODEL_ID"),
-    "messages": [{"role": "user", "content": "Hello!"}]
-}
-
-response = requests.post(url, headers=headers, json=data)
-print(response.json())
-```
-
-```javascript JavaScript
-const response = await fetch(
-  `${process.env.INFERENCE_URL}/v1/chat/completions`,
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: process.env.INFERENCE_MODEL_ID,
-      messages: [{ role: 'user', content: 'Hello!' }]
-    })
-  }
-);
-
-const data = await response.json();
-console.log(data);
-```
-
-</CodeGroup>
+<Tip>
+  Need end-to-end examples in cURL, Python, TypeScript, and Java? Follow the
+  [Quickstart](/quickstart) to copy ready-to-run snippets.
+</Tip>
 
 ## Base URL
 

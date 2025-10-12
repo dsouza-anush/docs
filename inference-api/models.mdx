@@ -377,32 +377,15 @@ stable-image-ultra
   </Accordion>
 </AccordionGroup>
 
-## Provisioning Models
+## Provisioning models
 
-### Via Heroku CLI
+Use the Heroku CLI to provision and manage models:
 
-```bash
-# Create a chat model
-heroku ai:models:create claude-4-sonnet --app my-app
+- `heroku ai:models:create <model-name> --app <app-name>` provisions a model and attaches it to your app.
+- `heroku ai:models:list` shows every model that can be provisioned, along with default aliases.
+- `heroku ai:models:info --app <app-name>` checks which resources are already attached to your app.
 
-# Create an embedding model
-heroku ai:models:create cohere-embed-multilingual --app my-app --as EMBEDDING
-
-# Create an image model
-heroku ai:models:create stable-image-ultra --app my-app --as DIFFUSION
-```
-
-### List Available Models
-
-```bash
-heroku ai:models:list
-```
-
-### Get Model Info
-
-```bash
-heroku ai:models:info --app my-app
-```
+Review the [CLI command reference](/inference-api/cli-commands) for more lifecycle commands (attach, detach, destroy) and automation flags.
 
 ## Pricing and Limits
 

@@ -3,298 +3,335 @@ title: "CLI Commands"
 description: "Manage AI models and tools using the Heroku CLI"
 ---
 
-The Heroku AI CLI plugin provides commands to provision, manage, and interact with AI models directly from your terminal. These commands help you create model resources, make inference requests, manage MCP servers, and access AI tools.
+The Heroku AI CLI plugin lets you provision, inspect, and use AI model resources without leaving your terminal. Use the commands below to manage model lifecycles, run inference, and connect Model Context Protocol (MCP) servers and tools.
 
 ## Installation
 
-The AI CLI plugin is included with the Heroku CLI. If you need to install or update the Heroku CLI, visit [heroku.com/cli](https://heroku.com/cli).
+<Info>
+  The AI plugin ships with the Heroku CLI (v10.8.0 and later). Update the CLI if you do not see the `heroku ai:*`
+  commands.
+</Info>
 
-## Quick Start
+<Steps>
+<Step title="Install or update the Heroku CLI">
+  Visit [heroku.com/cli](https://heroku.com/cli) and follow the platform-specific instructions. Then confirm the version:
 
-1. **Create a model resource**
-   ```bash
-   heroku ai:models:create claude-4-sonnet --app my-app
-   ```
+  ```bash
+  heroku --version
+  ```
+</Step>
+<Step title="Update plugins">
+  Pull the latest plugins (including `heroku-ai`) to ensure you have current commands:
 
-2. **Make an inference request**
-   ```bash
-   heroku ai:models:call INFERENCE --app my-app --prompt "Hello!"
-   ```
+  ```bash
+  heroku plugins:update
+  ```
+</Step>
+</Steps>
 
-3. **List all available models**
-   ```bash
-   heroku ai:models:list
-   ```
+## Quick workflow
 
-## Command Reference
+<Steps>
+<Step title="Provision a model">
+  ```bash
+  heroku ai:models:create claude-4-sonnet --app my-app
+  ```
+  Creates a managed inference resource attached to `my-app`.
+</Step>
+<Step title="Send a prompt">
+  ```bash
+  heroku ai:models:call claude-4-sonnet --app my-app --prompt "Hello!"
+  ```
+  Streams the response back to your terminal. Use `--json` to write raw JSON.
+</Step>
+<Step title="Review available models">
+  ```bash
+  heroku ai:models:list
+  ```
+  Lists all provisionable models, including their default aliases.
+</Step>
+</Steps>
 
-### Documentation
+## Command reference
 
-## heroku ai:docs
+### Model lifecycle
 
-open Heroku Managed Inference and Agent’s Dev Center documentation in your browser
+#### `heroku ai:models:list`
 
-```bash
-USAGE
-  $ heroku ai:docs [--browser ]
-
-FLAGS
-  --browser=  browser to open docs with (example: "firefox", "safari")
-
-DESCRIPTION
-  open Heroku Managed Inference and Agent's Dev Center documentation in your browser
-```
-
-See code: [src/commands/ai/docs.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/docs.ts)
-
-### MCP Server Management
-
-## heroku ai:mcp [ADDON]
-
-list the MCP server URL
-
-```bash
-USAGE
-  $ heroku ai:mcp [ADDON] [--json] [-a ]
-
-ARGUMENTS
-  ADDON  [default: heroku-inference] unique identifier or globally unique name of add-on
-
-FLAGS
-  -a, --app=  app to list the MCP server URL for
-      --json         output in JSON format
-
-DESCRIPTION
-  list the MCP server URL
-```
-
-See code: [src/commands/ai/mcp/index.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/mcp/index.ts)
-
-### Model Management
-
-## heroku ai:models
-
-list available AI models to provision access to
+**Purpose:** List every model that can be provisioned in your region. `heroku ai:models` is an alias.
 
 ```bash
-USAGE
-  $ heroku ai:models
-
-DESCRIPTION
-  list available AI models to provision access to
-
-ALIASES
-  $ heroku ai:models
-
-EXAMPLES
-  $ heroku ai:models:list
+heroku ai:models:list [--json]
 ```
 
-## heroku ai:models:attach MODEL_RESOURCE
+**Options**
 
-attach an existing model resource to an app
+| Flag | Description |
+| --- | --- |
+| `--json` | Return machine-readable output for automation and scripting. |
+
+**Example**
 
 ```bash
-USAGE
-  $ heroku ai:models:attach MODEL_RESOURCE -s  -t  [--as ] [--confirm ] [-r ]
-
-ARGUMENTS
-  MODEL_RESOURCE  resource ID or alias of model resource to attach
-
-FLAGS
-  -r, --remote=      git remote of target app
-  -s, --source-app=  (required) source app for model resource
-  -t, --target-app=  (required) target app for model resource
-      --as=          alias name for model resource
-      --confirm=     overwrite existing attached resource with same name
-
-DESCRIPTION
-  attach an existing model resource to an app
-
-EXAMPLES
-  $ heroku ai:models:attach claude-3-5-sonnet-acute-41518 --source-app example-source-app --target-app example-target-app
-
-  $ heroku ai:models:attach claude-3-5-sonnet-acute-41518 --source-app example-source-app --target-app example-target-app --as MY_CS35
+heroku ai:models:list --json | jq '.[0].name'
 ```
 
-See code: [src/commands/ai/models/attach.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/attach.ts)
+#### `heroku ai:models:create`
 
-## heroku ai:models:call MODEL_RESOURCE
-
-make an inference request to a specific AI model resource
+**Purpose:** Provision a model resource and attach it to an app.
 
 ```bash
-USAGE
-  $ heroku ai:models:call MODEL_RESOURCE [-a ] [-j] [--optfile ] [--opts ] [-o ] [-p
-    ] [-r ]
-
-ARGUMENTS
-  MODEL_RESOURCE  resource ID or alias of model (--app flag required if alias is used)
-
-FLAGS
-  -a, --app=      name or ID of app (required if alias is used)
-  -j, --json             output response as JSON
-  -o, --output=   file path where command writes the model response
-  -p, --prompt=   input prompt for model
-  -r, --remote=   git remote of app to use
-      --optfile=  additional options for model inference, provided as a JSON config file
-      --opts=     additional options for model inference, provided as a JSON string
-
-DESCRIPTION
-  make an inference request to a specific AI model resource
-
-EXAMPLES
-  $ heroku ai:models:call my_llm --app my-app --prompt "What is the meaning of life?"
-
-  $ heroku ai:models:call diffusion --app my-app --prompt "Generate an image of a sunset" --opts '{"quality":"hd"}' -o sunset.png
+heroku ai:models:create <model-name> --app <app-name> [--as <alias>] [--confirm <app-name>] [--remote <remote>]
 ```
 
-See code: [src/commands/ai/models/call.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/call.ts)
+**Arguments**
 
-## heroku ai:models:create MODEL_NAME
+- `<model-name>`: ID of the model you want to provision (for example `claude-3-5-sonnet`).
 
-provision access to an AI model
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App that owns the new model resource. |
+| `--as <alias>` | Optional alias for the resource (for example `chat-default`). |
+| `--confirm <app-name>` | Skip the confirmation prompt; value must match the app name. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Example**
 
 ```bash
-USAGE
-  $ heroku ai:models:create MODEL_NAME -a  [--as ] [--confirm ] [-r ]
-
-ARGUMENTS
-  MODEL_NAME  name of AI model to provision access for
-
-FLAGS
-  -a, --app=      (required) name of app to attach model to
-  -r, --remote=   git remote of app to use
-      --as=       alias of model resource
-      --confirm=  overwrite existing config vars or existing add-on aliases
-
-DESCRIPTION
-  provision access to an AI model
-
-EXAMPLES
-  # Provision access to an AI model and attach it to your app with a default name:
-  $ heroku ai:models:create claude-3-5-sonnet --app example-app
-  # Provision access to an AI model and attach it to your app with a custom name:
-  $ heroku ai:models:create stable-image-ultra --app example-app --as diffusion
+heroku ai:models:create claude-3-5-sonnet --app sample-app --as chat-default
 ```
 
-See code: [src/commands/ai/models/create.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/create.ts)
+#### `heroku ai:models:destroy`
 
-## heroku ai:models:destroy MODEL_RESOURCE
-
-destroy an existing AI model resource
+**Purpose:** Permanently delete a model resource.
 
 ```bash
-USAGE
-  $ heroku ai:models:destroy MODEL_RESOURCE -a  [-c ] [-f] [-r ]
-
-ARGUMENTS
-  MODEL_RESOURCE  resource ID or alias of model resource to destroy
-
-FLAGS
-  -a, --app=      (required) app to run command against
-  -c, --confirm=  set to app name to bypass confirmation prompt
-  -f, --force            allow destruction even if connected to other apps
-  -r, --remote=   git remote of app to use
-
-DESCRIPTION
-  destroy an existing AI model resource
-
-EXAMPLES
-  $ heroku ai:models:destroy claude-3-5-sonnet-acute-43973
+heroku ai:models:destroy <resource-alias> --app <app-name> [--confirm <app-name>] [--force] [--remote <remote>]
 ```
 
-See code: [src/commands/ai/models/destroy.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/destroy.ts)
+**Arguments**
 
-## heroku ai:models:detach MODEL_RESOURCE
+- `<resource-alias>`: Alias or resource ID to remove (for example `chat-default` or `claude-3-5-sonnet-basic-43973`).
 
-detach a model resource from an app
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App currently attached to the resource. |
+| `--confirm <app-name>` | Skip the confirmation prompt; value must match the app name. |
+| `--force` | Remove the resource even if it is shared with other apps. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Example**
 
 ```bash
-USAGE
-  $ heroku ai:models:detach MODEL_RESOURCE -a  [-r ]
-
-ARGUMENTS
-  MODEL_RESOURCE  alias of model resource to detach
-
-FLAGS
-  -a, --app=     (required) name of app to detach model resource from
-  -r, --remote=  git remote of app to use
-
-DESCRIPTION
-  detach a model resource from an app
-
-EXAMPLES
-  $ heroku ai:models:detach EXAMPLE_MODEL_ALIAS --app example-app
+heroku ai:models:destroy chat-default --app sample-app --confirm sample-app
 ```
 
-See code: [src/commands/ai/models/detach.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/detach.ts)
+#### `heroku ai:models:info`
 
-## heroku ai:models:info [MODEL_RESOURCE]
-
-get current status of a specific AI model resource or all AI model resources attached to an app
+**Purpose:** Inspect the status and configuration of one or all model resources on an app.
 
 ```bash
-USAGE
-  $ heroku ai:models:info [MODEL_RESOURCE] -a  [-r ]
-
-ARGUMENTS
-  MODEL_RESOURCE  resource ID or alias of model resource
-
-FLAGS
-  -a, --app=     (required) app to run command against
-  -r, --remote=  git remote of app to use
-
-DESCRIPTION
-  get current status of a specific AI model resource or all AI model resources attached to an app
-
-EXAMPLES
-  $ heroku ai:models:info claude-3-5-sonnet-acute-04281 --app example-app
-
-  $ heroku ai:models:info --app example-app
+heroku ai:models:info [<resource-alias>] --app <app-name> [--json] [--remote <remote>]
 ```
 
-See code: [src/commands/ai/models/info.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/info.ts)
+**Arguments**
 
-## heroku ai:models:list
+- `<resource-alias>`: Optional. Provide an alias to limit output to a single resource.
 
-list available AI models to provision access to
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App to query. |
+| `--json` | Emit machine-readable output. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Examples**
 
 ```bash
-USAGE
-  $ heroku ai:models:list
-
-DESCRIPTION
-  list available AI models to provision access to
-
-ALIASES
-  $ heroku ai:models
-
-EXAMPLES
-  $ heroku ai:models:list
+heroku ai:models:info --app sample-app
 ```
-
-See code: [src/commands/ai/models/list.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/models/list.ts)
-
-### Tool Management
-
-## heroku ai:tools:list [ADDON]
-
-list all available AI tools
 
 ```bash
-USAGE
-  $ heroku ai:tools:list [ADDON] [--json] [-a ]
-
-ARGUMENTS
-  ADDON  [default: heroku-inference] unique identifier or globally unique name of add-on
-
-FLAGS
-  -a, --app=  app to list tools for
-      --json         output in JSON format
-
-DESCRIPTION
-  list all available AI tools
+heroku ai:models:info chat-default --app sample-app --json
 ```
 
-See code: [src/commands/ai/tools/list.ts](https://github.com/heroku/heroku-cli-plugin-ai/blob/v1.0.0/src/commands/ai/tools/list.ts)
+### Share model access between apps
+
+#### `heroku ai:models:attach`
+
+**Purpose:** Attach an existing model resource to another app.
+
+```bash
+heroku ai:models:attach <resource-id> --source-app <source-app> --target-app <target-app> [--as <alias>] [--confirm <target-app>] [--remote <remote>]
+```
+
+**Arguments**
+
+- `<resource-id>`: Resource ID or alias from the source app (for example `claude-3-5-sonnet-basic-43973`).
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--source-app <source-app>` | Required. App that already owns the resource. |
+| `--target-app <target-app>` | Required. App that should receive the resource. |
+| `--as <alias>` | Optional alias to assign on the target app. |
+| `--confirm <target-app>` | Skip the overwrite prompt on the target app. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Example**
+
+```bash
+heroku ai:models:attach claude-3-5-sonnet-basic-43973 \
+  --source-app shared-services \
+  --target-app reporting-app \
+  --as chat-reporting
+```
+
+#### `heroku ai:models:detach`
+
+**Purpose:** Remove a model alias from an app without deleting the underlying resource.
+
+```bash
+heroku ai:models:detach <resource-alias> --app <app-name> [--remote <remote>]
+```
+
+**Arguments**
+
+- `<resource-alias>`: Alias to remove from the app (for example `chat-reporting`).
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App that currently uses the alias. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Example**
+
+```bash
+heroku ai:models:detach chat-reporting --app reporting-app
+```
+
+### Run inference
+
+#### `heroku ai:models:call`
+
+**Purpose:** Send a prompt to a model resource and stream the response locally.
+
+```bash
+heroku ai:models:call <resource-alias> --app <app-name> \
+  [--prompt "<prompt>"] [--opts '<json>'] [--optfile <file>] \
+  [--output <path>] [--json] [--remote <remote>]
+```
+
+**Arguments**
+
+- `<resource-alias>`: Alias or resource ID to invoke (for example `chat-default`).
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App that owns the resource. |
+| `--prompt "<prompt>"` | Provide a text prompt directly on the command line. |
+| `--opts '<json>'` | Pass additional options as a JSON string (for example `{"max_tokens":512}`). |
+| `--optfile <file>` | Pass options from a JSON file. |
+| `--output <path>` | Write the response body to a file. |
+| `--json` | Emit the raw API response as JSON. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Examples**
+
+```bash
+heroku ai:models:call chat-default --app sample-app \
+  --prompt "Summarize the latest release notes." \
+  --output release-summary.md
+```
+
+```bash
+heroku ai:models:call image-default --app sample-app \
+  --prompt "Generate a hero image of a cloud data center at dusk." \
+  --opts '{"quality":"hd"}' --json
+```
+
+### MCP servers and tools
+
+#### `heroku ai:mcp`
+
+**Purpose:** Retrieve the MCP server URL for a Heroku Inference add-on.
+
+```bash
+heroku ai:mcp [<addon-name>] --app <app-name> [--json] [--remote <remote>]
+```
+
+**Arguments**
+
+- `<addon-name>`: Optional. Defaults to `heroku-inference`.
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App that owns the add-on. |
+| `--json` | Return the response as JSON. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Example**
+
+```bash
+heroku ai:mcp --app sample-app --json
+```
+
+#### `heroku ai:tools:list`
+
+**Purpose:** List all tools exposed by a Heroku Inference resource.
+
+```bash
+heroku ai:tools:list [<addon-name>] --app <app-name> [--json] [--remote <remote>]
+```
+
+**Arguments**
+
+- `<addon-name>`: Optional. Defaults to `heroku-inference`.
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App that owns the add-on. |
+| `--json` | Return the response as JSON. |
+| `--remote <remote>` | Target the app referenced by a Git remote. |
+
+**Example**
+
+```bash
+heroku ai:tools:list --app sample-app --json | jq '.tools[].name'
+```
+
+### Documentation and help
+
+#### `heroku ai:docs`
+
+**Purpose:** Open the Heroku Managed Inference and Agents documentation in your browser.
+
+```bash
+heroku ai:docs [--browser <browser>]
+```
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--browser <browser>` | Specify a browser such as `firefox`, `safari`, or `edge`. Defaults to the system browser. |
+
+**Example**
+
+```bash
+heroku ai:docs --browser firefox
+```

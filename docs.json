@@ -11,26 +11,22 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Start",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Welcome",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "development",
+              "inference-api/cli-commands"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Customize docs",
             "pages": [
               "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
+              "essentials/navigation",
               "essentials/markdown",
               "essentials/code",
               "essentials/images",
@@ -58,7 +54,7 @@
             ]
           },
           {
-            "group": "Models & pricing",
+            "group": "Models",
             "pages": [
               "inference-api/models",
               "inference-api/choosing-a-model",
@@ -67,7 +63,7 @@
             ]
           },
           {
-            "group": "API",
+            "group": "API guides",
             "pages": [
               "inference-api/chat-completions",
               "inference-api/agents-heroku",
@@ -77,21 +73,10 @@
             ]
           },
           {
-            "group": "CLI",
-            "pages": [
-              "inference-api/cli-commands"
-            ]
-          },
-          {
-            "group": "MCP",
+            "group": "MCP & tools",
             "pages": [
               "heroku-inference/mcp-server-stdio",
-              "heroku-inference/mcp-server-remote"
-            ]
-          },
-          {
-            "group": "Tools",
-            "pages": [
+              "heroku-inference/mcp-server-remote",
               "tool-use/heroku-tools",
               "tool-use/working-with-mcp",
               "vector-database/pgvector"
