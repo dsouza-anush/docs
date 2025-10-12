@@ -1,38 +1,151 @@
 ---
 title: "Models overview"
 description: "Choose the right Heroku AI model using side-by-side comparisons, playbooks, and provisioning tips"
+fullWidth: true
 ---
 
-Heroku Managed Inference and Agents exposes leading chat, embedding, and generative image models behind OpenAI-compatible endpoints. Use this page to spot the best fit for your workload, understand trade-offs, and move from evaluation to production quickly.
+<section
+  style={{
+    padding: '3.5rem 6vw',
+    background: 'linear-gradient(180deg, rgba(35,30,60,0.65) 0%, rgba(10,8,20,0) 100%)',
+    borderRadius: '2rem',
+    border: '1px solid rgba(255,255,255,0.05)',
+    margin: '0 auto 3rem',
+    maxWidth: '1400px',
+    position: 'relative',
+    overflow: 'hidden'
+  }}
+>
+  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 15% 25%, rgba(139,127,212,0.35), transparent 60%)' }} />
+  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 75% 20%, rgba(86,188,255,0.25), transparent 65%)' }} />
+  <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+    <div>
+      <p style={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.82rem', color: 'rgba(235,235,255,0.6)' }}>Catalog overview</p>
+      <h1 style={{ fontSize: '2.6rem', lineHeight: 1.1, margin: '0.5rem 0 1rem' }}>Pick the best model for every experience</h1>
+      <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.8)', maxWidth: '34rem' }}>
+        Heroku Managed Inference and Agents exposes leading chat, embedding, and generative image models behind OpenAI-compatible endpoints.
+        Use these cards and comparison tools to balance quality, performance, and spend.
+      </p>
+    </div>
+    <div style={{
+      padding: '2rem',
+      borderRadius: '1.75rem',
+      background: 'rgba(12,10,24,0.55)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      boxShadow: '0 26px 60px rgba(20,18,40,0.4)',
+      backdropFilter: 'blur(18px)'
+    }}>
+      <p style={{ fontSize: '0.85rem', color: 'rgba(235,235,255,0.65)', marginBottom: '1rem' }}>Model selection checklist</p>
+      <ul style={{ listStyle: 'disc', paddingLeft: '1.25rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.82)' }}>
+        <li>Prototype with Claude 3.5 Haiku or Nova Lite to validate prompts quickly.</li>
+        <li>Upgrade to Claude 3.5 Sonnet for higher quality or image understanding.</li>
+        <li>Reach for Claude 4 Sonnet when workflows demand deep reasoning.</li>
+        <li>Use Cohere Embed Multilingual to add semantic search and retrieval.</li>
+      </ul>
+    </div>
+  </div>
+</section>
 
 ## Featured models
 
-<Columns cols={3}>
-  <Card title="Claude 4 Sonnet" icon="sparkles" href="#chat-models">
-    Premium reasoning model with extended thinking, multimodal inputs, and the highest quality responses for complex assistants.
-  </Card>
-  <Card title="Claude 3.5 Haiku" icon="bolt" href="#chat-models">
-    Fastest and most cost-efficient Claude option—ideal for realtime agents, support chat, and broadcast-style use cases.
-  </Card>
-  <Card title="Stable Image Ultra" icon="image" href="#image-models">
-    Enterprise-grade text-to-image model with high prompt adherence, adjustable aspect ratios, and reproducible seeds.
-  </Card>
-</Columns>
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
+  <div
+    style={{
+      display: 'grid',
+      gap: '1.75rem',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))'
+    }}
+  >
+    <a
+      href="#chat-models"
+      style={{
+        textDecoration: 'none',
+        padding: '2.5rem 2.25rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(105,90,255,0.58) 0%, rgba(72,60,200,0.52) 40%, rgba(35,30,110,0.72) 100%)',
+        boxShadow: '0 30px 70px rgba(80,68,220,0.26)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <div style={{ fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude 4 Sonnet</div>
+      <div style={{ fontSize: '1.2rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Deep reasoning with extended thinking, multimodal support, and enterprise-grade guardrails.
+      </div>
+      <div style={{ fontSize: '0.95rem', opacity: 0.9 }}>Best when stakes are high: research copilots, complex coding, strategic decisions.</div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>View details →</span>
+    </a>
+
+    <a
+      href="#chat-models"
+      style={{
+        textDecoration: 'none',
+        padding: '2.5rem 2.25rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(41,163,206,0.54) 0%, rgba(47,118,192,0.5) 40%, rgba(22,54,120,0.66) 100%)',
+        boxShadow: '0 30px 70px rgba(36,140,200,0.24)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <div style={{ fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude 3.5 Haiku</div>
+      <div style={{ fontSize: '1.2rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Fastest Claude tier with 200K context—perfect for live agents, support chat, and API orchestration.
+      </div>
+      <div style={{ fontSize: '0.95rem', opacity: 0.9 }}>Choose when throughput and predictable spend matter most.</div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>View details →</span>
+    </a>
+
+    <a
+      href="#image-models"
+      style={{
+        textDecoration: 'none',
+        padding: '2.5rem 2.25rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(255,148,92,0.58) 0%, rgba(223,104,60,0.52) 45%, rgba(150,54,28,0.7) 100%)',
+        boxShadow: '0 30px 70px rgba(255,136,76,0.24)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <div style={{ fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Stable Image Ultra</div>
+      <div style={{ fontSize: '1.2rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Enterprise-quality text-to-image model with precise prompt adherence and reproducible seeds.
+      </div>
+      <div style={{ fontSize: '0.95rem', opacity: 0.9 }}>Ideal for marketing, product visualization, and creative tooling.</div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>View details →</span>
+    </a>
+  </div>
+</section>
 
 ## Compare models at a glance
 
-| Model | Category | Strength | Relative cost | Context window | Extended thinking | Vision | Link |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude 4 Sonnet | Chat | Deep reasoning with chain-of-thought | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Claude 3.7 Sonnet | Chat | High intelligence with extended thinking | High | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Claude 3.5 Sonnet | Chat | Balanced quality, speed, and cost | Balanced | 200K tokens | Optional | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Claude 3.5 Haiku | Chat | Lowest latency, great for scale | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Claude 3.0 Haiku | Chat | Legacy low-cost option | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Amazon Nova Pro | Chat | Enterprise-first generalist | High | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Amazon Nova Lite | Chat | Efficient conversational model | Low | Medium | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| OpenAI GPT OSS 120B | Chat | Open-weight experimentation | Self-managed | 128K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Cohere Embed Multilingual | Embeddings | Multilingual semantic search | Per 1M tokens | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
-| Stable Image Ultra | Image | High fidelity image synthesis | Per image | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
+<section style={{ maxWidth: '1400px', margin: '0 auto 2.5rem', padding: '0 4vw' }}>
+  | Model | Category | Strength | Relative cost | Context window | Extended thinking | Vision | Link |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Claude 4 Sonnet | Chat | Deep reasoning with chain-of-thought | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 3.7 Sonnet | Chat | High intelligence with extended thinking | High | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 3.5 Sonnet | Chat | Balanced quality, speed, and cost | Balanced | 200K tokens | Optional | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 3.5 Haiku | Chat | Lowest latency, great for scale | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 3.0 Haiku | Chat | Legacy low-cost option | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Amazon Nova Pro | Chat | Enterprise-first generalist | High | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Amazon Nova Lite | Chat | Efficient conversational model | Low | Medium | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | OpenAI GPT OSS 120B | Chat | Open-weight experimentation | Self-managed | 128K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Cohere Embed Multilingual | Embeddings | Multilingual semantic search | Per 1M tokens | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Stable Image Ultra | Image | High fidelity image synthesis | Per image | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
+</section>
 
 <Note>
   Cost guidance reflects relative position within the Heroku AI catalog. Check the pricing page for live token and image rates before deploying to production.
@@ -42,6 +155,7 @@ Heroku Managed Inference and Agents exposes leading chat, embedding, and generat
 
 Advanced language models for assistants, copilots, and automated workflows.
 
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
 <AccordionGroup>
   <Accordion title="Claude 4 Sonnet (premium reasoning)">
     <Columns cols={2}>
@@ -284,11 +398,13 @@ Advanced language models for assistants, copilots, and automated workflows.
     </Columns>
   </Accordion>
 </AccordionGroup>
+</section>
 
 ## Embedding models
 
 Use embeddings for semantic search, classification, clustering, and retrieval-augmented generation.
 
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
 <AccordionGroup>
   <Accordion title="Cohere Embed Multilingual">
     <Columns cols={2}>
@@ -323,11 +439,13 @@ Use embeddings for semantic search, classification, clustering, and retrieval-au
     </Columns>
   </Accordion>
 </AccordionGroup>
+</section>
 
 ## Image models
 
 Generate photorealistic and stylized visuals straight from prompts.
 
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
 <AccordionGroup>
   <Accordion title="Stable Image Ultra">
     <Columns cols={2}>
@@ -359,6 +477,7 @@ Generate photorealistic and stylized visuals straight from prompts.
     </Columns>
   </Accordion>
 </AccordionGroup>
+</section>
 
 ## Model selection playbooks
 
@@ -379,6 +498,7 @@ Generate photorealistic and stylized visuals straight from prompts.
 
 ### Provisioning checklist
 
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
 <Steps>
   <Step title="Inspect availability">
 
@@ -399,9 +519,11 @@ Generate photorealistic and stylized visuals straight from prompts.
   ```
   </Step>
 </Steps>
+</section>
 
 ## Related resources
 
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
 <CardGroup cols={2}>
   <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
     Implement conversational workloads with streaming and tool calling.
@@ -416,3 +538,4 @@ Generate photorealistic and stylized visuals straight from prompts.
     Evaluate prompts, compare models, and share test links.
   </Card>
 </CardGroup>
+</section>

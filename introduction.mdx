@@ -1,82 +1,283 @@
 ---
 title: "Introduction"
 description: "Explore the Heroku AI platform, its guides, and the fastest paths to production."
+fullWidth: true
 ---
 
-<div style={{ textAlign: 'center', padding: '5rem 0 3rem 0' }}>
-  <h1>Welcome to Heroku AI</h1>
-  <p style={{
-    maxWidth: '42rem',
-    margin: '1.25rem auto 0 auto',
-    fontSize: '1.15rem',
-    lineHeight: 1.6,
-    color: 'var(--mint-text-secondary, #d0d0d0)'
-  }}>
-    Build intelligent assistants, copilots, and creative workflows on top of Heroku’s managed inference platform.
-    Start with the quickstart, explore model guides, or jump straight into AI Studio to experiment.
-  </p>
-</div>
+<section
+  style={{
+    padding: '4rem 6vw 3rem',
+    background: 'linear-gradient(180deg, rgba(45,40,76,0.65) 0%, rgba(18,16,30,0) 100%)',
+    borderRadius: '2.25rem',
+    border: '1px solid rgba(255,255,255,0.06)',
+    margin: '0 auto 3.5rem',
+    maxWidth: '1400px',
+    position: 'relative',
+    overflow: 'hidden'
+  }}
+>
+  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 20% 20%, rgba(139,127,212,0.35), transparent 55%)' }} />
+  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 70% 30%, rgba(111,199,255,0.25), transparent 60%)' }} />
+  <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+    <div>
+      <p style={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.85rem', color: 'rgba(255,255,255,0.58)' }}>Heroku AI platform</p>
+      <h1 style={{ fontSize: '2.8rem', lineHeight: 1.1, margin: '0.75rem 0' }}>Build and run AI experiences on Heroku</h1>
+      <p style={{ fontSize: '1.1rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.82)', maxWidth: '32rem' }}>
+        Provision managed inference, evaluate prompts in AI Studio, and ship production workloads with OpenAI-compatible endpoints.
+      </p>
+      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
+        <a href="/quickstart" style={{
+          padding: '0.85rem 1.6rem',
+          borderRadius: '999px',
+          background: 'rgba(108,98,235,0.85)',
+          color: '#F9FAFF',
+          textDecoration: 'none',
+          fontWeight: 600,
+          boxShadow: '0 18px 40px rgba(83,74,199,0.45)'
+        }}>
+          Start building
+        </a>
+        <a href="/inference-api/models" style={{
+          padding: '0.85rem 1.6rem',
+          borderRadius: '999px',
+          border: '1px solid rgba(255,255,255,0.18)',
+          color: '#F9FAFF',
+          textDecoration: 'none',
+          fontWeight: 500,
+          background: 'rgba(16,14,30,0.6)',
+          backdropFilter: 'blur(6px)'
+        }}>
+          Review models
+        </a>
+      </div>
+    </div>
 
-<CardGroup cols={2}>
-  <Card
-    title="Quickstart"
-    icon="rocket"
-    href="/quickstart"
+    <div style={{
+      padding: '2rem',
+      borderRadius: '1.75rem',
+      background: 'rgba(12,10,24,0.65)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      boxShadow: '0 26px 60px rgba(20,18,40,0.4)',
+      backdropFilter: 'blur(18px)'
+    }}>
+      <p style={{ fontSize: '0.9rem', color: 'rgba(235,235,255,0.7)', marginBottom: '1rem' }}>OpenAI-compatible quickstart</p>
+      ```bash
+      curl https://us.inference.heroku.com/v1/chat/completions \
+        -H "Authorization: Bearer $INFERENCE_KEY" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "model": "claude-3-5-sonnet",
+          "messages": [
+            {"role": "system", "content": "You are a Heroku AI assistant."},
+            {"role": "user", "content": "Generate onboarding steps for a new developer."}
+          ]
+        }'
+      ```
+      <p style={{ fontSize: '0.8rem', color: 'rgba(235,235,255,0.55)', marginTop: '1.25rem' }}>
+        Works with the official OpenAI SDKs—swap the base URL to route traffic through Heroku’s managed inference.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section style={{ maxWidth: '1400px', margin: '0 auto 3rem', padding: '0 4vw' }}>
+  <div
     style={{
-      background: 'linear-gradient(152deg, #0091FF 0%, #00C2FF 45%, #6B5FC7 100%)',
-      color: '#FFFFFF',
-      border: 'none',
-      boxShadow: '0 24px 60px rgba(0, 145, 255, 0.25)'
+      display: 'grid',
+      gap: '1.75rem',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))'
     }}
   >
-    Provision a model and make your first API call in minutes with ready-to-run cURL, Python, and TypeScript snippets.
-  </Card>
+    <a
+      href="/quickstart"
+      style={{
+        position: 'relative',
+        borderRadius: '1.5rem',
+        padding: '2.25rem',
+        textDecoration: 'none',
+        color: '#F8FAFF',
+        background: 'linear-gradient(160deg, rgba(30,118,255,0.55) 0%, rgba(86,188,255,0.45) 55%, rgba(46,102,204,0.6) 100%)',
+        boxShadow: '0 28px 60px rgba(35,126,255,0.18)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '220px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}
+    >
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+        Quickstart
+      </div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Provision a model and ship your first API request in minutes with copy-paste snippets.
+      </div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>View guide →</span>
+    </a>
 
-  <Card
-    title="CLI commands"
-    icon="terminal"
-    href="/inference-api/cli-commands"
-    style={{
-      background: 'linear-gradient(150deg, #6B5FC7 0%, #8B7FD4 40%, #4D34B3 100%)',
-      color: '#FFFFFF',
-      border: 'none',
-      boxShadow: '0 24px 60px rgba(107, 95, 199, 0.28)'
-    }}
-  >
-    Automate provisioning, inspect resources, and manage models directly from the Heroku CLI.
-  </Card>
+    <a
+      href="/inference-api/cli-commands"
+      style={{
+        position: 'relative',
+        borderRadius: '1.5rem',
+        padding: '2.25rem',
+        textDecoration: 'none',
+        color: '#F8FAFF',
+        background: 'linear-gradient(160deg, rgba(84,64,200,0.55) 0%, rgba(126,103,214,0.45) 50%, rgba(50,36,150,0.6) 100%)',
+        boxShadow: '0 28px 60px rgba(88,70,205,0.2)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '220px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}
+    >
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+        CLI automation
+      </div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Script provisioning, rotate keys, and manage resources from the Heroku CLI.
+      </div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Open reference →</span>
+    </a>
 
-  <Card
-    title="Models overview"
-    icon="sparkles"
-    href="/inference-api/models"
-    style={{
-      background: 'linear-gradient(150deg, #1F8A70 0%, #18A999 40%, #3BB7B2 100%)',
-      color: '#FFFFFF',
-      border: 'none',
-      boxShadow: '0 24px 60px rgba(31, 138, 112, 0.25)'
-    }}
-  >
-    Compare chat, embedding, and image models side-by-side to pick the right option for each workload.
-  </Card>
+    <a
+      href="/inference-api/models"
+      style={{
+        position: 'relative',
+        borderRadius: '1.5rem',
+        padding: '2.25rem',
+        textDecoration: 'none',
+        color: '#F8FAFF',
+        background: 'linear-gradient(160deg, rgba(26,140,129,0.55) 0%, rgba(63,181,173,0.45) 50%, rgba(24,105,96,0.6) 100%)',
+        boxShadow: '0 28px 60px rgba(28,140,128,0.2)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '220px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}
+    >
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+        Model catalog
+      </div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Compare chat, embedding, and image models side-by-side before you choose.
+      </div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Browse models →</span>
+    </a>
 
-  <Card
-    title="AI Studio"
-    icon="palette"
-    href="/heroku-inference/ai-studio"
-    style={{
-      background: 'linear-gradient(152deg, #FF8A3D 0%, #FFB347 50%, #FF6A3D 100%)',
-      color: '#FFFFFF',
-      border: 'none',
-      boxShadow: '0 24px 60px rgba(255, 138, 61, 0.3)'
-    }}
-  >
-    Prototype prompts, invite reviewers, and benchmark responses before promoting changes to production apps.
-  </Card>
-</CardGroup>
+    <a
+      href="/heroku-inference/ai-studio"
+      style={{
+        position: 'relative',
+        borderRadius: '1.5rem',
+        padding: '2.25rem',
+        textDecoration: 'none',
+        color: '#F8FAFF',
+        background: 'linear-gradient(160deg, rgba(255,142,70,0.55) 0%, rgba(255,174,86,0.45) 50%, rgba(214,92,44,0.6) 100%)',
+        boxShadow: '0 28px 60px rgba(255,142,70,0.22)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '220px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}
+    >
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
+        AI Studio
+      </div>
+      <div style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Experiment with prompts, share evaluations, and promote what works to production.
+      </div>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Open AI Studio →</span>
+    </a>
+  </div>
+</section>
 
 ## Explore more
 
-- Configure Model Context Protocol integrations with the [MCP guides](/tool-use/working-with-mcp).
-- Wire reference apps using the [OpenAI SDK cookbook](/cookbook/openai-sdk-reference-apps).
-- Monitor usage and costs from the Heroku Dashboard to keep production workloads healthy.
+<section style={{ maxWidth: '1400px', margin: '1.5rem auto 0', padding: '0 4vw' }}>
+  <div
+    style={{
+      display: 'grid',
+      gap: '1.6rem',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))'
+    }}
+  >
+    <a
+      href="/tool-use/working-with-mcp"
+      style={{
+        textDecoration: 'none',
+        padding: '2.25rem',
+        borderRadius: '1.5rem',
+        color: '#F8FAFF',
+        background: 'linear-gradient(155deg, rgba(96,76,220,0.4) 0%, rgba(58,46,160,0.55) 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 24px 55px rgba(86,70,210,0.18)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '200px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>MCP guides</span>
+      <span style={{ fontSize: '1.08rem', fontWeight: 600, lineHeight: 1.4 }}>
+        Wire tools and integrations into Model Context Protocol workflows.
+      </span>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Open playbooks →</span>
+    </a>
+
+    <a
+      href="/cookbook/openai-sdk-reference-apps"
+      style={{
+        textDecoration: 'none',
+        padding: '2.25rem',
+        borderRadius: '1.5rem',
+        color: '#F8FAFF',
+        background: 'linear-gradient(155deg, rgba(36,150,200,0.42) 0%, rgba(30,82,150,0.55) 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 24px 55px rgba(30,126,200,0.18)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '200px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>Cookbook</span>
+      <span style={{ fontSize: '1.08rem', fontWeight: 600, lineHeight: 1.4 }}>
+        Clone reference apps that use the OpenAI SDK against Heroku endpoints.
+      </span>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>See recipes →</span>
+    </a>
+
+    <a
+      href="https://dashboard.heroku.com"
+      style={{
+        textDecoration: 'none',
+        padding: '2.25rem',
+        borderRadius: '1.5rem',
+        color: '#F8FAFF',
+        background: 'linear-gradient(155deg, rgba(255,136,76,0.42) 0%, rgba(186,70,36,0.55) 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 24px 55px rgba(222,118,58,0.2)',
+        backdropFilter: 'blur(18px)',
+        minHeight: '200px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.8 }}>Monitor</span>
+      <span style={{ fontSize: '1.08rem', fontWeight: 600, lineHeight: 1.4 }}>
+        Track usage, token spend, and performance metrics inside the Heroku Dashboard.
+      </span>
+      <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Go to dashboard →</span>
+    </a>
+  </div>
+</section>
