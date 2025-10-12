@@ -16,6 +16,7 @@
           {
             "group": "Getting started",
             "pages": [
+              "introduction",
               "quickstart",
               "inference-api/cli-commands"
             ]
@@ -94,14 +95,26 @@
   "navbar": {
     "links": [
       {
+        "label": "Guides",
+        "href": "/introduction"
+      },
+      {
+        "label": "API reference",
+        "href": "/inference-api/chat-completions"
+      },
+      {
+        "label": "Changelog",
+        "href": "/changelog"
+      },
+      {
         "label": "Support",
         "href": "https://help.heroku.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.heroku.com"
+      "label": "Get started",
+      "href": "https://signup.heroku.com"
     }
   },
   "contextual": {

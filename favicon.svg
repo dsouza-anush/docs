@@ -1,7 +1,18 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Purple background circle -->
-  <circle cx="12" cy="12" r="10" fill="#6762A6"/>
-
-  <!-- Lightning bolt -->
-  <path d="M12 6l-3 4.5h3v6l3-4.5h-3V6z" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#25213F"/>
+  <path
+    d="M16 6.5l8.3 4.76v9.48L16 25.5l-8.3-4.76v-9.48L16 6.5z"
+    stroke="#F7F6FF"
+    stroke-width="1.6"
+    fill="#25213F"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M16 11.4c1.5 1.5 2.2 2.2 3.7 3.7-1.5 1.5-2.2 2.2-3.7 3.7-1.5-1.5-2.2-2.2-3.7-3.7 1.5-1.5 2.2-2.2 3.7-3.7z"
+    fill="#F7F6FF"
+  />
+  <path
+    d="M25.3 9.7l0.77-1.54 0.77 1.54 1.7 0.28-1.24 1.29 0.29 1.75-1.53-0.8-1.49 0.8 0.27-1.75-1.25-1.29 1.71-0.28z"
+    fill="#F7F6FF"
+  />
 </svg>
