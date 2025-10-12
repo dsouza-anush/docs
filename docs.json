@@ -95,18 +95,6 @@
   "navbar": {
     "links": [
       {
-        "label": "Guides",
-        "href": "/introduction"
-      },
-      {
-        "label": "API reference",
-        "href": "/inference-api/chat-completions"
-      },
-      {
-        "label": "Changelog",
-        "href": "/changelog"
-      },
-      {
         "label": "Support",
         "href": "https://help.heroku.com"
       }

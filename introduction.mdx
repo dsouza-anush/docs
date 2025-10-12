@@ -3,10 +3,16 @@ title: "Introduction"
 description: "Explore the Heroku AI platform, its guides, and the fastest paths to production."
 ---
 
-<div style={{ textAlign: 'center', padding: '4rem 0 2rem 0' }}>
+<div style={{ textAlign: 'center', padding: '5rem 0 3rem 0' }}>
   <h1>Welcome to Heroku AI</h1>
-  <p style={{ maxWidth: '40rem', margin: '1rem auto 0 auto', fontSize: '1.1rem' }}>
-    Build intelligent assistants, copilots, and creative workflows on top of Heroku’s managed inference platform. 
+  <p style={{
+    maxWidth: '42rem',
+    margin: '1.25rem auto 0 auto',
+    fontSize: '1.15rem',
+    lineHeight: 1.6,
+    color: 'var(--mint-text-secondary, #d0d0d0)'
+  }}>
+    Build intelligent assistants, copilots, and creative workflows on top of Heroku’s managed inference platform.
     Start with the quickstart, explore model guides, or jump straight into AI Studio to experiment.
   </p>
 </div>
@@ -16,6 +22,12 @@ description: "Explore the Heroku AI platform, its guides, and the fastest paths 
     title="Quickstart"
     icon="rocket"
     href="/quickstart"
+    style={{
+      background: 'linear-gradient(152deg, #0091FF 0%, #00C2FF 45%, #6B5FC7 100%)',
+      color: '#FFFFFF',
+      border: 'none',
+      boxShadow: '0 24px 60px rgba(0, 145, 255, 0.25)'
+    }}
   >
     Provision a model and make your first API call in minutes with ready-to-run cURL, Python, and TypeScript snippets.
   </Card>
@@ -24,6 +36,12 @@ description: "Explore the Heroku AI platform, its guides, and the fastest paths 
     title="CLI commands"
     icon="terminal"
     href="/inference-api/cli-commands"
+    style={{
+      background: 'linear-gradient(150deg, #6B5FC7 0%, #8B7FD4 40%, #4D34B3 100%)',
+      color: '#FFFFFF',
+      border: 'none',
+      boxShadow: '0 24px 60px rgba(107, 95, 199, 0.28)'
+    }}
   >
     Automate provisioning, inspect resources, and manage models directly from the Heroku CLI.
   </Card>
@@ -32,6 +50,12 @@ description: "Explore the Heroku AI platform, its guides, and the fastest paths 
     title="Models overview"
     icon="sparkles"
     href="/inference-api/models"
+    style={{
+      background: 'linear-gradient(150deg, #1F8A70 0%, #18A999 40%, #3BB7B2 100%)',
+      color: '#FFFFFF',
+      border: 'none',
+      boxShadow: '0 24px 60px rgba(31, 138, 112, 0.25)'
+    }}
   >
     Compare chat, embedding, and image models side-by-side to pick the right option for each workload.
   </Card>
@@ -40,12 +64,18 @@ description: "Explore the Heroku AI platform, its guides, and the fastest paths 
     title="AI Studio"
     icon="palette"
     href="/heroku-inference/ai-studio"
+    style={{
+      background: 'linear-gradient(152deg, #FF8A3D 0%, #FFB347 50%, #FF6A3D 100%)',
+      color: '#FFFFFF',
+      border: 'none',
+      boxShadow: '0 24px 60px rgba(255, 138, 61, 0.3)'
+    }}
   >
     Prototype prompts, invite reviewers, and benchmark responses before promoting changes to production apps.
   </Card>
 </CardGroup>
 
-## What’s next
+## Explore more
 
 - Configure Model Context Protocol integrations with the [MCP guides](/tool-use/working-with-mcp).
 - Wire reference apps using the [OpenAI SDK cookbook](/cookbook/openai-sdk-reference-apps).
