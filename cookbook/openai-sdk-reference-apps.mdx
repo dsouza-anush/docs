@@ -1,0 +1,214 @@
+---
+title: "OpenAI SDK reference apps"
+description: "Blueprints for building Heroku AI applications with the OpenAI SDK"
+---
+
+Heroku AI exposes OpenAI-compatible endpoints, which lets you reuse the official OpenAI SDKs while routing traffic through Heroku's managed infrastructure. Use the recipes below to bootstrap real applications quickly, then adapt them to your product needs.
+
+<Info>
+  All examples call `https://us.inference.heroku.com/v1` and rely on a Heroku-managed API key. Provision a model first and export the key as `INFERENCE_KEY`.
+</Info>
+
+## Before you start
+
+- Install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) and log in.
+- Provision a model, for example `heroku ai:models:create claude-3-5-sonnet --app my-ai-app`.
+- Store the resulting key securely (`heroku config:get INFERENCE_KEY --app my-ai-app`).
+- Set the base URL when instantiating the SDK client (`base_url="https://us.inference.heroku.com/v1"`).
+
+## Recipe: Customer support chat
+
+Provide agents with instant answers sourced from your knowledge base.
+
+<Tabs>
+  <Tab title="Python (Flask)">
+    <Steps>
+      <Step title="Install dependencies">
+
+      ```bash
+      pip install openai flask
+      ```
+      </Step>
+      <Step title="Create `app.py`">
+
+      ```python
+      import os
+      from flask import Flask, request, jsonify
+      from openai import OpenAI
+
+      client = OpenAI(
+          base_url="https://us.inference.heroku.com/v1",
+          api_key=os.environ["INFERENCE_KEY"],
+      )
+
+      app = Flask(__name__)
+
+      @app.post("/chat")
+      def chat():
+          question = request.json.get("question", "")
+          response = client.chat.completions.create(
+              model="claude-3-5-sonnet",
+              messages=[
+                  {"role": "system", "content": "You are a Heroku support specialist."},
+                  {"role": "user", "content": question},
+              ],
+              max_tokens=600,
+              temperature=0.3,
+          )
+          return jsonify({"answer": response.choices[0].message.content})
+
+      if __name__ == "__main__":
+          app.run(debug=True)
+      ```
+      </Step>
+      <Step title="Deploy to Heroku">
+
+      ```bash
+      heroku create my-ai-support
+      git push heroku main
+      heroku config:set INFERENCE_KEY=$(heroku config:get INFERENCE_KEY --app my-ai-app) --app my-ai-support
+      ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="TypeScript (Next.js API route)">
+    <Steps>
+      <Step title="Install dependencies">
+
+      ```bash
+      npm install openai
+      ```
+      </Step>
+      <Step title="Add `/app/api/chat/route.ts`">
+
+      ```ts
+      import { NextRequest, NextResponse } from "next/server";
+      import OpenAI from "openai";
+
+      const client = new OpenAI({
+        baseURL: "https://us.inference.heroku.com/v1",
+        apiKey: process.env.INFERENCE_KEY,
+      });
+
+      export async function POST(req: NextRequest) {
+        const { question } = await req.json();
+        const completion = await client.chat.completions.create({
+          model: "claude-3-5-sonnet",
+          max_tokens: 600,
+          temperature: 0.3,
+          messages: [
+            { role: "system", content: "You are a Heroku support specialist." },
+            { role: "user", content: question },
+          ],
+        });
+
+        return NextResponse.json({
+          answer: completion.choices[0].message?.content,
+        });
+      }
+      ```
+      </Step>
+      <Step title="Configure environment">
+
+      ```bash
+      heroku config:set INFERENCE_KEY=$(heroku config:get INFERENCE_KEY --app my-ai-app) --app my-next-app
+      ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Recipe: Search + summarize notebook
+
+Blend embeddings and chat completions to turn raw documents into actionable briefs.
+
+<Steps>
+  <Step title="Embed your corpus">
+
+  ```python
+  from openai import OpenAI
+  import os
+
+  client = OpenAI(
+      base_url="https://us.inference.heroku.com/v1",
+      api_key=os.environ["INFERENCE_KEY"],
+  )
+
+  documents = [...]
+  vectors = client.embeddings.create(
+      model="cohere-embed-multilingual",
+      input=documents,
+  )
+  ```
+  </Step>
+  <Step title="Index vectors in Postgres + pgvector">
+
+  ```sql
+  CREATE TABLE docs (
+    id serial PRIMARY KEY,
+    content text,
+    embedding vector(1024)
+  );
+  ```
+  </Step>
+  <Step title="Answer questions with retrieval">
+
+  ```python
+  def summarize(question: str) -> str:
+      related = fetch_similar_vectors(question, top_k=4)
+      context = "\n\n".join(doc.text for doc in related)
+      completion = client.chat.completions.create(
+          model="claude-3-5-sonnet",
+          temperature=0.4,
+          max_tokens=700,
+          messages=[
+              {"role": "system", "content": "Summarize internal Heroku docs."},
+              {"role": "user", "content": f"{question}\n\nContext:\n{context}"},
+          ],
+      )
+      return completion.choices[0].message.content
+  ```
+  </Step>
+</Steps>
+
+## Recipe: Image generator microservice
+
+Expose Stable Image Ultra behind a simple REST interface.
+
+```python
+import base64
+import os
+from io import BytesIO
+
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://us.inference.heroku.com/v1",
+    api_key=os.environ["INFERENCE_KEY"],
+)
+
+app = FastAPI()
+
+@app.post("/images")
+async def images(prompt: str):
+    result = client.images.generate(
+        model="stable-image-ultra",
+        prompt=prompt,
+        size="1024x1024",
+    )
+    data = base64.b64decode(result.data[0].b64_json)
+    image_bytes = BytesIO(data)
+    image_bytes.seek(0)
+    return StreamingResponse(image_bytes, media_type="image/png")
+```
+
+Deploy with a Heroku Container stack or `uvicorn` buildpack, then protect the endpoint with an API key or Heroku session token.
+
+## What to build next
+
+- Add streaming UIs with Server-Sent Events for chat interfaces.
+- Swap models dynamically by passing the `model` from request payloads.
+- Log completions to [Heroku Data for Redis](https://devcenter.heroku.com/articles/heroku-redis) for analytics.
+- Pair these recipes with the [Chat Completions API guide](/inference-api/chat-completions) for advanced parameters such as tool calling and structured outputs.
