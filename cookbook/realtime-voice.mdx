@@ -1,0 +1,138 @@
+---
+title: "Realtime voice agents"
+description: "Design natural voice assistants with gpt-realtime prompts, pacing, and deployment tips for Heroku AI."
+fullWidth: true
+---
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+  <p>
+    OpenAI’s Realtime Prompting Guide highlights the techniques required to make voice interfaces sound confident, on-brand, and latency-aware. The guidance below shows how to translate those best practices to Heroku AI deployments.
+    Learn more in the original recipe: <a href="https://cookbook.openai.com/examples/realtime_prompting_guide" target="_blank" rel="noopener noreferrer">Realtime Prompting Guide</a>.
+  </p>
+</section>
+
+## Sculpt the system prompt
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(98,76,220,0.45) 0%, rgba(42,34,120,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Prompt skeleton</h3>
+    <p>
+      Break the system prompt into labeled sections so the model can zero in on each rule set:
+    </p>
+    <ul>
+      <li><strong>Role &amp; Objective</strong> — what success looks like.</li>
+      <li><strong>Personality &amp; Tone</strong> — diction, warmth, length, pacing.</li>
+      <li><strong>Tools</strong> — which MCP servers or actions are allowed.</li>
+      <li><strong>Conversation Flow</strong> — state machine or escalation path.</li>
+      <li><strong>Safety &amp; Escalation</strong> — hand-offs and compliance triggers.</li>
+    </ul>
+    <p>
+      Start from the cookbook skeleton and add domain-specific sections (e.g., “Regulatory Disclosures” for healthcare).[^realtime]
+    </p>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```yaml
+    # Role & Objective
+    You are a calm, solution-focused Heroku support specialist helping developers triage deployment failures.
+
+    # Personality & Tone
+    - Voice: friendly, confident, concise
+    - Length: 2–3 sentences per reply
+    - Pacing: speak briskly but never rushed
+
+    # Tools
+    - status_app: summarize incident feed entries
+    - reopen_ticket: escalate to human if failures persist
+
+    # Safety & Escalation
+    - If user mentions billing or security, route to human immediately.
+    ```
+  </div>
+</section>
+
+## Control delivery
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(30,118,255,0.45) 0%, rgba(20,64,132,0.62) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Pacing and variety</h3>
+    <ul>
+      <li>Add explicit “Variety” or “Pacing” subsections to avoid robotic phrasing.[^realtime]</li>
+      <li>Use capitalized emphasis for critical rules (“ALWAYS escalate when the user says ‘outage’”).</li>
+      <li>Anchor output length (“Limit to 2 sentences unless the user asks for a checklist”).</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url="https://us.inference.heroku.com/v1",
+        api_key=os.environ["INFERENCE_KEY"],
+    )
+
+    session = client.responses.create(
+        model="gpt-realtime-2025-09-01",
+        input=[{"role": "developer", "content": [{"type": "input_text", "text": SYSTEM_PROMPT}]}],
+        audio={"voice": "alloy", "format": "wav"},
+        modalities=["audio", "text"],
+    )
+    ```
+    <p>
+      Stream audio chunks over WebRTC or WebSockets. Wrap responses with Heroku’s WebSocket Multiplayer add-on or a lightweight FastAPI server for low-latency fan-out.
+    </p>
+  </div>
+</section>
+
+## Production guardrails
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(42,176,206,0.45) 0%, rgba(24,88,128,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Monitoring tips</h3>
+    <ul>
+      <li>Log transcripts and synthesized instructions to Log Drains or Datadog for QA.</li>
+      <li>Use the evaluation flywheel graders to score tone, compliance, and escalation accuracy on daily samples.</li>
+      <li>Rotate voices programmatically during A/B tests; track CSAT correlations.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <h3>MCP & tools</h3>
+    <p>
+      Publish MCP servers (status dashboards, ticket search, knowledge bases) alongside the realtime session. The prompt should name each tool and clarify when to call it. Combine with guardrails so every answer cites the data source.
+    </p>
+  </div>
+</section>
+
+[^realtime]: OpenAI, “Realtime Prompting Guide,” Oct 2025. Retrieved from <https://cookbook.openai.com/examples/realtime_prompting_guide>.

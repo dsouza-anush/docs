@@ -1,0 +1,124 @@
+---
+title: "MCP integrations"
+description: "Connect enterprise data sources to Heroku AI agents using the Model Context Protocol (MCP)."
+fullWidth: true
+---
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+  <p>
+    Use MCP servers to expose internal data, analytics functions, or search indexes to Heroku AI agents. This guide adapts the OpenAI Cookbook’s Databricks copilot example for managed inference workloads. Source: <a href="https://cookbook.openai.com/examples/mcp/databricks_mcp_cookbook" target="_blank" rel="noopener noreferrer">Building a supply-chain copilot with OpenAI Agent SDK and Databricks MCP</a>.
+  </p>
+</section>
+
+## Architecture highlights
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(255,196,102,0.45) 0%, rgba(176,118,32,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Core components</h3>
+    <ul>
+      <li>MCP server that wraps Databricks Unity Catalog functions and vector search endpoints.[^databricks]</li>
+      <li>OpenAI Agent SDK orchestrating tool calls with guardrails.</li>
+      <li>Heroku worker dyno hosting the agent session and relaying responses to web or CLI clients.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    from openai import OpenAI
+    from openai.agents import Agent, Runner, ModelSettings
+    from my_mcp import vector_search, uc_function
+
+    client = OpenAI(
+        base_url="https://us.inference.heroku.com/v1",
+        api_key=os.environ["INFERENCE_KEY"],
+    )
+
+    assistant = Agent(
+        name="SupplyChainAssistant",
+        instructions="Answer only supply-chain questions. Always cite the tool you called.",
+        tools=[vector_search, uc_function],
+        model_settings=ModelSettings(model="claude-3-5-sonnet", tool_choice="required"),
+    )
+    ```
+  </div>
+</section>
+
+## Authentication and secrets
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(96,76,220,0.45) 0%, rgba(54,40,154,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Best practices</h3>
+    <ul>
+      <li>Store Databricks PATs or OAuth refresh tokens in Heroku Config Vars.</li>
+      <li>Mirror the cookbook’s `DatabricksOAuthClientProvider` to keep credential refresh logic isolated.[^databricks]</li>
+      <li>Scope each MCP server to a single domain and add guardrails that reject off-topic requests.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    def databricks_profile():
+        return {
+            "host": os.environ["DATABRICKS_HOST"],
+            "token": os.environ["DATABRICKS_TOKEN"],
+        }
+    ```
+    <p>
+      Provision separate Config Vars per environment (staging vs. production) and rotate tokens via Heroku’s secrets API or the Databricks CLI.
+    </p>
+  </div>
+</section>
+
+## Observability & safety
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(42,176,206,0.45) 0%, rgba(18,96,150,0.62) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Trace everything</h3>
+    <ul>
+      <li>Use the Agent SDK’s trace context (as in the cookbook) to record tool calls and guardrail trips.[^databricks]</li>
+      <li>Ship traces to Papertrail or Datadog for post-incident analysis.</li>
+      <li>Alert on repeated guardrail violations — they often signal missing domain filters.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <h3>Permissioning tips</h3>
+    <ul>
+      <li>Whitelist the specific Unity Catalog functions each agent can call.</li>
+      <li>Return descriptive errors (not stack traces) when guardrails block responses.</li>
+      <li>Include linkable citations back to the underlying Databricks query results for end-user trust.</li>
+    </ul>
+  </div>
+</section>
+
+[^databricks]: OpenAI, “Building a supply-chain copilot with OpenAI Agent SDK and Databricks MCP,” Jul 2025. Retrieved from <https://cookbook.openai.com/examples/mcp/databricks_mcp_cookbook>.

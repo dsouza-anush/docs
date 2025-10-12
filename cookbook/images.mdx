@@ -1,0 +1,131 @@
+---
+title: "Image workflows"
+description: "Ship branded visuals with high-fidelity image editing and automated pipelines on Heroku AI."
+fullWidth: true
+---
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+  <p>
+    Use these patterns when you need consistent brand assets or precise image edits. They adapt the OpenAI Cookbook guidance on high-fidelity edits and automation. Primary reference: <a href="https://cookbook.openai.com/examples/generate_images_with_high_input_fidelity" target="_blank" rel="noopener noreferrer">Generate images with high input fidelity</a>.
+  </p>
+</section>
+
+## Preserve detail with `input_fidelity="high"`
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(255,148,92,0.45) 0%, rgba(210,88,44,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>When to enable</h3>
+    <ul>
+      <li>Logo or product color tweaks that must preserve surrounding detail.</li>
+      <li>Portrait adjustments where faces need to stay recognizable.</li>
+      <li>Localized edits (add/remove props) without altering the background.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    from openai import OpenAI
+    client = OpenAI(
+        base_url="https://us.inference.heroku.com/v1",
+        api_key=os.environ["INFERENCE_KEY"],
+    )
+
+    def edit_image(image_bytes: bytes, prompt: str) -> bytes:
+        result = client.images.edit(
+            model="gpt-image-1",
+            image=image_bytes,
+            prompt=prompt,
+            input_fidelity="high",
+            quality="high",
+            output_format="png",
+        )
+        return base64.b64decode(result.data[0].b64_json)
+    ```
+  </div>
+</section>
+
+## Automate asset pipelines
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(96,76,220,0.45) 0%, rgba(54,40,154,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Workflow tips</h3>
+    <ul>
+      <li>Store source images in Heroku Data for Redis or S3; pull by URL and feed to the edit endpoint.</li>
+      <li>Run edits in a worker dyno and push results to a CDN (CloudFront/Fastly) via background jobs.</li>
+      <li>Track prompt + output pairs in Postgres so designers can revert or reapply edits.</li>
+    </ul>
+    <p>
+      The cookbook suggests batching edits (resize, add/remove elements, face preservation) with helper functions and Pillow for preview generation.[^fidelity]
+    </p>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    import base64
+    from io import BytesIO
+    from PIL import Image
+
+    def store_derivative(raw_bytes: bytes, filename: str):
+        image = Image.open(BytesIO(raw_bytes))
+        thumbnail = image.resize((512, int(image.height * 512 / image.width)))
+        buffer = BytesIO()
+        thumbnail.save(buffer, format="PNG")
+        upload_to_s3(filename, buffer.getvalue())
+    ```
+    <p>
+      Wrap S3 uploads in retry logic (Heroku recommends `tenacity` or AWS exponential backoff) and emit metrics when edits fail.
+    </p>
+  </div>
+</section>
+
+## Team workflow
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(42,176,206,0.45) 0%, rgba(18,96,150,0.62) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Governance</h3>
+    <ul>
+      <li>Restrict edit prompts to pre-approved templates (color swaps, copy updates) to avoid off-brand outputs.</li>
+      <li>Attach a simple React admin UI (served from Heroku) to preview before publishing.</li>
+      <li>Emit provenance metadata (prompt, date, operator) with each asset to satisfy audit requests.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <h3>Versioning</h3>
+    <p>
+      Store both the original and edited image hashes. If a new brand guideline is released, queue re-edits by iterating over historical prompts and swapping colors/overlays. High fidelity mode ensures incremental changes keep prior detail intact.[^fidelity]
+    </p>
+  </div>
+</section>
+
+[^fidelity]: OpenAI, “Generate images with high input fidelity,” Jul 2025. Retrieved from <https://cookbook.openai.com/examples/generate_images_with_high_input_fidelity>.

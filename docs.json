@@ -68,7 +68,12 @@
           {
             "group": "Cookbook",
             "pages": [
-              "cookbook/openai-sdk-reference-apps"
+              "cookbook/index",
+              "cookbook/openai-sdk-reference-apps",
+              "cookbook/chat-agents",
+              "cookbook/realtime-voice",
+              "cookbook/images",
+              "cookbook/mcp-integrations"
             ]
           }
         ]

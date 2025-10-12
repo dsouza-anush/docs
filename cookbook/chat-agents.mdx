@@ -1,0 +1,150 @@
+---
+title: "Chat & agent patterns"
+description: "Harden prompts, evaluations, and agent workflows for Heroku AI using OpenAI’s latest cookbook playbooks."
+fullWidth: true
+---
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+  <p>
+    These patterns adapt the OpenAI Cookbook’s guidance on prompt optimization, evaluation flywheels, and agent design to Heroku AI. Each section links to the original reference so you can dive deeper before implementing in your own apps.
+  </p>
+</section>
+
+## Multi-agent prompt optimization
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(96,76,220,0.45) 0%, rgba(54,40,154,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F8FAFF',
+    boxShadow: '0 24px 60px rgba(82,66,210,0.22)'
+  }}>
+    <h3>Workflow summary</h3>
+    <ol>
+      <li>Assign focused “checker” agents to scan prompts for contradictions, missing format specs, and few-shot drift.</li>
+      <li>Hand off to rewrite agents that patch the developer prompt and regenerate examples.</li>
+      <li>Return structured issues and candidate rewrites so humans can review before deploying.</li>
+    </ol>
+    <p>
+      Original recipe: <a href="https://cookbook.openai.com/examples/optimize_prompts" target="_blank" rel="noopener noreferrer">Optimize Prompts</a>.
+    </p>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <h3>Adaptation checklist</h3>
+    <ul>
+      <li>Run the optimizer as a scheduled Heroku worker that pulls prompts from Postgres or Git.</li>
+      <li>Persist checker output and human decisions in a change-log table for auditability.</li>
+      <li>Wrap each agent call with `client.responses.create(..., model="claude-3-5-sonnet")` or your chosen default and use Heroku Redis to queue jobs.</li>
+    </ul>
+    ```python
+    from openai import OpenAI
+    client = OpenAI(
+        base_url="https://us.inference.heroku.com/v1",
+        api_key=os.environ["INFERENCE_KEY"],
+    )
+
+    def optimize_prompt(dev_message: str, examples: list[dict]):
+        response = client.responses.create(
+            model="claude-3-5-sonnet",
+            input=[{"role": "system", "content": dev_message}, *examples],
+            reasoning={"effort": "medium"},
+        )
+        return response.output_text
+    ```
+  </div>
+</section>
+
+## Evaluation flywheel
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(30,118,255,0.45) 0%, rgba(20,72,180,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F8FAFF',
+    boxShadow: '0 24px 60px rgba(40,110,220,0.2)'
+  }}>
+    <h3>Key stages</h3>
+    <ol>
+      <li><strong>Analyze</strong> — annotate failing traces to discover recurring defects.</li>
+      <li><strong>Measure</strong> — build graders (LLM judges) that score each failure mode.</li>
+      <li><strong>Improve</strong> — patch prompts, add retrieval context, or escalate model tiers; repeat.</li>
+    </ol>
+    <p>
+      Reference methodology: <a href="https://cookbook.openai.com/examples/evaluation/building_resilient_prompts_using_an_evaluation_flywheel" target="_blank" rel="noopener noreferrer">Building resilient prompts using an evaluation flywheel</a>.
+    </p>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <h3>Ship it on Heroku</h3>
+    <ul>
+      <li>Store traces in Heroku Postgres with failure metadata; expose a simple moderation UI (Rails or Next.js) for annotations.</li>
+      <li>Schedule nightly graders with the Heroku Scheduler add-on and push scores to Datadog or Grafana.</li>
+      <li>Gate deployments: run graders in CI and block merges if TPR/TNR drop below thresholds.</li>
+    </ul>
+  </div>
+</section>
+
+## Research copilots
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(42,176,206,0.45) 0%, rgba(18,96,150,0.62) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F8FAFF',
+    boxShadow: '0 24px 60px rgba(36,140,180,0.2)'
+  }}>
+    <h3>Deep research API</h3>
+    <p>
+      The Deep Research models (`o3-deep-research`, `o4-mini-deep-research`) plan sub-questions, call web search, execute code, and return citation-rich reports automatically.
+      See <a href="https://cookbook.openai.com/examples/deep_research_api/introduction_to_deep_research_api" target="_blank" rel="noopener noreferrer">Introduction to deep research in the OpenAI API</a>.
+    </p>
+    <ul>
+      <li>Add `web_search_preview` and optional `code_interpreter` tools.</li>
+      <li>Enable `background=True` to keep long-running jobs from timing out.</li>
+      <li>Read `response.output` to inspect reasoning, search calls, and generated citations.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    from openai import OpenAI
+    client = OpenAI(
+        base_url="https://us.inference.heroku.com/v1",
+        api_key=os.environ["INFERENCE_KEY"],
+    )
+
+    task = client.responses.create(
+        model="o4-mini-deep-research-2025-06-26",
+        input=[
+            {"role": "developer", "content": [{"type": "input_text", "text": SYSTEM_PROMPT}]},
+            {"role": "user", "content": [{"type": "input_text", "text": research_query}]},
+        ],
+        tools=[{"type": "web_search_preview"}],
+        background=True,
+    )
+    print(task.id)  # poll status before retrieving the final report
+    ```
+    <p>
+      Persist the async job ID in Postgres and use a Heroku worker to poll the `responses.retrieve` endpoint until the report is ready. Store the final markdown plus citation metadata for downstream dashboards.
+    </p>
+  </div>
+</section>

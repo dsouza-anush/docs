@@ -1,0 +1,169 @@
+---
+title: "Cookbook overview"
+description: "Jump into curated build guides for chat agents, realtime voice, image workflows, and enterprise integrations on Heroku AI."
+fullWidth: true
+---
+
+<section
+  style={{
+    margin: '0 calc(-1 * min(8vw, 96px)) 3rem',
+    padding: '4rem min(8vw, 96px)',
+    background: 'linear-gradient(180deg, rgba(36,34,58,0.65) 0%, rgba(12,10,24,0) 100%)',
+    borderRadius: '2.25rem',
+    border: '1px solid rgba(255,255,255,0.06)',
+    position: 'relative',
+    overflow: 'hidden'
+  }}
+>
+  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 18% 22%, rgba(139,127,212,0.35), transparent 55%)' }} />
+  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 72% 28%, rgba(86,188,255,0.25), transparent 60%)' }} />
+  <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+    <div>
+      <p style={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.82rem', color: 'rgba(235,235,255,0.6)' }}>Heroku AI cookbook</p>
+      <h1 style={{ fontSize: '2.6rem', lineHeight: 1.1, margin: '0.5rem 0 1rem' }}>Blueprints for shipping production AI faster</h1>
+      <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.82)', maxWidth: '34rem' }}>
+        These recipes adapt OpenAI’s latest patterns to Heroku’s managed inference stack. Copy them as-is or remix the ideas to accelerate your next assistant, voice experience, or enterprise integration.
+      </p>
+    </div>
+    <div style={{
+      padding: '2rem',
+      borderRadius: '1.75rem',
+      background: 'rgba(12,10,24,0.65)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      boxShadow: '0 26px 60px rgba(20,18,40,0.4)',
+      backdropFilter: 'blur(18px)'
+    }}>
+      <p style={{ fontSize: '0.9rem', color: 'rgba(235,235,255,0.7)', marginBottom: '1rem' }}>Adapt each recipe</p>
+      <ul style={{ listStyle: 'disc', paddingLeft: '1.25rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.82)' }}>
+        <li>Switch clients to `https://us.inference.heroku.com/v1` and reuse your `INFERENCE_KEY`.</li>
+        <li>Store credentials in Heroku Config Vars, not source code.</li>
+        <li>Attach guardrails (input/output filters) before connecting production tools.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+  <div
+    style={{
+      display: 'grid',
+      gap: '1.75rem',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))'
+    }}
+  >
+    <a
+      href="/cookbook/openai-sdk-reference-apps"
+      style={{
+        textDecoration: 'none',
+        padding: '2.4rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(30,118,255,0.55) 0%, rgba(72,132,220,0.5) 40%, rgba(26,64,160,0.65) 100%)',
+        boxShadow: '0 28px 60px rgba(32,120,240,0.2)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Reference apps</span>
+      <span style={{ fontSize: '1.15rem', fontWeight: 600, lineHeight: 1.35 }}>
+        End-to-end templates for chat, retrieval, and image workflows using the OpenAI SDK.
+      </span>
+      <span style={{ fontSize: '0.94rem', opacity: 0.9 }}>Launch examples →</span>
+    </a>
+
+    <a
+      href="/cookbook/chat-agents"
+      style={{
+        textDecoration: 'none',
+        padding: '2.4rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(98,76,220,0.55) 0%, rgba(60,44,160,0.52) 45%, rgba(28,18,92,0.7) 100%)',
+        boxShadow: '0 28px 60px rgba(90,70,215,0.22)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Chat & agent patterns</span>
+      <span style={{ fontSize: '1.15rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Apply prompt optimization flywheels, evaluator pipelines, and multi-agent design on Heroku.
+      </span>
+      <span style={{ fontSize: '0.94rem', opacity: 0.9 }}>Harden prompts →</span>
+    </a>
+
+    <a
+      href="/cookbook/realtime-voice"
+      style={{
+        textDecoration: 'none',
+        padding: '2.4rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(42,176,206,0.55) 0%, rgba(32,112,180,0.5) 40%, rgba(16,62,120,0.7) 100%)',
+        boxShadow: '0 28px 60px rgba(40,150,200,0.22)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Realtime voice</span>
+      <span style={{ fontSize: '1.15rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Tune system prompts, personas, and pacing for gpt-realtime voice agents deployed on Heroku.
+      </span>
+      <span style={{ fontSize: '0.94rem', opacity: 0.9 }}>Design scripts →</span>
+    </a>
+
+    <a
+      href="/cookbook/images"
+      style={{
+        textDecoration: 'none',
+        padding: '2.4rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(255,148,92,0.55) 0%, rgba(206,102,48,0.5) 45%, rgba(140,52,26,0.7) 100%)',
+        boxShadow: '0 28px 60px rgba(240,130,72,0.24)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Image workflows</span>
+      <span style={{ fontSize: '1.15rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Preserve brand detail with high-fidelity edits and automated asset pipelines.
+      </span>
+      <span style={{ fontSize: '0.94rem', opacity: 0.9 }}>Refine assets →</span>
+    </a>
+
+    <a
+      href="/cookbook/mcp-integrations"
+      style={{
+        textDecoration: 'none',
+        padding: '2.4rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(255,196,102,0.5) 0%, rgba(180,120,32,0.55) 45%, rgba(110,66,18,0.7) 100%)',
+        boxShadow: '0 28px 60px rgba(220,160,60,0.22)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}
+    >
+      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>MCP integrations</span>
+      <span style={{ fontSize: '1.15rem', fontWeight: 600, lineHeight: 1.35 }}>
+        Connect Databricks, internal APIs, and vector search to Heroku AI agents with guardrails.
+      </span>
+      <span style={{ fontSize: '0.94rem', opacity: 0.9 }}>Wire data →</span>
+    </a>
+  </div>
+</section>
