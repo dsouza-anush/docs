@@ -51,17 +51,7 @@
               "inference-api/chat-vs-agents",
               "inference-api/agents-heroku",
               "inference-api/embeddings",
-              "inference-api/images-generations",
-              "inference-api/mcp-servers"
-            ]
-          },
-          {
-            "group": "MCP & tools",
-            "pages": [
-              "heroku-inference/mcp-server-stdio",
-              "heroku-inference/mcp-server-remote",
-              "tool-use/heroku-tools",
-              "tool-use/working-with-mcp"
+              "inference-api/images-generations"
             ]
           },
           {
