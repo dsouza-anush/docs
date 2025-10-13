@@ -17,9 +17,7 @@
           {
             "group": "Start here",
             "pages": [
-              "introduction",
-              "quickstart",
-              "inference-api/cli-commands"
+              "introduction"
             ]
           }
         ]
@@ -27,6 +25,13 @@
       {
         "tab": "Heroku AI",
         "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "quickstart",
+              "inference-api/cli-commands"
+            ]
+          },
           {
             "group": "Overview",
             "pages": [
