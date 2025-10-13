@@ -63,8 +63,6 @@
           {
             "group": "MCP & tools",
             "pages": [
-              "heroku-inference/mcp-server-stdio",
-              "heroku-inference/mcp-server-remote",
               "tool-use/heroku-tools",
               "tool-use/working-with-mcp"
             ]
