@@ -3,7 +3,7 @@ title: "Doc reader"
 description: "Summarize and answer questions from documentation stored in Heroku." 
 ---
 
-The doc reader tool ingests documentation, markdown files, or knowledge base articles so agents can answer questions with citations. Provide the document path or content and the tool returns relevant excerpts.
+The doc reader mirrors the [mcp-doc-reader](https://github.com/heroku/mcp-doc-reader) template covered in [Working with MCP](/tool-use/working-with-mcp). It ingests documentation, markdown files, or knowledge base articles so agents can answer questions with citations—without the need to deploy your own MCP server.
 
 ## Use cases
 
@@ -22,3 +22,4 @@ Summarize the deployment steps from our Heroku onboarding guide.
 - Keep documents scoped to a topic to improve accuracy.
 - Update the stored content regularly to avoid stale answers.
 - Combine with code execution or SQL tools to produce actionable responses.
+- When you need more control over parsing (HTML, PDF, etc.), fork the `mcp-doc-reader` template and deploy it as a dedicated MCP server.

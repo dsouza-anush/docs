@@ -3,11 +3,22 @@ title: "Code execution"
 description: "Run language-specific code securely via Heroku tools." 
 ---
 
-The code execution tool allows agents to run short scripts within a sandboxed environment. Use it for debugging, data transformation, or script automation without leaving the conversation.
+The built-in code execution tools mirror the MCP templates highlighted in [Working with MCP](/tool-use/working-with-mcp). They let agents run small scripts inside one-off dynos—without maintaining a separate MCP server—using the same execution model as the open-source templates.
+
+## Supported runtimes
+
+| Tool | Runtime | Matching MCP template |
+| --- | --- | --- |
+| `code_exec_ruby` | Ruby with Gemfile support | [mcp-code-exec-ruby](https://github.com/heroku/mcp-code-exec-ruby) |
+| `code_exec_python` | Python with pip packages | [mcp-code-exec-python](https://github.com/heroku/mcp-code-exec-python) |
+| `code_exec_go` | Go modules | [mcp-code-exec-go](https://github.com/heroku/mcp-code-exec-go) |
+| `code_exec_node` | Node.js with npm packages | [mcp-code-exec-node](https://github.com/heroku/mcp-code-exec-node) |
+
+Use the table to decide whether the built-in tool is sufficient or if you need to fork the corresponding template for additional customization.
 
 ## Usage
 
-Provide the language (`python`, `ruby`, `node`, `go`) and source code. The tool returns stdout, stderr, and the exit status. Limit execution to quick tasks—long-running jobs should move to dedicated dynos.
+Provide the language (`python`, `ruby`, `node`, `go`) and source code. The tool returns stdout, stderr, and the exit status. Keep executions short—long-running jobs should be promoted to a dedicated dyno or background worker.
 
 ## Example prompt
 
@@ -20,3 +31,4 @@ Run this Python code that sums numbers 1 through 10.
 - Validate input before execution to avoid unintended side effects.
 - Keep scripts idempotent—agents may retry on errors.
 - Log execution metadata (`target_app_name`, timestamps) for auditing.
+- When you need more control, deploy your own MCP server using the templates above.

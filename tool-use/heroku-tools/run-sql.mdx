@@ -3,12 +3,13 @@ title: "Run SQL queries"
 description: "Execute Postgres queries through the Heroku pg_psql tool." 
 ---
 
-Use the `pg_psql` tool to run SQL against a Heroku Postgres database attached to your app. The tool returns query results as JSON, making it easy to answer analytical questions or power dashboards.
+Use the `pg_psql` tool to run SQL against a Heroku Postgres follower database. As noted in [Working with MCP](/tool-use/working-with-mcp#security), database tools work only with followers so your production data remains read-only for agents. Results are returned as JSON, which makes it easy to answer analytical questions or power dashboards.
 
 ## Requirements
 
 - `target_app_name` pointing to the Heroku app with the database
 - Appropriate database credentials configured via config vars
+- A follower database provisioned via [`heroku pg:copy` or heroku addons:create`](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower)
 
 ## Example prompt
 
@@ -20,4 +21,5 @@ Query the database for the top 5 customers by annual recurring revenue.
 
 - Use parameterized queries to avoid SQL injection.
 - Limit result sets to keep responses manageable.
-- Combine with the doc reader to explain table schemas before querying.
+- Combine with the [Doc reader](/tool-use/heroku-tools/doc-reader) to explain table schemas before querying.
+- For complex data pipelines, consider deploying the [pg_psql MCP template](https://github.com/heroku/mcp-doc-reader) so you can extend behavior beyond the built-in tool.
