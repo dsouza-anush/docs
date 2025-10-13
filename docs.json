@@ -40,7 +40,8 @@
               "inference-api/models",
               "inference-api/choosing-a-model",
               "inference-api/model-deprecations",
-              "inference-api/pricing"
+              "inference-api/pricing",
+              "inference-api/rate-limits"
             ]
           },
           {

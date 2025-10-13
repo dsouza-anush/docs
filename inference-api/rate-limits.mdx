@@ -1,0 +1,26 @@
+---
+title: "Model rate limits"
+description: "Request and token limits for Heroku AI models across supported regions."
+---
+
+Use the table below to plan throughput for each Heroku AI model. Limits apply to both US (`us-east-1`) and EU (`eu-central-1`) regions unless otherwise noted.
+
+| Model | Requests / min | Tokens / min | Notes |
+| --- | --- | --- | --- |
+| Claude 4.5 Sonnet | 150 | 800,000 | Supports extended reasoning and prompt caching (`system`, `tools`). |
+| Claude 4 Sonnet | 150 | 800,000 | Supports extended reasoning and prompt caching (`system`, `tools`). |
+| Claude 3.7 Sonnet | 150 | 800,000 | Supports extended reasoning and prompt caching (`system`, `tools`). |
+| Claude 3.5 Sonnet (Latest) | 150 | 800,000 | Prompt caching available for `system` and `tools`. |
+| Claude 3.5 Haiku | 200 | 800,000 | Prompt caching available for `system` and `tools`. |
+| Claude 3 Haiku | 250 | 800,000 | Fastest tier for high-volume workloads. |
+| GPT-OSS 120B | 200 | 800,000 | Open-weight model hosted via Heroku AI. |
+| Nova Pro | 150 | 800,000 | Prompt caching available for `system`. |
+| Nova Lite | 150 | 800,000 | Prompt caching available for `system`. |
+| Cohere Embed Multilingual | 500 | 800,000 | Applies to embedding tokens; batch up to 96 inputs per request. |
+| Stable Image Ultra | 20 | N/A | Limit measured per image generation request. |
+
+### Tips
+
+- **Prompt caching**: When available, cache your system and tool definitions to reduce billed token usage and improve performance. See the [Anthropic documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) for prompt caching strategies.
+- **Scaling beyond limits**: Contact Heroku Support if your production workload consistently approaches these thresholds.
+- **Regional routing**: Deploy workloads in the region closest to your users. The limits above apply per region, so running in both US and EU doubles the overall headroom.
