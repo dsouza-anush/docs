@@ -61,8 +61,7 @@
               "heroku-inference/mcp-server-stdio",
               "heroku-inference/mcp-server-remote",
               "tool-use/heroku-tools",
-              "tool-use/working-with-mcp",
-              "vector-database/pgvector"
+              "tool-use/working-with-mcp"
             ]
           },
           {
@@ -117,9 +116,14 @@
               "tool-use/heroku-tools",
               "tool-use/working-with-mcp"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Vector database",
+        "groups": [
           {
-            "group": "Data & storage",
+            "group": "pgvector",
             "pages": [
               "vector-database/pgvector"
             ]
