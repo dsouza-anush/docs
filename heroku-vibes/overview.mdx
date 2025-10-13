@@ -1,49 +1,125 @@
 ---
 title: "Heroku Vibes overview"
-description: "Define the personality, guardrails, and rituals that give your Heroku AI experiences a consistent feel."
+description: "Use Heroku Vibes to turn conversational prompts into ready-to-transfer Heroku apps."
 ---
 
-Heroku Vibes is the umbrella for the tone, rituals, and human-in-the-loop practices that make every assistant feel on-brand. Use these guidelines to launch new experiences that sound like Heroku—whether you’re building support copilots, onboarding guides, or dashboard helpers.
+Heroku Vibes is an asynchronous agent that helps you build apps on Heroku. Use Heroku Vibes to generate apps from conversational prompts, enabling you to go from idea to fully-deployed app in minutes. The assistant provides an intuitive, guided experience that abstracts away the complexities of modern app development. Whether you’re an experienced developer or new to coding, you can use Heroku Vibes to increase your productivity and efficiency.
 
-## What is a vibe?
+This article guides you through using Heroku Vibes, from generating an app to transferring it to your own Heroku account.
 
-A vibe captures three ingredients:
+> note
+> Heroku Vibes is currently in pilot. The products offered as part of the pilot aren’t intended for production use and are considered as a Beta Service and are subject to the Beta Services terms at [https://www.salesforce.com/company/legal/agreements.jsp](https://www.salesforce.com/company/legal/agreements.jsp).
 
-1. **Voice** – the words and sentence structure you want the model to use.
-2. **Values** – the behaviours the assistant must uphold (accuracy, transparency, empathy).
-3. **Rituals** – repeatable moments that reinforce the brand (celebrating deploys, nudging best practices).
+## Benefits
 
-Combining all three helps teams ship consistent assistants without re-writing the same instructions each time.
+Heroku Vibes benefits new and experienced developers:
 
-## How to capture your vibe
+- **New developers**: Build functional apps without getting stuck in technical details. Vibes is your launchpad for learning and creating.
+- **Experienced developers**: Bypass the repetitive setup and configuration. Use Vibes to prototype rapidly and spend more time on your project's unique challenges.
 
-<Steps>
-<Step title="Document intent and audience">
-  Outline what the assistant is responsible for, who it helps, and the outcomes that define success.
-</Step>
-<Step title="Write a core prompt">
-  Use the [tone library](/heroku-vibes/tone-library) to assemble a system message that includes voice, values, rituals, and red lines.
-</Step>
-<Step title="Collect signature phrases">
-  Add example sentences or callouts (e.g., “Heads up, this runs on a one-off dyno”) that the assistant can reuse when appropriate.
-</Step>
-<Step title="Publish the vibe">
-  Store your prompt, sample conversations, and evaluation checklist in version control so every team can adopt it.
-</Step>
-</Steps>
+## Quick start
 
-## Evaluating vibes
+1. Go to [vibes.heroku.com](https://vibes.heroku.com).
+2. Sign in with Heroku or a Google account.
+3. Describe the app you want to build.
+4. Review the app in the right panel and click **Open App** to see the app.
 
-Revisit the prompt whenever:
+## Getting started
 
-- Accuracy starts slipping or the assistant overpromises.
-- New product launches require different rituals (e.g., calling out AI Studio features).
-- Customer support teams request tone adjustments (more direct? more celebratory?).
+Before you can start building, log in to a Heroku account or Google account by clicking **Sign In**.
 
-Use lightweight graders (see the [prompt patterns cookbook](/cookbook/prompt-patterns)) to keep tone and policy compliance measurable in CI and post-deployment.
+- **Existing Heroku users**: Log in directly with your existing Heroku account.
+- **New users**: Either sign up for a new Heroku account, or log in with your Google account.
 
-## Next steps
+## How it works
 
-- Explore the [tone library](/heroku-vibes/tone-library) for plug-and-play system snippets.
-- Align with the [prompt patterns cookbook](/cookbook/prompt-patterns) to audit prompts before rollout.
-- Revisit vibes quarterly with product, CX, and marketing partners to ensure they still match our customers’ expectations.
+Heroku Vibes acts as your AI assistant. You provide the details, and it generates your app.
+
+### 1. Create your app with a prompt
+
+Start by describing the application you want to build in plain English. The more descriptive you are, the better. For example:
+
+- “Build a simple blog application using Node.js and a PostgreSQL database.”
+- “I need a Python Flask API for a to-do list.”
+- “Create a basic Ruby on Rails app that displays a welcome message.”
+
+After you enter your prompt, Vibes spins up a dyno and creates a to-do list to track the implementation, so you can follow along every step of the way.
+
+### 2. Review your app
+
+After the generation is complete, you can find your app in the right panel. From here, you can preview the app in preview mode or click **Open App** to view it in a webpage.
+
+### 3. Verify your account
+
+During the pilot, Vibes creates your app in a temporary Heroku account. When you're ready to take full control, you can transfer it to your personal Heroku account.
+
+Before transferring, you must verify your Heroku account. A verified account also gives you 30 free messages per week. The verification process is free, and you’re not charged. To verify, click **Get Verified** in the top right and then **Verify Account**.
+
+- **Existing Heroku users**: Log in to authorize the connection. Then, add a payment method if you haven’t added one to verify your account.
+- **New users**: We guide you through creating a Heroku account and adding a payment method to verify your account.
+
+### 4. Transfer your app
+
+After verifying, click **Transfer to Heroku**. When prompted provide the Heroku account you want to transfer your app to. After transferring, you can manage the app from your standard Heroku Dashboard, such as scaling dynos, adding custom domains, viewing logs, and editing the code to continue its development. To download your app's code, run:
+
+```bash
+heroku git:clone -a APP-NAME
+```
+
+Transferring your app to your Heroku account adds one Basic dyno to your app, which costs $7 per month. Standard pricing and terms apply after transferring your app.
+
+### 5. Delete a project
+
+If you no longer need one of your projects or are out of project slots, you can delete one by clicking the Delete icon on the project page.
+
+## Extend your apps with add-ons
+
+You can provision add-ons like databases and caching services by including them in your [initial prompt](#1-create-your-app-with-a-prompt).
+
+### Attaching Heroku Postgres
+
+To add a Postgres database, mention it in your request. Vibes automatically provisions the database, attaches it to your app, and sets the `DATABASE_URL` config var.
+
+Example prompts:
+
+- “Build a guestbook application that saves messages from visitors.”
+- “Create a Go web server and attach a `standard-0` Heroku Postgres database.”
+
+### Attaching Heroku Key-Value Store
+
+You can also add a Key-Value Store instance. Vibes provisions the add-on and configures the `REDIS_URL` for your application.
+
+Example prompts:
+
+- “Create a simple polling app that shows vote counts in real-time.”
+- “Generate a Python app that uses a Heroku Key-Value Store instance for caching.”
+
+### Managing add-ons
+
+You can view attached add-ons within the Vibes UI. Full management capabilities, such as upgrading plans or removing add-ons, are available in the Heroku Dashboard after you [transfer the app](#4-transfer-your-app).
+
+## Quotas and limits
+
+To ensure a fair and stable experience for everyone, we have usage quotas in place:
+
+- **Message limit for unverified users**: Receive up to 15 free messages per week.
+- **Message limit for verified users**: Receive up to 30 free messages per week to build and iterate more.
+- **Project limit**: All users can work on up to 3 projects at a time. If you’re out of projects, [transfer an app](#4-transfer-your-app) to your Heroku account or delete a project to free up a project slot. Standard pricing and terms apply after transferring your app.
+
+> note
+> To increase your message limit, [verify your account](#3-verify-your-account).
+
+## Limited pilot considerations
+
+Heroku Vibes is currently in a limited pilot, and we appreciate your feedback. Keep in mind:
+
+- **Daily app generation limits**: To ensure a stable experience for all users, there's a limit on how many new apps Vibes can generate each day.
+- **Read-only code**: Before transferring an app to your Heroku account, its code is view-only within Vibes. [Transfer your app](#4-transfer-your-app) to gain full editing capabilities.
+
+## Support
+
+Submit all Heroku Vibes support and runtime issues via one of the [Heroku Support](https://help.heroku.com) channels. Submit any product feedback to `heroku-ai-feedback@salesforce.com`.
+
+## Additional resources
+
+- [Heroku Blog: Turn Ideas Into Apps](https://blog.heroku.com/turn-ideas-into-apps)

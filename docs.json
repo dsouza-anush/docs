@@ -18,12 +18,7 @@
             "group": "Start here",
             "pages": [
               "introduction",
-              "quickstart"
-            ]
-          },
-          {
-            "group": "Tooling",
-            "pages": [
+              "quickstart",
               "inference-api/cli-commands"
             ]
           }
@@ -36,7 +31,6 @@
             "group": "Overview",
             "pages": [
               "inference-api/overview",
-              "inference-api/chat-vs-agents",
               "heroku-inference/ai-studio"
             ]
           },
@@ -47,6 +41,44 @@
               "inference-api/choosing-a-model",
               "inference-api/model-deprecations",
               "inference-api/pricing"
+            ]
+          },
+          {
+            "group": "API guides",
+            "pages": [
+              "inference-api/chat-completions",
+              "inference-api/chat-vs-agents",
+              "inference-api/agents-heroku",
+              "inference-api/embeddings",
+              "inference-api/images-generations",
+              "inference-api/mcp-servers"
+            ]
+          },
+          {
+            "group": "MCP & tools",
+            "pages": [
+              "heroku-inference/mcp-server-stdio",
+              "heroku-inference/mcp-server-remote",
+              "tool-use/heroku-tools",
+              "tool-use/working-with-mcp",
+              "vector-database/pgvector"
+            ]
+          },
+          {
+            "group": "Cookbooks",
+            "pages": [
+              "cookbook/index",
+              "cookbook/openai-sdk-reference-apps",
+              "cookbook/prompt-patterns",
+              "cookbook/embeddings-rag",
+              "cookbook/images"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "ai-integrations/llamaindex",
+              "ai-integrations/pydantic"
             ]
           }
         ]
