@@ -1,0 +1,22 @@
+---
+title: "Code execution"
+description: "Run language-specific code securely via Heroku tools." 
+---
+
+The code execution tool allows agents to run short scripts within a sandboxed environment. Use it for debugging, data transformation, or script automation without leaving the conversation.
+
+## Usage
+
+Provide the language (`python`, `ruby`, `node`, `go`) and source code. The tool returns stdout, stderr, and the exit status. Limit execution to quick tasks—long-running jobs should move to dedicated dynos.
+
+## Example prompt
+
+```
+Run this Python code that sums numbers 1 through 10.
+```
+
+## Best practices
+
+- Validate input before execution to avoid unintended side effects.
+- Keep scripts idempotent—agents may retry on errors.
+- Log execution metadata (`target_app_name`, timestamps) for auditing.

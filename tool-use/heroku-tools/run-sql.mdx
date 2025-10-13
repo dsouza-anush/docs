@@ -1,0 +1,23 @@
+---
+title: "Run SQL queries"
+description: "Execute Postgres queries through the Heroku pg_psql tool." 
+---
+
+Use the `pg_psql` tool to run SQL against a Heroku Postgres database attached to your app. The tool returns query results as JSON, making it easy to answer analytical questions or power dashboards.
+
+## Requirements
+
+- `target_app_name` pointing to the Heroku app with the database
+- Appropriate database credentials configured via config vars
+
+## Example prompt
+
+```
+Query the database for the top 5 customers by annual recurring revenue.
+```
+
+## Tips
+
+- Use parameterized queries to avoid SQL injection.
+- Limit result sets to keep responses manageable.
+- Combine with the doc reader to explain table schemas before querying.

@@ -64,6 +64,9 @@
             "group": "MCP & tools",
             "pages": [
               "tool-use/heroku-tools",
+              "tool-use/heroku-tools/code-execution",
+              "tool-use/heroku-tools/run-sql",
+              "tool-use/heroku-tools/doc-reader",
               "tool-use/working-with-mcp"
             ]
           },
