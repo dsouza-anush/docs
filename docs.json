@@ -48,8 +48,8 @@
             "group": "API guides",
             "pages": [
               "inference-api/chat-completions",
-              "inference-api/chat-vs-agents",
               "inference-api/agents-heroku",
+              "inference-api/chat-vs-agents",
               "inference-api/embeddings",
               "inference-api/images-generations",
               "inference-api/mcp-servers"
