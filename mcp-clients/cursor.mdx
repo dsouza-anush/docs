@@ -1,0 +1,25 @@
+---
+title: "Cursor"
+description: "Use Heroku-hosted MCP servers inside the Cursor AI code editor."
+---
+
+Cursor supports MCP so you can call your Heroku tools directly from the editor when writing or reviewing code.
+
+## Connect your server
+
+1. Deploy your MCP server to Heroku and copy the manifest URL (`https://your-app.herokuapp.com/.well-known/mcp.json`).
+2. In Cursor, open **Settings → AI → MCP**.
+3. Click **Add MCP Server**, paste the manifest URL, and provide any auth token or header required by your server.
+4. Save. Your tools appear under the MCP palette (`⌘ ⇧ P` / `Ctrl Shift P`) and are available in chat completions.
+
+## Workflow ideas
+
+- Generate scaffolding from internal templates, lint custom rules, or run deployment checks without leaving the editor.
+- Combine Cursor’s “autofix” command with MCP tools to run Heroku CLIs, inspect logs, or query staging environments.
+- Use Heroku Pipelines review apps to create per-branch MCP endpoints for QA.
+
+## Tips
+
+- Keep tooling idempotent—Cursor may call a tool multiple times while refining output.
+- Stream responses for long-running operations so developers see incremental status inside Cursor.
+- Monitor usage with `heroku logs --tail` to tune latency and identify commands that need caching.

@@ -1,0 +1,32 @@
+---
+title: "ChatGPT"
+description: "Connect Heroku-hosted MCP servers to ChatGPT apps and conversations."
+---
+
+ChatGPT supports the Model Context Protocol (MCP) through the Apps SDK. Point ChatGPT at your Heroku manifest to expose tools, resources, and widgets inside conversations.
+
+## Requirements
+
+- ChatGPT Developer Mode (request access in [OpenAI settings](https://platform.openai.com/settings/organization/general)).
+- An MCP server running on Heroku with a manifest served at `/.well-known/mcp.json` (see the [remote server guide](/heroku-inference/mcp-server-remote)).
+
+## Add a connector
+
+1. Deploy or update your Heroku MCP server. Copy the manifest URL, for example `https://my-app.herokuapp.com/.well-known/mcp.json`.
+2. In ChatGPT, open **Settings → Builder tools → Connectors**.
+3. Click **Add MCP server**, paste the manifest URL, and supply auth headers if required.
+4. Assign the connector to the GPTs or workspaces that should use the tools.
+
+ChatGPT fetches the manifest, lists the available tools/resources/widgets, and invokes them automatically when the conversation matches their descriptions. Users can also call tools explicitly by name.
+
+## Build a ChatGPT app
+
+- Use the [ChatGPT app cookbook](/cookbook/chatgpt-apps) to bootstrap rich widgets and tool logic.
+- Keep tool descriptions specific so ChatGPT understands when to trigger them.
+- Monitor Heroku logs (`heroku logs --tail`) to verify tool invocations and diagnose errors.
+
+## Tips
+
+- Long-running tasks should stream updates or return quickly with follow-up prompts.
+- Version your manifest—ChatGPT caches responses; changing the URL path (e.g., `/mcp/v2.json`) forces a refresh.
+- Coordinate with your team via Heroku Pipelines: review apps let you test manifest changes before promoting to production.

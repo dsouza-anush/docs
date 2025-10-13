@@ -1,0 +1,37 @@
+---
+title: "Agentforce"
+description: "Expose Heroku MCP servers to Salesforce Agentforce agents." 
+---
+
+Agentforce (Salesforce’s generative AI platform) can call external MCP servers. Host your tools on Heroku and register the manifest in Salesforce so custom agents can invoke them alongside CRM data.
+
+## Prerequisites
+
+- Access to Agentforce with the **Model Context Protocol** feature enabled.
+- A Heroku MCP server with a public manifest (for example `https://your-app.herokuapp.com/.well-known/mcp.json`).
+- Salesforce credentials with permission to manage Connected Apps.
+
+## Register the manifest
+
+1. From Salesforce Setup, open **Agentforce → Tools → MCP Integrations**.
+2. Click **New MCP Server** and supply:
+   - **Name**: descriptive label (for example `Heroku Deploy Tools`).
+   - **Manifest URL**: the Heroku `/.well-known/mcp.json` endpoint.
+   - **Authentication**: API key or OAuth details, if your server requires auth.
+3. Save the integration. Salesforce fetches the manifest and validates tool definitions.
+
+## Attach to an agent
+
+1. Open the Agentforce builder for the agent you want to enhance.
+2. In **Tools**, add the MCP integration you created (for example, `Heroku Deploy Tools`).
+3. Configure prompts or guardrails so the agent knows when to call each tool.
+4. Test the agent in the preview console; Heroku logs show tool invocations in real time.
+
+## Best practices
+
+- Use Salesforce Shield or Named Credentials to store sensitive auth tokens securely.
+- Keep tool responses structured—Agentforce agents can map JSON output into flows or records.
+- Monitor invocation metrics in Salesforce and Heroku to maintain reliability SLA targets.
+- Combine MCP tools with Agentforce’s CRM grounding so assistants can reason over Salesforce data while executing Heroku automation.
+
+See the [MCP integration cookbook](/cookbook/mcp-integrations) for deployment tips that apply to Agentforce, Claude, and ChatGPT.

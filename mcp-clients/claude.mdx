@@ -1,0 +1,61 @@
+---
+title: "Claude"
+description: "Connect Heroku-hosted MCP servers to Claude Desktop, Claude.ai, and the Anthropic Agents API."
+---
+
+Claude implements MCP for both the desktop client and Anthropic’s Agents API. Point Claude at your Heroku manifest to unlock custom tools in conversations.
+
+## Claude Desktop
+
+1. Deploy your MCP server to Heroku and note the manifest URL (`https://your-app.herokuapp.com/.well-known/mcp.json`).
+2. Open the Claude Desktop config file:
+   - macOS: `~/Library/Application Support/Claude/resources/claude_desktop_config.json`
+   - Windows: `%AppData%\\Claude\\resources\\claude_desktop_config.json`
+3. Add an entry under `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "heroku-tools": {
+      "type": "remote",
+      "url": "https://your-app.herokuapp.com/.well-known/mcp.json",
+      "auth": {
+        "type": "basic",
+        "username": "$MCP_USER",
+        "password": "$MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+4. Restart Claude Desktop. Your tools appear in the MCP panel when you start a new chat.
+
+## Claude.ai / Workbench
+
+- Upload the manifest in **Settings → Tools & Integrations → Model Context Protocol**.
+- Alternatively, attach MCP servers when running the [Anthropic Agents API](https://docs.anthropic.com/en/docs/agents):
+
+```json
+{
+  "agent_id": "agent_123",
+  "input": "Investigate the latest release in staging.",
+  "mcp": {
+    "servers": [
+      {
+        "name": "heroku-tools",
+        "type": "remote",
+        "url": "https://your-app.herokuapp.com/.well-known/mcp.json"
+      }
+    ]
+  }
+}
+```
+
+Claude automatically loads the manifest and invokes your tools during the agent run.
+
+## Tips
+
+- Use [prompt caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) for large system prompts—Anthropic supports caching per-tool.
+- Track tool usage via Heroku logs to understand invocation frequency and errors.
+- Combine with the [MCP integration cookbook](/cookbook/mcp-integrations) for end-to-end deployment patterns.

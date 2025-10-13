@@ -1,0 +1,41 @@
+---
+title: "ChatGPT apps on Heroku"
+description: "Deploy MCP-powered ChatGPT apps with interactive widgets using Heroku infrastructure."
+---
+
+Build ChatGPT apps that connect to Heroku-hosted Model Context Protocol (MCP) servers. ChatGPT apps expose your tools directly inside ChatGPT conversations, support rich widgets, and reach hundreds of millions of users without requiring separate installs.
+
+Use the [pizzaz-mcp-heroku](https://github.com/dsouza-anush/pizzaz-mcp-heroku) reference project as a starting point. It ships a production-ready MCP server with multiple widget examples (map, carousel, photo album, list, video) plus a one-click Deploy to Heroku experience.
+
+## Quick start
+
+1. **Deploy the sample**
+   ```bash
+   git clone https://github.com/dsouza-anush/pizzaz-mcp-heroku.git
+   cd pizzaz-mcp-heroku
+   heroku create my-chatgpt-app
+   heroku buildpacks:add heroku/python
+   git push heroku main
+   ```
+2. **Publish the manifest**  
+   The app exposes its manifest at `https://my-chatgpt-app.herokuapp.com/.well-known/mcp.json`. Copy that URL.
+3. **Add to ChatGPT**  
+   In ChatGPT → *Settings* → *Builder tools* → *Connectors*, add the manifest URL. Developer Mode is required while the feature is in beta.
+4. **Test the widgets**  
+   Ask ChatGPT “Show me the pizza map from my connector.” The interactive widget loads inline, demonstrating the iframe-based UI pattern.
+
+## Customize your app
+
+- Replace the sample data sources with your own APIs or databases.
+- Extend the widget templates (`/widgets` folder) with bespoke HTML/CSS/JS to deliver richer experiences.
+- Use Heroku add-ons (Postgres, Redis, metrics) to power more sophisticated tools without managing infrastructure.
+- Iterate quickly with `git push heroku main`, review apps, and staging pipelines.
+
+## Best practices
+
+- Keep tool names and descriptions explicit so ChatGPT understands when to call them.
+- Return fast responses; offload long-running work to background jobs and stream progress through widgets.
+- Secure your endpoints with auth headers or tokens and rotate them through Heroku config vars.
+- Monitor usage via Heroku logs and metrics to fine-tune invocation rates, error handling, and widget performance.
+
+Once you deploy your own manifest, your capability becomes available wherever ChatGPT users ask for it—no installs required. Iterate on the server just like any other Heroku app, and update your manifest as you add tools or widgets.

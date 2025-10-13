@@ -121,7 +121,17 @@
           {
             "group": "Cookbooks",
             "pages": [
-              "cookbook/mcp-integrations"
+              "cookbook/mcp-integrations",
+              "cookbook/chatgpt-apps"
+            ]
+          },
+          {
+            "group": "Clients",
+            "pages": [
+              "mcp-clients/chatgpt",
+              "mcp-clients/claude",
+              "mcp-clients/cursor",
+              "mcp-clients/agentforce"
             ]
           }
         ]
