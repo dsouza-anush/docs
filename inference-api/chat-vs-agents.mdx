@@ -1,0 +1,102 @@
+---
+title: "Chat Completions vs Agents"
+description: "Understand when to reach for the lightweight chat completions API or the agent runtime on Heroku AI."
+---
+
+Heroku AI exposes two high-level ways to run language models:
+
+- **Chat Completions API** – an OpenAI-compatible endpoint for direct request / response interactions.
+- **Agents API** – an agentic runtime that can plan, call tools, and manage multi-step workflows on your behalf.
+
+Use the guidance below to pick the right approach for each feature.
+
+## Side-by-side comparison
+
+| Capability | Chat completions (`/v1/chat/completions`) | Agents (`/v1/agents/heroku`) |
+| --- | --- | --- |
+| Request style | Stateless prompt + response | Stateful loop with intermediate steps |
+| Tool execution | Manual (you inspect `tool_calls` and run the tool) | Automatic (Heroku executes configured tools or MCP servers) |
+| Streaming | SSE streaming supported | SSE streaming supported for both chat and tool events |
+| Latency | Lowest overhead—single model invocation | Higher, due to agent planning and tool execution |
+| Pricing | Billed per underlying model tokens | Billed per model tokens plus tool runtime |
+| Best for | Conversational UIs, templated responses, retrieval and summarization | Automated runbooks, diagnostics, orchestrating multiple tools |
+| OpenAI compatibility | Matches OpenAI Chat Completions payloads (minor enum differences) | Similar concepts to OpenAI Agents; see tool/runtime parameters in docs |
+
+## When to use chat completions
+
+Choose chat completions when you need:
+
+- A lightweight API call from web or mobile clients.
+- Retrieval-augmented generation (RAG) where you control embedding and context injection.
+- Structured outputs (JSON, Markdown tables) without invoking external tools.
+- Model-assisted workflows embedded in existing applications (e.g., form filling, code suggestions).
+
+Because the endpoint is OpenAI-compatible, most SDKs work by only changing the `base_url` and API key:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://us.inference.heroku.com/v1",
+    api_key=os.environ["INFERENCE_KEY"],
+)
+
+response = client.chat.completions.create(
+    model="claude-3-5-sonnet",
+    messages=[
+        {"role": "system", "content": "You are a concise release-notes assistant."},
+        {"role": "user", "content": "Draft highlights for this new CLI feature."},
+    ],
+    temperature=0.4,
+)
+```
+
+## When to use agents
+
+Reach for the Agents API when your product needs:
+
+- Automated tool execution (Heroku CLI commands, database checks, MCP servers).
+- Multi-step planning where the model decides the order of actions.
+- Long-running jobs that benefit from the agent loop and guardrails.
+- Consistent observability into tool usage without building your own orchestration layer.
+
+Agents build on the same message schema but add a `tools` array so you can delegate work:
+
+```json
+POST /v1/agents/heroku
+{
+  "model": "claude-3-5-sonnet",
+  "messages": [
+    {"role": "system", "content": "You are a deployment assistant."},
+    {"role": "user", "content": "Run database migrations on my staging app."}
+  ],
+  "tools": [
+    {
+      "type": "heroku_tool",
+      "name": "run_migrations",
+      "runtime_params": {
+        "target_app_name": "my-app-staging",
+        "ttl_seconds": 60
+      }
+    }
+  ]
+}
+```
+
+The response stream will include both chat messages and tool invocations until the agent decides it is done.
+
+## Choosing between them
+
+Start with chat completions whenever:
+
+- Tooling can be orchestrated inside your own codebase.
+- You need the fastest possible response time.
+- The experience fits in a single prompt/response cycle.
+
+Upgrade to agents when:
+
+- You want Heroku to manage tool execution, retries, and guardrails.
+- Human operators expect a “copilot” that can take action, not just reply.
+- Non-technical teams need to configure workflows without writing code.
+
+Many teams implement both: core product flows rely on chat completions, while internal automation and diagnostics run on the Agents API. Pick the surface that balances performance, control, and ease of integration for your use case.

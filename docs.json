@@ -12,20 +12,31 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Heroku AI",
+        "tab": "Welcome",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Start here",
             "pages": [
               "introduction",
-              "quickstart",
-              "inference-api/cli-commands"
+              "quickstart"
             ]
           },
+          {
+            "group": "Tooling",
+            "pages": [
+              "inference-api/cli-commands"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Heroku AI",
+        "groups": [
           {
             "group": "Overview",
             "pages": [
               "inference-api/overview",
+              "inference-api/chat-vs-agents",
               "heroku-inference/ai-studio"
             ]
           },
@@ -37,9 +48,56 @@
               "inference-api/model-deprecations",
               "inference-api/pricing"
             ]
+          }
+        ]
+      },
+      {
+        "tab": "Heroku Vibes",
+        "groups": [
+          {
+            "group": "Foundations",
+            "pages": [
+              "heroku-vibes/overview"
+            ]
           },
           {
-            "group": "API guides",
+            "group": "Tone library",
+            "pages": [
+              "heroku-vibes/tone-library"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Model Context Protocol",
+        "groups": [
+          {
+            "group": "Server modes",
+            "pages": [
+              "heroku-inference/mcp-server-stdio",
+              "heroku-inference/mcp-server-remote"
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "tool-use/heroku-tools",
+              "tool-use/working-with-mcp"
+            ]
+          },
+          {
+            "group": "Data & storage",
+            "pages": [
+              "vector-database/pgvector"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API References",
+        "groups": [
+          {
+            "group": "Endpoints",
             "pages": [
               "inference-api/chat-completions",
               "inference-api/agents-heroku",
@@ -47,15 +105,20 @@
               "inference-api/images-generations",
               "inference-api/mcp-servers"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "groups": [
           {
-            "group": "MCP & tools",
+            "group": "Cookbooks",
             "pages": [
-              "heroku-inference/mcp-server-stdio",
-              "heroku-inference/mcp-server-remote",
-              "tool-use/heroku-tools",
-              "tool-use/working-with-mcp",
-              "vector-database/pgvector"
+              "cookbook/index",
+              "cookbook/openai-sdk-reference-apps",
+              "cookbook/prompt-patterns",
+              "cookbook/embeddings-rag",
+              "cookbook/images"
             ]
           },
           {
@@ -63,17 +126,6 @@
             "pages": [
               "ai-integrations/llamaindex",
               "ai-integrations/pydantic"
-            ]
-          },
-          {
-            "group": "Cookbook",
-            "pages": [
-              "cookbook/index",
-              "cookbook/openai-sdk-reference-apps",
-              "cookbook/chat-agents",
-              "cookbook/realtime-voice",
-              "cookbook/images",
-              "cookbook/mcp-integrations"
             ]
           }
         ]

@@ -1,0 +1,49 @@
+---
+title: "Heroku Vibes overview"
+description: "Define the personality, guardrails, and rituals that give your Heroku AI experiences a consistent feel."
+---
+
+Heroku Vibes is the umbrella for the tone, rituals, and human-in-the-loop practices that make every assistant feel on-brand. Use these guidelines to launch new experiences that sound like Heroku—whether you’re building support copilots, onboarding guides, or dashboard helpers.
+
+## What is a vibe?
+
+A vibe captures three ingredients:
+
+1. **Voice** – the words and sentence structure you want the model to use.
+2. **Values** – the behaviours the assistant must uphold (accuracy, transparency, empathy).
+3. **Rituals** – repeatable moments that reinforce the brand (celebrating deploys, nudging best practices).
+
+Combining all three helps teams ship consistent assistants without re-writing the same instructions each time.
+
+## How to capture your vibe
+
+<Steps>
+<Step title="Document intent and audience">
+  Outline what the assistant is responsible for, who it helps, and the outcomes that define success.
+</Step>
+<Step title="Write a core prompt">
+  Use the [tone library](/heroku-vibes/tone-library) to assemble a system message that includes voice, values, rituals, and red lines.
+</Step>
+<Step title="Collect signature phrases">
+  Add example sentences or callouts (e.g., “Heads up, this runs on a one-off dyno”) that the assistant can reuse when appropriate.
+</Step>
+<Step title="Publish the vibe">
+  Store your prompt, sample conversations, and evaluation checklist in version control so every team can adopt it.
+</Step>
+</Steps>
+
+## Evaluating vibes
+
+Revisit the prompt whenever:
+
+- Accuracy starts slipping or the assistant overpromises.
+- New product launches require different rituals (e.g., calling out AI Studio features).
+- Customer support teams request tone adjustments (more direct? more celebratory?).
+
+Use lightweight graders (see the [prompt patterns cookbook](/cookbook/prompt-patterns)) to keep tone and policy compliance measurable in CI and post-deployment.
+
+## Next steps
+
+- Explore the [tone library](/heroku-vibes/tone-library) for plug-and-play system snippets.
+- Align with the [prompt patterns cookbook](/cookbook/prompt-patterns) to audit prompts before rollout.
+- Revisit vibes quarterly with product, CX, and marketing partners to ensure they still match our customers’ expectations.

@@ -1,0 +1,148 @@
+---
+title: "Embeddings & RAG playbooks"
+description: "Build search and retrieval workflows on Heroku AI with OpenAI-compatible embeddings and chat completions."
+fullWidth: true
+---
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+  <p>
+    Heroku AI exposes OpenAI-compatible embedding models, including <code>cohere-embed-multilingual</code>. These notes adapt the OpenAI Cookbook’s retrieval patterns to Heroku’s stack so you can stand up semantic search, question answering, and summarization pipelines quickly. Primary references: <a href="https://cookbook.openai.com/examples/vector_databases/search_summarize" target="_blank" rel="noopener noreferrer">Search + Summarize</a> and <a href="https://cookbook.openai.com/examples/vector_databases/faq_bot" target="_blank" rel="noopener noreferrer">FAQ bot with embeddings</a>.
+  </p>
+</section>
+
+## Design the retrieval flow
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(26,140,129,0.5) 0%, rgba(18,90,98,0.65) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Core pipeline</h3>
+    <ol>
+      <li>Chunk source documents (300–500 word windows with overlap).</li>
+      <li>Embed chunks with <code>cohere-embed-multilingual</code> using the <code>search_document</code> input type.</li>
+      <li>Persist vectors in Postgres + pgvector or another ANN store.</li>
+      <li>At query time, embed the question (<code>search_query</code> type), retrieve top-k matches, and assemble a prompt.</li>
+      <li>Send prompt + context to <code>claude-3-5-sonnet</code> or <code>claude-3-5-haiku</code> via the Chat Completions API.</li>
+    </ol>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    from openai import OpenAI
+    import os
+
+    client = OpenAI(
+        base_url="https://us.inference.heroku.com/v1",
+        api_key=os.environ["INFERENCE_KEY"],
+    )
+
+    def embed_texts(texts: list[str], input_type: str) -> list[list[float]]:
+        result = client.embeddings.create(
+            model="cohere-embed-multilingual",
+            input=texts,
+            encoding_format="float",
+            input_type=input_type,
+        )
+        return [item.embedding for item in result.data]
+    ```
+    <p>
+      Batch up to 96 strings per request for cost efficiency, mirroring the cookbook guidance. Store the resulting vectors with their source metadata.
+    </p>
+  </div>
+</section>
+
+## Assemble the answering prompt
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(96,76,220,0.45) 0%, rgba(54,40,154,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Prompt template</h3>
+    <ul>
+      <li>System message: define role, tone, and citation requirements.</li>
+      <li>Human message: include the user question and formatted context snippets.</li>
+      <li>Add explicit output rules (e.g., “If facts are missing, say you don’t know.”).</li>
+    </ul>
+    <p>
+      Follow the cookbook’s recommendation to annotate each chunk with identifiers so you can cite sources back to the end user.
+    </p>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    ```python
+    def answer_with_context(question: str, context_blocks: list[str]) -> str:
+        prompt = "\n\n".join(
+            [f"[{i}] {block}" for i, block in enumerate(context_blocks, start=1)]
+        )
+        response = client.chat.completions.create(
+            model="claude-3-5-sonnet",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a concise support assistant. Cite sources like [1], [2].",
+                },
+                {
+                    "role": "user",
+                    "content": f"Question: {question}\n\nContext:\n{prompt}",
+                },
+            ],
+            temperature=0.2,
+            max_tokens=800,
+        )
+        return response.choices[0].message.content
+    ```
+    <p>
+      Use Haiku when you prioritize throughput; upgrade to Sonnet for harder questions or multilingual outputs.
+    </p>
+  </div>
+</section>
+
+## Operational guidance
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'linear-gradient(160deg, rgba(30,118,255,0.45) 0%, rgba(20,72,180,0.6) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#F9FAFF'
+  }}>
+    <h3>Best practices</h3>
+    <ul>
+      <li>Normalize text (lowercase, trim whitespace) before embedding.</li>
+      <li>Refresh embeddings when source data changes; track versions in Postgres.</li>
+      <li>Add automated evaluations (see our prompt patterns cookbook) to spot drift.</li>
+      <li>Cache retrieval results for popular questions to reduce load.</li>
+    </ul>
+  </div>
+  <div style={{
+    padding: '2.25rem',
+    borderRadius: '1.75rem',
+    background: 'rgba(12,10,24,0.65)',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <h3>Deployment on Heroku</h3>
+    <ul>
+      <li>Run the embedding pipeline as a worker dyno; trigger rebuilds via Scheduler or webhooks.</li>
+      <li>Store secrets (API keys, database URLs) in Config Vars, never in source.</li>
+      <li>Use the <code>pgvector</code> extension on Heroku Postgres for similarity search.</li>
+      <li>Stream chat responses to the client for faster perceived latency.</li>
+    </ul>
+  </div>
+</section>
