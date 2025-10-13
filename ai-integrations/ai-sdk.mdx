@@ -1,0 +1,72 @@
+---
+title: "AI SDK provider"
+description: "Use the Heroku AI provider for the Vercel AI SDK to call Heroku AI models."
+---
+
+The [Heroku AI provider](https://github.com/julianduque/heroku-ai-provider) adds first-class Heroku support to the [Vercel AI SDK](https://sdk.vercel.ai/docs). It wraps Heroku’s OpenAI-compatible endpoints so you can call chat completions, streaming responses, and tools using the same client code you’d write for OpenAI.
+
+## Install
+
+Clone the example project and install dependencies:
+
+```bash
+git clone https://github.com/julianduque/heroku-ai-provider.git
+cd heroku-ai-provider
+npm install
+```
+
+Add your Heroku inference key to `.env.local`:
+
+```bash
+INFERENCE_KEY="your-heroku-inference-key"
+INFERENCE_URL="https://us.inference.heroku.com/v1"
+```
+
+## Use the provider
+
+```ts
+import { Heroku } from "heroku-ai-provider";
+import { streamText } from "ai";
+
+const client = new Heroku({
+  apiKey: process.env.INFERENCE_KEY!,
+  baseURL: process.env.INFERENCE_URL,
+});
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const response = await streamText({
+    model: client.chat("claude-3-5-sonnet"),
+    messages,
+  });
+
+  return response.toAIStreamResponse();
+}
+```
+
+The provider maps model names to Heroku’s OpenAI-compatible identifiers (e.g., `claude-3-5-sonnet`, `claude-3-5-haiku`). You get streaming responses, tool calling, and error handling that match the Vercel AI SDK.
+
+## Deploy
+
+Deploy the example to Heroku or any Node host:
+
+```bash
+heroku create my-ai-sample
+heroku buildpacks:add heroku/nodejs
+git push heroku main
+```
+
+Set config vars for production:
+
+```bash
+heroku config:set INFERENCE_KEY=... INFERENCE_URL=https://us.inference.heroku.com/v1
+```
+
+Now your frontend can call `/api/chat` and the provider forwards requests to Heroku AI behind the scenes.
+
+## Extend
+
+- Swap the model name to use image generation (`stable-image-ultra`) or embeddings (`cohere-embed-multilingual`).
+- Add tool definitions to the `streamText` call to let your app invoke MCP servers hosted on Heroku.
+- Combine with [Heroku Vibes](/heroku-vibes/overview) to bootstrap full-stack apps that call Heroku AI via the SDK.

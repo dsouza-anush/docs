@@ -1,0 +1,158 @@
+---
+title: "MCP integration cookbooks"
+description: "Deploy Heroku-hosted MCP servers and connect them to agents such as Claude and ChatGPT."
+fullWidth: true
+---
+
+Heroku AI hosts Model Context Protocol (MCP) servers so you can expose internal tools, data, and automation to modern agent runtimes. This cookbook walks through deployment patterns and shows how to attach your server to popular MCP-aware agents.
+
+## 1. Deploy a server to Heroku
+
+Choose the hosting mode that fits your use case:
+
+- **STDIO mode** – Package your MCP server as a Heroku app that communicates over STDIO. Follow the [STDIO server guide](/heroku-inference/mcp-server-stdio) for language-specific examples.
+- **Remote mode** – Wrap a HTTP/WebSocket server and deploy it to Heroku. See the [remote server guide](/heroku-inference/mcp-server-remote) for the manifest format, signing requirements, and WebSocket upgrade handling.
+
+When your dyno is running, note:
+
+- Public URL (for remote servers).
+- API key or auth headers (if your server requires authentication).
+- Tool definitions (names, descriptions, input schema).
+
+## 2. Publish a manifest
+
+Every agent needs a manifest that describes the tools and that points at your Heroku endpoint. For a remote server, create `mcp.json`:
+
+```json
+{
+  "name": "heroku-notifications",
+  "description": "Manage deploy notifications and release history from Heroku.",
+  "endpoints": {
+    "websocket": {
+      "url": "wss://your-app.herokuapp.com/mcp"
+    }
+  },
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "recent-releases",
+      "description": "List the latest releases for a Heroku app.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string",
+            "description": "Heroku app name"
+          }
+        },
+        "required": ["app"]
+      }
+    }
+  ]
+}
+```
+
+Serve this file from `https://your-app.herokuapp.com/.well-known/mcp.json` (remote) or bundle it into your STDIO server so agents can read the metadata.
+
+## 3. Connect to Claude
+
+Claude Desktop and Claude for Web both support MCP manifests.
+
+### Claude Desktop
+
+1. Open the settings file. On macOS it lives at `~/Library/Application Support/Claude/resources/claude_desktop_config.json`.
+2. Add your Heroku MCP server:
+
+```json
+{
+  "mcpServers": {
+    "heroku-notifications": {
+      "type": "remote",
+      "url": "https://your-app.herokuapp.com/.well-known/mcp.json",
+      "auth": {
+        "type": "basic",
+        "username": "$HEROKU_MCP_USER",
+        "password": "$HEROKU_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+3. Restart Claude Desktop. The tools appear under the MCP section when you start a new conversation.
+
+### Claude Workbench / API
+
+When calling the [Anthropic Agents API](https://docs.anthropic.com/en/docs/agents), include your tools as MCP resources:
+
+```json
+POST /v1/agents/runs
+{
+  "agent_id": "agent_123",
+  "input": "Check the latest release for my staging app.",
+  "mcp": {
+    "servers": [
+      {
+        "name": "heroku-notifications",
+        "type": "remote",
+        "url": "https://your-app.herokuapp.com/.well-known/mcp.json"
+      }
+    ]
+  }
+}
+```
+
+Anthropic fetches the manifest and invokes tools as needed.
+
+## 4. Connect to ChatGPT / OpenAI agents
+
+OpenAI supports MCP through manifests or the [Assistants API](https://platform.openai.com/docs/assistants/overview).
+
+### ChatGPT (web)
+
+1. Visit [https://platform.openai.com/mcp](https://platform.openai.com/mcp) and click **Add MCP server**.
+2. Enter the manifest URL from Heroku and supply any auth headers.
+3. Enable the server for the GPTs or workspaces that should use the tools.
+
+### Assistants API
+
+Include your MCP server when creating or running an assistant:
+
+```python
+from openai import OpenAI
+
+client = OpenAI()
+
+assistant = client.beta.assistants.create(
+    name="Deploy helper",
+    model="gpt-4.1",
+    instructions="Use the Heroku tools to dig into deploy history.",
+    mcp={
+        "servers": [
+            {
+                "name": "heroku-notifications",
+                "type": "remote",
+                "url": "https://your-app.herokuapp.com/.well-known/mcp.json"
+            }
+        ]
+    },
+)
+```
+
+OpenAI automatically connects to the server, invokes tools, and streams results during runs.
+
+## 5. Secure access
+
+- **Authentication**: Protect remote endpoints with HTTPS and an auth layer (basic auth, API keys, or OAuth). Pass credentials via agent configuration.
+- **Logging**: Use Heroku log drains or add structured logging to observe tool usage and troubleshoot agent calls.
+- **Rate limits**: Add Heroku rate limiting (e.g., Shield add-on) or guardrails in the MCP server to block abusive traffic.
+
+## 6. Extend beyond Claude and ChatGPT
+
+MCP is an open standard. The same manifest works with any compatible agent runtime (Cursor, VS Code Copilot, etc.). Keep your server stateless, document tool schemas carefully, and agents will interoperate without custom adapters.
+
+### Next steps
+
+- Review the [Heroku tools reference](/tool-use/heroku-tools) for built-in automation.
+- Explore the [working with MCP guide](/tool-use/working-with-mcp) for local testing techniques.
+- Add automated tests for your MCP server endpoints so you can catch regressions before connecting agents in production.
