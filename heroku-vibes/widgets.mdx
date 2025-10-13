@@ -1,0 +1,48 @@
+---
+title: "Widgets and UI patterns"
+description: "Design rich interactive experiences for the apps Vibes generates." 
+---
+
+Vibes ships with a library of interactive widgets so generated apps feel like real products, not static mockups. You can extend these widgets or introduce your own components when you refine the app post-transfer.
+
+## Built-in patterns
+
+| Widget | Use cases |
+| --- | --- |
+| **Interactive map** | Visualize store locations, delivery zones, or service coverage with zoom and tooltips. |
+| **Image carousel** | Highlight feature screenshots, product photos, or design mockups. |
+| **Photo album** | Display grid galleries with lightbox navigation. |
+| **Scrollable list** | Present search results or structured records with sorting and filters. |
+| **Video player** | Embed how-to videos or product demos directly in the generated page. |
+
+Each widget is implemented with standard HTML, CSS, and JavaScript, so you can enrich them after transferring the project.
+
+## Customize prompts
+
+To influence widget selection, include cues in your prompt:
+
+- “Show nearby clinics on a map.”
+- “Add a carousel with three customer testimonials.”
+- “Create a pricing table with cards for Starter and Pro tiers.”
+
+Vibes chooses the closest widget pattern and populates placeholder content that you can refine later.
+
+## Reference implementation
+
+The [pizzaz-mcp-heroku](https://github.com/dsouza-anush/pizzaz-mcp-heroku) repository demonstrates the full widget stack—MCP server, manifest, and front-end components. Use it as a blueprint when designing custom widgets.
+
+### Key files
+
+- `/widgets/*.html` – iframe HTML for each widget.
+- `/widgets/static/*` – CSS and JavaScript assets.
+- `/server/tools/*.py` – MCP tool definitions that return widget metadata.
+
+## After transfer
+
+Once the app lives in your Heroku account you can:
+
+- Replace placeholder data with content from your database or APIs.
+- Swap the widget framework for your preferred component library (React, Vue, etc.).
+- Add analytics or event tracking to understand user interaction with widgets.
+
+Widgets are a quick way to demonstrate value during prototyping. Treat them as starting points—enhance them as you productize the generated app.

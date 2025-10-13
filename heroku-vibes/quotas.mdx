@@ -1,0 +1,38 @@
+---
+title: "Quotas and limits"
+description: "Understand message caps, project slots, and usage guidelines for the Vibes pilot." 
+---
+
+Heroku Vibes runs in a controlled pilot to ensure stability. Keep these limits in mind as you build.
+
+## Message quotas
+
+| Account status | Messages per week | How to increase |
+| --- | --- | --- |
+| Unverified | 15 | Verify your account (free) to double the quota. |
+| Verified | 30 | Contact Heroku Support if your team needs higher limits. |
+
+Messages include prompts and follow-up instructions. Deleting a project does not restore messages consumed for that week.
+
+## Project slots
+
+- **3 active projects** per workspace.
+- Transfer or delete a project to free a slot.
+- Transferring spins up a Basic dyno in your account and does not consume project slots.
+
+## App generation limits
+
+- Daily caps protect shared infrastructure. If you hit a cap, wait until the next UTC day or contact Support with your use case.
+- Extremely long prompts may be truncated; break work into smaller iterations for best results.
+
+## Runtime characteristics
+
+- Temporary apps run on Eco dynos. They may sleep after periods of inactivity.
+- After transfer, the app runs on a Basic dyno (`$7/month`) by default. Adjust the plan to match your workload.
+
+## Support channels
+
+- Runtime or deployment issues: [Heroku Support](https://help.heroku.com)
+- Product feedback: `heroku-ai-feedback@salesforce.com`
+
+Respecting these limits keeps the pilot reliable for everyone while we scale capacity.

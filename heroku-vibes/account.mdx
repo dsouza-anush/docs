@@ -1,0 +1,52 @@
+---
+title: "Account verification & transfer"
+description: "Unlock higher quotas and move Vibes projects into your own Heroku account." 
+---
+
+During the pilot, all projects run inside a temporary Heroku tenant. When you are ready to take ownership, verify your account and transfer the project.
+
+## Verify your account
+
+1. Click **Get verified** in the Vibes header.
+2. Authenticate with your Heroku credentials.
+3. Add a payment method if your account doesn’t have one. (Verification is free—charges apply only after transfer when a Basic dyno is provisioned.)
+4. Confirmation unlocks a higher weekly message quota and the ability to transfer apps.
+
+## Transfer a project
+
+1. Open the project you want to keep.
+2. Click **Transfer to Heroku**.
+3. Choose the destination Heroku account (the verified account you authenticated above).
+4. Confirm. Vibes creates a new app in your account with:
+   - The generated source code in a git repository.
+   - Any provisioned add-ons (for example, Postgres, Key-Value Store).
+   - Config vars required by the app.
+   - A Basic dyno (`$7/month`) running the latest build.
+
+## Continue development
+
+- Clone the repo locally:
+
+  ```bash
+  heroku git:clone -a YOUR-APP-NAME
+  ```
+
+- Use `heroku logs --tail` to monitor runtime behavior.
+- Scale dynos or attach additional add-ons just like any other Heroku app.
+
+## Free up project slots
+
+Each Vibes workspace supports three active projects. After transferring, delete the temporary project to free a slot:
+
+1. In Vibes, open the project menu.
+2. Click the trash icon and confirm deletion.
+
+## Troubleshooting
+
+| Issue | Fix |
+| --- | --- |
+| Verification prompts for payment method | Add a card in the Heroku Dashboard → Account → Billing. |
+| Transfer fails with permission error | Ensure you’re signed into the correct Heroku account and have the **Deploy** permission for the target team/app space. |
+| App not visible after transfer | Refresh the Heroku Dashboard or run `heroku apps` to list all apps under your account. |
+
+Need help? Contact [Heroku Support](https://help.heroku.com) and reference the project ID shown in the Vibes UI.

@@ -1,0 +1,39 @@
+---
+title: "Reference implementation"
+description: "Deploy the pizzaz-mcp-heroku sample to explore advanced widgets and MCP tooling." 
+---
+
+Use the [pizzaz-mcp-heroku](https://github.com/dsouza-anush/pizzaz-mcp-heroku) repository to study how Vibes and MCP work together end-to-end. It includes:
+
+- A Python-based MCP server using FastMCP.
+- Five interactive widgets rendered as HTML/JS iframes.
+- A Deploy to Heroku button for one-click setup.
+- Documentation for connecting the server to ChatGPT (Apps SDK) or Claude.
+
+## Deploy the sample
+
+```bash
+git clone https://github.com/dsouza-anush/pizzaz-mcp-heroku.git
+cd pizzaz-mcp-heroku
+heroku create my-vibes-sample
+heroku buildpacks:add heroku/python
+git push heroku main
+```
+
+After deployment, the manifest lives at `https://my-vibes-sample.herokuapp.com/.well-known/mcp.json`.
+
+## Explore the code
+
+| Path | Description |
+| --- | --- |
+| `server/tools/` | MCP tool definitions—see how widgets return metadata. |
+| `widgets/` | HTML, CSS, and JS assets rendered inside ChatGPT. |
+| `app.json` | Heroku app definition for review apps/pipelines. |
+
+## Extend for your use case
+
+- Fork the repo and swap the pizza-themed content for your product data.
+- Add new widgets by copying the pattern in `widgets/` and updating the tool manifest.
+- Deploy multiple variants using Heroku Pipelines and review apps to test changes before promoting them.
+
+This sample is the fastest way to understand the architecture behind Vibes and build confidence before customizing your own MCP server or widgets.

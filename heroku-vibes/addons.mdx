@@ -1,0 +1,38 @@
+---
+title: "Add-ons and integrations"
+description: "Attach data stores and services to Vibes projects directly from your prompts." 
+---
+
+Heroku Vibes provisions add-ons automatically when you mention them in your prompt. This lets you prototype with real data and infrastructure from the first iteration.
+
+## Supported add-ons
+
+| Add-on | Prompt hints | Notes |
+| --- | --- | --- |
+| Heroku Postgres | “Attach a standard-0 Postgres database” | Vibes sets `DATABASE_URL` and migrates basic schemas as needed. |
+| Heroku Key-Value Store | “Use Redis for caching session data” | Configures `REDIS_URL` and installs the adapter for the detected language. |
+| Heroku Data for Redis (legacy) | “Connect to Redis premium” | Consider Key-Value Store for new projects. |
+| Any marketplace add-on | “Provision Papertrail for logs” | Vibes executes `heroku addons:create` with default plans unless you specify one. |
+
+## Prompting tips
+
+- Specify the plan tier if cost matters (for example, `standard-0`, `basic`, `eco`).
+- Mention the integration point (“store signups in Postgres”, “cache API responses in Redis”).
+- Request sample data to see the schema in action.
+
+## Inspecting add-ons
+
+Within Vibes you can view which add-ons were attached. After transfer:
+
+1. Run `heroku addons -a YOUR-APP-NAME` to list services.
+2. Use the add-on dashboard (for example, Heroku Postgres) to inspect tables or metrics.
+
+## Extending integrations
+
+Once the project is in your account:
+
+- Scale add-ons to production tiers.
+- Add private networking or Shield features if compliance requires it.
+- Combine with other services (Search, MQ, observability) using the standard Heroku CLI.
+
+Prototyping with real services ensures your app architecture translates cleanly when you move past the pilot stage.

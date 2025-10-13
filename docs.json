@@ -88,15 +88,26 @@
         "tab": "Heroku Vibes",
         "groups": [
           {
-            "group": "Foundations",
+            "group": "Getting started",
             "pages": [
-              "heroku-vibes/overview"
+              "heroku-vibes/overview",
+              "heroku-vibes/quickstart",
+              "heroku-vibes/account"
             ]
           },
           {
-            "group": "Tone library",
+            "group": "Build experiences",
             "pages": [
+              "heroku-vibes/widgets",
+              "heroku-vibes/addons",
               "heroku-vibes/tone-library"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "heroku-vibes/quotas",
+              "heroku-vibes/reference-app"
             ]
           }
         ]
