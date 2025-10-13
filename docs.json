@@ -98,9 +98,7 @@
           {
             "group": "Build experiences",
             "pages": [
-              "heroku-vibes/widgets",
-              "heroku-vibes/addons",
-              "heroku-vibes/tone-library"
+              "heroku-vibes/addons"
             ]
           },
           {
@@ -133,7 +131,8 @@
             "group": "Cookbooks",
             "pages": [
               "cookbook/mcp-integrations",
-              "cookbook/chatgpt-apps"
+              "cookbook/chatgpt-apps",
+              "heroku-vibes/widgets"
             ]
           },
           {
