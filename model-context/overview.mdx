@@ -1,0 +1,28 @@
+---
+title: "Model Context Protocol on Heroku"
+description: "Host MCP servers, wire them to agents, and extend your AI stack with Heroku infrastructure."
+---
+
+The Model Context Protocol (MCP) lets large language models call external tools, access resources, and render interactive widgets. Heroku provides everything you need to host MCP servers, expose manifests, and connect them to popular clients such as ChatGPT, Claude, Cursor, and Agentforce.
+
+Use this section as the control center for MCP:
+
+- **Server modes** – Deploy STDIO or Remote MCP servers on Heroku with built-in SSL, scaling, and logging.
+- **Tools** – Combine Heroku tools (CLI, PG, KV) with your own MCP endpoints for richer agents.
+- **Cookbooks** – Launch ChatGPT apps, integrate reference implementations, and follow end-to-end deployment guides.
+- **Clients** – Configure each agent platform to consume your Heroku-hosted manifest.
+
+<Frame caption="Example Heroku dashboard powering an MCP tooling setup">
+  <img src="/media/images/shared/heroku-ai-mcp-toolkit-dashboard.png" alt="Heroku dashboard with MCP tools" />
+</Frame>
+
+### Quick tour
+
+| Task | Where to start |
+| --- | --- |
+| Deploy an MCP server | [STDIO mode](/heroku-inference/mcp-server-stdio) or [Remote mode](/heroku-inference/mcp-server-remote) |
+| Connect to ChatGPT, Claude, Cursor, Agentforce | [Client guides](/mcp-clients/chatgpt) |
+| Build rich ChatGPT apps with widgets | [ChatGPT apps cookbook](/cookbook/chatgpt-apps) |
+| Combine tools and automate flows | [Heroku tools reference](/tool-use/heroku-tools) |
+
+Bring your existing APIs, data stores, or automation scripts. MCP simply packages them so agents can discover and invoke the right capability at the right time. Heroku takes care of the runtime so you can focus on the tools themselves.

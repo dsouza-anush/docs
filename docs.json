@@ -114,6 +114,12 @@
         "tab": "Model Context Protocol",
         "groups": [
           {
+            "group": "Overview",
+            "pages": [
+              "model-context/overview"
+            ]
+          },
+          {
             "group": "Server modes",
             "pages": [
               "heroku-inference/mcp-server-stdio",
