@@ -36,8 +36,8 @@ fullWidth: true
     }}>
       <p style={{ fontSize: '0.85rem', color: 'rgba(235,235,255,0.65)', marginBottom: '1rem' }}>Model selection checklist</p>
       <ul style={{ listStyle: 'disc', paddingLeft: '1.25rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.82)' }}>
-        <li>Prototype with Claude 3.5 Haiku or Nova Lite to validate prompts quickly.</li>
-        <li>Upgrade to Claude 3.5 Sonnet for higher quality or image understanding.</li>
+        <li>Prototype with Claude 4.5 Haiku or Nova Lite for fast, cost-effective validation.</li>
+        <li>Upgrade to Claude 4.5 Sonnet for balanced performance on complex tasks.</li>
         <li>Reach for Claude 4 Sonnet when workflows demand deep reasoning.</li>
         <li>Use Cohere Embed Multilingual to add semantic search and retrieval.</li>
       </ul>
@@ -71,11 +71,11 @@ fullWidth: true
         gap: '0.9rem'
       }}
     >
-      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude 4 Sonnet</div>
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude 4.5 Sonnet</div>
       <div style={{ fontSize: '1.12rem', fontWeight: 600, lineHeight: 1.32 }}>
-        Flagship reasoning model with extended thinking, vision, and tool calling.
+        High-performance model balancing intelligence and speed for complex tasks.
       </div>
-      <div style={{ fontSize: '0.92rem', opacity: 0.85 }}>Reach for high-stakes copilots, complex code, and long documents.</div>
+      <div style={{ fontSize: '0.92rem', opacity: 0.85 }}>Perfect for data processing, sales forecasting, and nuanced content generation.</div>
       <span style={{ fontSize: '0.88rem', opacity: 0.8 }}>View details →</span>
     </a>
 
@@ -95,11 +95,11 @@ fullWidth: true
         gap: '0.9rem'
       }}
     >
-      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude 3.5 Haiku</div>
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude 4.5 Haiku</div>
       <div style={{ fontSize: '1.12rem', fontWeight: 600, lineHeight: 1.32 }}>
-        Fastest Claude tier with full 200K context for responsive, low-cost assistants.
+        Fast and highly cost-effective model optimized for high-throughput tasks.
       </div>
-      <div style={{ fontSize: '0.92rem', opacity: 0.85 }}>Ideal for support chat, orchestrators, and high-volume pipelines.</div>
+      <div style={{ fontSize: '0.92rem', opacity: 0.85 }}>Ideal for rapid responses, content moderation, and inventory management.</div>
       <span style={{ fontSize: '0.88rem', opacity: 0.8 }}>View details →</span>
     </a>
 
@@ -134,9 +134,11 @@ fullWidth: true
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2.5rem', padding: '0 min(8vw, 96px)' }}>
   | Model | Category | Strength | Relative cost | Context window | Extended thinking | Vision | Link |
   | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Claude 4.5 Sonnet | Chat | High-performance balanced model with speed | Balanced | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 4 Sonnet | Chat | Deep reasoning with chain-of-thought | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.7 Sonnet | Chat | High intelligence with extended thinking | High | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.5 Sonnet | Chat | Balanced quality, speed, and cost | Balanced | 200K tokens | Optional | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 4.5 Haiku | Chat | Fast and highly cost-effective | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.5 Haiku | Chat | Lowest latency, great for scale | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.0 Haiku | Chat | Legacy low-cost option | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Amazon Nova Pro | Chat | Enterprise-first generalist | High | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
@@ -156,6 +158,37 @@ Advanced language models for assistants, copilots, and automated workflows.
 
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
 <AccordionGroup>
+  <Accordion title="Claude 4.5 Sonnet (high-performance balance)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Latest Sonnet model balancing intelligence and speed.</li>
+          <li>Multimodal: accepts images, PDFs, and mixed media.</li>
+          <li>200K token window for large documents and code bases.</li>
+          <li>Supports extended thinking, tool calling, and structured outputs.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Complex tasks requiring both speed and quality.</li>
+          <li>Data processing and sales forecasting workflows.</li>
+          <li>Nuanced content generation for enterprise applications.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Optimized for high-throughput tasks and real-time interactions.</li>
+          <li>Use for applications requiring rapid responses and content moderation.</li>
+          <li>Stream responses to maintain low latency for end users.</li>
+        </ul>
+        <Callout title="Model ID">
+          `claude-4-5-sonnet`
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
   <Accordion title="Claude 4 Sonnet (premium reasoning)">
     <Columns cols={2}>
       <div>
@@ -242,6 +275,37 @@ Advanced language models for assistants, copilots, and automated workflows.
         </ul>
         <Callout title="Model ID">
           `claude-3-5-sonnet`
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
+  <Accordion title="Claude 4.5 Haiku (fast and cost-effective)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Fast and highly cost-effective for high-throughput tasks.</li>
+          <li>Optimized for rapid responses and real-time interactions.</li>
+          <li>Full 200K context window for broad prompts.</li>
+          <li>Perfect for content moderation and inventory management.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Applications requiring rapid responses.</li>
+          <li>Content moderation at scale.</li>
+          <li>Inventory management and high-volume automation.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Optimized for high-throughput with low latency.</li>
+          <li>No extended thinking—design prompts accordingly.</li>
+          <li>Batch inference when possible to maximize concurrency.</li>
+        </ul>
+        <Callout title="Model ID">
+          `claude-4-5-haiku`
         </Callout>
       </div>
     </Columns>
@@ -482,8 +546,8 @@ Generate photorealistic and stylized visuals straight from prompts.
 
 ### Picking a default chat model
 
-1. Prototype with **Claude 3.5 Haiku** for the lowest latency and cost.
-2. Upgrade to **Claude 3.5 Sonnet** when prompts demand more reasoning or image understanding.
+1. Prototype with **Claude 4.5 Haiku** for fast, cost-effective performance.
+2. Upgrade to **Claude 4.5 Sonnet** for balanced performance on complex tasks.
 3. Escalate to **Claude 4 Sonnet** for high-stakes workflows (compliance, financial analysis, multi-step coding).
 4. Use **Nova Lite** or **Nova Pro** if you need tighter alignment with AWS governance.
 

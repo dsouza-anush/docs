@@ -1,0 +1,426 @@
+---
+title: "OpenAI SDK compatibility"
+description: "Use the OpenAI SDK to interact with Heroku Managed Inference and Agents models"
+---
+
+Heroku Managed Inference and Agents provides OpenAI SDK compatibility, allowing you to use familiar OpenAI client libraries to interact with Claude, Amazon Nova, and other models available on the platform.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- Heroku Managed Inference and Agents add-on provisioned
+- An API key from your Heroku dashboard
+- The OpenAI SDK installed for your language
+
+## Why use OpenAI SDK compatibility?
+
+OpenAI SDK compatibility offers several advantages:
+
+- **Familiar interface**: Use the same code patterns you already know from OpenAI
+- **Easy migration**: Switch between OpenAI and Heroku models with minimal code changes
+- **Broad ecosystem**: Leverage tools and frameworks built for OpenAI SDK
+- **Multi-language support**: Available in Python, Node.js, and other languages
+
+## Quick start
+
+### Python
+
+Install the OpenAI Python SDK:
+
+```bash
+pip install openai
+```
+
+Configure the client to use Heroku's inference endpoint:
+
+```python
+from openai import OpenAI
+import os
+
+client = OpenAI(
+    api_key=os.getenv("INFERENCE_KEY"),
+    base_url=os.getenv("INFERENCE_URL") + "/v1/"
+)
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain quantum computing in simple terms."}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Node.js
+
+Install the OpenAI Node.js SDK:
+
+```bash
+npm install openai
+```
+
+Configure the client:
+
+```javascript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+    apiKey: process.env.INFERENCE_KEY,
+    baseURL: process.env.INFERENCE_URL + '/v1/'
+});
+
+const response = await client.chat.completions.create({
+    model: 'claude-4-5-sonnet',
+    messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: 'Explain quantum computing in simple terms.' }
+    ]
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## Environment variables
+
+Set up your environment with these variables:
+
+```bash
+export INFERENCE_KEY="your-api-key"
+export INFERENCE_URL="https://inference.heroku.com"
+export INFERENCE_MODEL_ID="claude-4-5-sonnet"
+```
+
+View your API credentials in the [Heroku Dashboard](https://dashboard.heroku.com).
+
+## Supported parameters
+
+Heroku's OpenAI-compatible API supports most standard chat completion parameters.
+
+### Request parameters
+
+<AccordionGroup>
+  <Accordion title="Core parameters">
+    | Parameter | Support level | Description |
+    | --- | --- | --- |
+    | `model` | **Full** | Model identifier (e.g., `claude-4-5-sonnet`) |
+    | `messages` | **Full** | Array of conversation messages |
+    | `max_tokens` | **Full** | Maximum tokens to generate |
+    | `temperature` | **Full** | Sampling temperature (0-1) |
+    | `top_p` | **Full** | Nucleus sampling parameter |
+    | `stream` | **Full** | Enable streaming responses |
+    | `stop` | **Full** | Stop sequences |
+  </Accordion>
+
+  <Accordion title="Advanced parameters">
+    | Parameter | Support level | Description |
+    | --- | --- | --- |
+    | `tools` | **Full** | Function calling tools |
+    | `tool_choice` | **Full** | Control tool selection |
+    | `response_format` | **Partial** | Structured output format |
+    | `seed` | **Ignored** | Deterministic sampling seed |
+    | `n` | **Ignored** | Number of completions |
+    | `presence_penalty` | **Ignored** | Presence penalty |
+    | `frequency_penalty` | **Ignored** | Frequency penalty |
+    | `logit_bias` | **Ignored** | Token probability bias |
+  </Accordion>
+
+  <Accordion title="Metadata parameters">
+    | Parameter | Support level | Description |
+    | --- | --- | --- |
+    | `user` | **Full** | End-user identifier |
+    | `metadata` | **Partial** | Request metadata |
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  **Ignored parameters**: Parameters marked as "Ignored" are accepted by the API but have no effect on the response. Use `allow_ignored_params: false` to receive errors instead.
+</Note>
+
+### Response structure
+
+The response follows OpenAI's standard format:
+
+```json
+{
+  "id": "msg_abc123",
+  "object": "chat.completion",
+  "created": 1234567890,
+  "model": "claude-4-5-sonnet",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Response text here"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 50,
+    "total_tokens": 70
+  }
+}
+```
+
+## Extended thinking
+
+Claude 4.5 Sonnet, Claude 4 Sonnet, and Claude 3.7 Sonnet support extended thinking for complex reasoning tasks.
+
+### Enabling extended thinking
+
+Use the `extra_body` parameter to configure extended thinking:
+
+```python
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "user", "content": "Analyze the pros and cons of different database architectures."}
+    ],
+    extra_body={
+        "extended_thinking": {
+            "enabled": True,
+            "budget_tokens": 5000
+        }
+    }
+)
+```
+
+### Extended thinking options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `enabled` | boolean | Enable extended thinking mode |
+| `budget_tokens` | integer | Token budget for reasoning (max varies by model) |
+| `include_reasoning` | boolean | Include reasoning in response (default: false) |
+
+<Tip>
+  Extended thinking increases output token usage. Set a token budget to control costs while enabling deeper analysis.
+</Tip>
+
+## Streaming responses
+
+Enable streaming to receive responses as they're generated:
+
+```python
+response = client.chat.completions.create(
+    model="claude-4-5-haiku",
+    messages=[
+        {"role": "user", "content": "Write a short story about AI."}
+    ],
+    stream=True
+)
+
+for chunk in response:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end='')
+```
+
+### Streaming benefits
+
+- Lower perceived latency for users
+- Display partial results immediately
+- Better UX for longer responses
+- Efficient resource usage
+
+## Tool calling
+
+Function calling allows models to interact with external tools and APIs.
+
+### Basic tool usage
+
+```python
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "City name"
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    }
+]
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "user", "content": "What's the weather in San Francisco?"}
+    ],
+    tools=tools,
+    tool_choice="auto"
+)
+```
+
+### Tool calling requirements
+
+<Warning>
+  When using tools, ensure each message includes a non-empty `content` field. Messages with only tool calls and no content may cause errors.
+</Warning>
+
+### Processing tool calls
+
+```python
+# Check if model wants to call a tool
+if response.choices[0].message.tool_calls:
+    tool_call = response.choices[0].message.tool_calls[0]
+    function_name = tool_call.function.name
+    function_args = json.loads(tool_call.function.arguments)
+
+    # Execute the function
+    result = execute_function(function_name, function_args)
+
+    # Return result to model
+    messages.append(response.choices[0].message)
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "content": json.dumps(result)
+    })
+
+    # Get final response
+    final_response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=messages,
+        tools=tools
+    )
+```
+
+## Model compatibility
+
+All models available through Heroku Managed Inference and Agents work with the OpenAI SDK:
+
+| Model family | OpenAI SDK support | Extended thinking | Vision |
+| --- | --- | --- | --- |
+| Claude 4.5 Sonnet | ✓ | ✓ | ✓ |
+| Claude 4.5 Haiku | ✓ | ✗ | ✗ |
+| Claude 4 Sonnet | ✓ | ✓ | ✓ |
+| Claude 3.7 Sonnet | ✓ | ✓ | ✓ |
+| Claude 3.5 Sonnet | ✓ | Optional | ✓ |
+| Claude 3.5 Haiku | ✓ | ✗ | ✗ |
+| Amazon Nova Pro | ✓ | ✗ | ✗ |
+| Amazon Nova Lite | ✓ | ✗ | ✗ |
+
+<Note>
+  Vision capabilities require sending images in base64 format or via URLs in the message content.
+</Note>
+
+## Limitations and constraints
+
+### Known limitations
+
+1. **Parameter support**: Some OpenAI parameters are ignored (seed, n, penalties)
+2. **Response format**: Limited support for structured output schemas
+3. **Tool calling**: Requires non-empty content field in messages
+4. **Extended thinking**: Only available for specific Claude models
+5. **Batch API**: Not currently supported
+
+### Error handling
+
+Handle API errors using standard try-catch patterns:
+
+```python
+from openai import OpenAI, APIError
+
+try:
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+except APIError as e:
+    print(f"API error: {e.status_code} - {e.message}")
+```
+
+## Migration from OpenAI
+
+Switching from OpenAI to Heroku requires minimal code changes:
+
+<Steps>
+  <Step title="Update base URL">
+    Point the SDK to Heroku's endpoint:
+
+    ```python
+    client = OpenAI(
+        api_key=os.getenv("INFERENCE_KEY"),
+        base_url=os.getenv("INFERENCE_URL") + "/v1/"
+    )
+    ```
+  </Step>
+
+  <Step title="Update model names">
+    Replace OpenAI model names with Heroku models:
+
+    ```python
+    # Before: model="gpt-4"
+    # After:  model="claude-4-5-sonnet"
+    ```
+  </Step>
+
+  <Step title="Test and validate">
+    Test your application thoroughly, especially if using:
+    - Function calling
+    - Streaming responses
+    - Vision capabilities
+  </Step>
+</Steps>
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Performance optimization">
+    - Use `claude-4-5-haiku` for high-volume, latency-sensitive workloads
+    - Enable streaming for better perceived performance
+    - Set appropriate `max_tokens` limits to control costs
+    - Cache frequently-used prompts when possible
+  </Accordion>
+
+  <Accordion title="Error handling">
+    - Implement exponential backoff for rate limit errors
+    - Validate inputs before sending to the API
+    - Handle streaming disconnections gracefully
+    - Log errors with request IDs for debugging
+  </Accordion>
+
+  <Accordion title="Security">
+    - Never expose API keys in client-side code
+    - Use environment variables for credentials
+    - Validate user inputs to prevent prompt injection
+    - Monitor usage patterns for anomalies
+  </Accordion>
+
+  <Accordion title="Cost management">
+    - Choose appropriate models for each use case
+    - Set `max_tokens` to prevent runaway generation
+    - Use extended thinking only when necessary
+    - Monitor token usage in the Heroku Dashboard
+  </Accordion>
+</AccordionGroup>
+
+## Additional resources
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Native API reference with full parameter details
+  </Card>
+  <Card title="Models overview" href="/inference-api/models" icon="sparkles">
+    Compare available models and capabilities
+  </Card>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Understand token costs and optimize spend
+  </Card>
+  <Card title="OpenAI SDK reference apps" href="/cookbook/openai-sdk-reference-apps" icon="code">
+    Example applications using the OpenAI SDK
+  </Card>
+</CardGroup>

@@ -55,6 +55,8 @@
               "inference-api/chat-completions",
               "inference-api/agents-heroku",
               "inference-api/chat-vs-agents",
+              "inference-api/openai-compatibility",
+              "inference-api/structured-output",
               "inference-api/embeddings",
               "inference-api/images-generations",
               "inference-api/mcp-servers"

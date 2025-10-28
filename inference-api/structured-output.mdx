@@ -1,0 +1,949 @@
+---
+title: "Structured output"
+description: "Generate consistent, validated JSON responses from language models using tool calling and prompt engineering"
+---
+
+Structured output ensures AI models return data in a predictable, machine-readable format. While Heroku's OpenAI-compatible API doesn't support OpenAI's native `response_format` parameter, you can achieve reliable structured output using tool calling and prompt engineering techniques.
+
+## What is structured output?
+
+Structured output transforms free-form AI responses into validated JSON that matches a predefined schema. This enables:
+
+- **Type safety**: Ensure responses match expected data structures
+- **Validation**: Catch errors before they reach your application
+- **Integration**: Seamlessly pipe AI outputs into databases or APIs
+- **Consistency**: Guarantee predictable response formats across requests
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="Data extraction" icon="database">
+    Extract structured information from documents, emails, or web content
+  </Card>
+  <Card title="Form generation" icon="file-lines">
+    Create structured forms, surveys, or data collection schemas
+  </Card>
+  <Card title="API responses" icon="code">
+    Generate API-ready responses with validated fields
+  </Card>
+  <Card title="Database records" icon="table">
+    Create properly formatted database entries from natural language
+  </Card>
+</CardGroup>
+
+## Limitations
+
+<Warning>
+  Heroku's OpenAI-compatible API has limited support for OpenAI's `response_format` parameter. Use the techniques below for reliable structured output.
+</Warning>
+
+| Feature | OpenAI API | Heroku API |
+| --- | --- | --- |
+| `response_format: json_object` | ✓ | Partial support |
+| JSON schema validation | ✓ | Not supported |
+| Structured outputs | ✓ | Not supported |
+| Tool calling | ✓ | **✓ Full support** |
+
+## Recommended approaches
+
+Heroku supports two reliable methods for structured output:
+
+1. **Tool calling** (recommended): Use function calling to define strict output schemas
+2. **Prompt engineering** (fallback): Guide the model with clear instructions and examples
+
+## Method 1: Tool calling
+
+Tool calling is the most reliable way to get structured output. Define a tool that represents your desired output schema, and the model will populate it with the appropriate data.
+
+### Prerequisites
+
+```bash
+pip install openai pydantic
+```
+
+### Basic example
+
+```python
+from openai import OpenAI
+from pydantic import BaseModel
+import os
+import json
+
+client = OpenAI(
+    api_key=os.getenv("INFERENCE_KEY"),
+    base_url=os.getenv("INFERENCE_URL") + "/v1/"
+)
+
+# Define your output schema
+class UserProfile(BaseModel):
+    name: str
+    age: int
+    email: str
+    occupation: str
+
+# Convert Pydantic model to function definition
+def get_user_profile_tool():
+    return {
+        "type": "function",
+        "function": {
+            "name": "save_user_profile",
+            "description": "Save a user profile with structured information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Full name of the user"
+                    },
+                    "age": {
+                        "type": "integer",
+                        "description": "Age of the user"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email address"
+                    },
+                    "occupation": {
+                        "type": "string",
+                        "description": "Current occupation"
+                    }
+                },
+                "required": ["name", "age", "email", "occupation"]
+            }
+        }
+    }
+
+# Make the request
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {
+            "role": "system",
+            "content": "Extract user information and call the save_user_profile function."
+        },
+        {
+            "role": "user",
+            "content": "My name is Sarah Johnson, I'm 28 years old, and I work as a software engineer. You can reach me at sarah.j@example.com"
+        }
+    ],
+    tools=[get_user_profile_tool()],
+    tool_choice={"type": "function", "function": {"name": "save_user_profile"}}
+)
+
+# Extract structured data
+tool_call = response.choices[0].message.tool_calls[0]
+structured_data = json.loads(tool_call.function.arguments)
+
+# Validate with Pydantic
+user = UserProfile(**structured_data)
+print(user.model_dump_json(indent=2))
+```
+
+### Using Pydantic's schema generation
+
+Pydantic can automatically generate JSON schemas for your models:
+
+```python
+from pydantic import BaseModel, Field
+from typing import List, Optional
+import json
+
+class Address(BaseModel):
+    street: str = Field(description="Street address")
+    city: str = Field(description="City name")
+    state: str = Field(description="State or province")
+    zip_code: str = Field(description="Postal code")
+
+class Customer(BaseModel):
+    name: str = Field(description="Customer's full name")
+    email: str = Field(description="Email address")
+    phone: Optional[str] = Field(None, description="Phone number")
+    address: Address = Field(description="Mailing address")
+    purchase_history: List[str] = Field(
+        default_factory=list,
+        description="List of purchased items"
+    )
+
+# Generate JSON schema from Pydantic model
+def pydantic_to_tool(model: type[BaseModel], name: str, description: str):
+    schema = model.model_json_schema()
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description,
+            "parameters": schema
+        }
+    }
+
+# Use it
+customer_tool = pydantic_to_tool(
+    Customer,
+    "save_customer",
+    "Save customer information to the database"
+)
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {
+            "role": "user",
+            "content": """
+            Extract customer info: John Smith bought a laptop and mouse.
+            Email: john.smith@email.com, Phone: 555-0123
+            Address: 123 Main St, Springfield, IL 62701
+            """
+        }
+    ],
+    tools=[customer_tool],
+    tool_choice={"type": "function", "function": {"name": "save_customer"}}
+)
+
+# Parse and validate
+tool_call = response.choices[0].message.tool_calls[0]
+customer_data = json.loads(tool_call.function.arguments)
+customer = Customer(**customer_data)
+print(customer)
+```
+
+### Complex nested structures
+
+```python
+from pydantic import BaseModel, Field, validator
+from typing import List, Literal
+from datetime import datetime
+
+class LineItem(BaseModel):
+    product_id: str = Field(description="Product identifier")
+    quantity: int = Field(description="Quantity ordered", gt=0)
+    unit_price: float = Field(description="Price per unit", gt=0)
+
+    @property
+    def total(self) -> float:
+        return self.quantity * self.unit_price
+
+class ShippingInfo(BaseModel):
+    carrier: Literal["fedex", "ups", "usps"] = Field(
+        description="Shipping carrier"
+    )
+    tracking_number: str = Field(description="Tracking number")
+    estimated_delivery: str = Field(description="Estimated delivery date (YYYY-MM-DD)")
+
+class Order(BaseModel):
+    order_id: str = Field(description="Unique order identifier")
+    customer_email: str = Field(description="Customer email address")
+    items: List[LineItem] = Field(description="List of ordered items")
+    shipping: ShippingInfo = Field(description="Shipping information")
+    notes: Optional[str] = Field(None, description="Additional notes")
+
+    @validator("customer_email")
+    def validate_email(cls, v):
+        if "@" not in v:
+            raise ValueError("Invalid email format")
+        return v
+
+# Create the tool
+order_tool = pydantic_to_tool(
+    Order,
+    "create_order",
+    "Create a new order with items and shipping info"
+)
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {
+            "role": "user",
+            "content": """
+            Create order ORD-2024-001 for jane@example.com:
+            - 2x Widget A at $19.99 each (product: WID-A)
+            - 1x Widget B at $34.99 (product: WID-B)
+            Ship via FedEx, tracking 1234567890, deliver by 2024-12-15
+            Note: Gift wrap requested
+            """
+        }
+    ],
+    tools=[order_tool],
+    tool_choice={"type": "function", "function": {"name": "create_order"}}
+)
+
+# Extract and validate
+tool_call = response.choices[0].message.tool_calls[0]
+order_data = json.loads(tool_call.function.arguments)
+order = Order(**order_data)
+
+print(f"Order ID: {order.order_id}")
+print(f"Total items: {len(order.items)}")
+print(f"Order total: ${sum(item.total for item in order.items):.2f}")
+```
+
+### JavaScript/TypeScript example
+
+```javascript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+    apiKey: process.env.INFERENCE_KEY,
+    baseURL: process.env.INFERENCE_URL + '/v1/'
+});
+
+// Define the tool schema
+const extractPersonTool = {
+    type: 'function',
+    function: {
+        name: 'extract_person',
+        description: 'Extract person information from text',
+        parameters: {
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'string',
+                    description: 'Full name'
+                },
+                age: {
+                    type: 'number',
+                    description: 'Age in years'
+                },
+                location: {
+                    type: 'string',
+                    description: 'City and country'
+                },
+                skills: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'List of skills'
+                }
+            },
+            required: ['name', 'age', 'location']
+        }
+    }
+};
+
+async function extractStructuredData(text) {
+    const response = await client.chat.completions.create({
+        model: 'claude-4-5-sonnet',
+        messages: [
+            {
+                role: 'system',
+                content: 'Extract person information and call extract_person.'
+            },
+            { role: 'user', content: text }
+        ],
+        tools: [extractPersonTool],
+        tool_choice: {
+            type: 'function',
+            function: { name: 'extract_person' }
+        }
+    });
+
+    const toolCall = response.choices[0].message.tool_calls[0];
+    const structuredData = JSON.parse(toolCall.function.arguments);
+
+    return structuredData;
+}
+
+// Use it
+const text = `
+    Alex Martinez is a 32-year-old software engineer from Barcelona, Spain.
+    She specializes in Python, JavaScript, and cloud architecture.
+`;
+
+const person = await extractStructuredData(text);
+console.log(person);
+// {
+//   name: "Alex Martinez",
+//   age: 32,
+//   location: "Barcelona, Spain",
+//   skills: ["Python", "JavaScript", "cloud architecture"]
+// }
+```
+
+## Method 2: Prompt engineering
+
+When tool calling isn't suitable, use carefully crafted prompts to guide the model toward structured output.
+
+### Best practices for prompts
+
+<AccordionGroup>
+  <Accordion title="1. Specify the exact format">
+    Explicitly describe the JSON structure you want:
+
+    ```python
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {
+                "role": "system",
+                "content": """
+                You are a data extraction assistant. Always respond with valid JSON
+                in this exact format:
+                {
+                    "name": "string",
+                    "email": "string",
+                    "phone": "string or null",
+                    "interests": ["array", "of", "strings"]
+                }
+
+                Do not include any text outside the JSON object.
+                """
+            },
+            {
+                "role": "user",
+                "content": "Extract info: Maria Garcia, maria@email.com, interested in AI and robotics"
+            }
+        ]
+    )
+
+    # Parse the response
+    import json
+    result = json.loads(response.choices[0].message.content)
+    ```
+  </Accordion>
+
+  <Accordion title="2. Provide examples (few-shot learning)">
+    Show the model examples of the desired format:
+
+    ```python
+    messages = [
+        {
+            "role": "system",
+            "content": "Extract product information as JSON."
+        },
+        {
+            "role": "user",
+            "content": "Product: Blue Widget, Price: $29.99, Stock: 150"
+        },
+        {
+            "role": "assistant",
+            "content": '{"name": "Blue Widget", "price": 29.99, "stock": 150}'
+        },
+        {
+            "role": "user",
+            "content": "Product: Red Gadget, Price: $49.99, Stock: 75"
+        },
+        {
+            "role": "assistant",
+            "content": '{"name": "Red Gadget", "price": 49.99, "stock": 75}'
+        },
+        {
+            "role": "user",
+            "content": "Product: Green Tool, Price: $15.99, Stock: 200"
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model="claude-4-5-haiku",
+        messages=messages
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="3. Use validation and retry logic">
+    Parse and validate responses, retrying if needed:
+
+    ```python
+    import json
+    from pydantic import BaseModel, ValidationError
+
+    class Product(BaseModel):
+        name: str
+        price: float
+        stock: int
+
+    def get_structured_output(prompt: str, max_retries: int = 3):
+        for attempt in range(max_retries):
+            response = client.chat.completions.create(
+                model="claude-4-5-sonnet",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """
+                        Respond with valid JSON only. Format:
+                        {"name": "string", "price": float, "stock": integer}
+                        """
+                    },
+                    {"role": "user", "content": prompt}
+                ]
+            )
+
+            try:
+                data = json.loads(response.choices[0].message.content)
+                product = Product(**data)
+                return product
+            except (json.JSONDecodeError, ValidationError) as e:
+                if attempt == max_retries - 1:
+                    raise
+                # Retry with more specific instructions
+                continue
+
+        raise Exception("Failed to get valid structured output")
+
+    # Use it
+    product = get_structured_output("Extract: Premium Laptop, $1299, 45 units available")
+    ```
+  </Accordion>
+
+  <Accordion title="4. Use XML-style markers">
+    Guide the model with clear boundaries:
+
+    ```python
+    system_prompt = """
+    Extract information and wrap your response in XML-style tags:
+
+    <output>
+    {
+        "field1": "value1",
+        "field2": "value2"
+    }
+    </output>
+
+    Only include the JSON between the tags.
+    """
+
+    def extract_json_from_response(text: str) -> dict:
+        import re
+        match = re.search(r'<output>\s*(\{.*?\})\s*</output>', text, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+        raise ValueError("No JSON found in response")
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": "Extract: Book title 'AI Guide', author 'Dr. Smith', pages 350"}
+        ]
+    )
+
+    data = extract_json_from_response(response.choices[0].message.content)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Prompt engineering example
+
+Complete example using prompt engineering only:
+
+```python
+from openai import OpenAI
+import json
+from typing import Optional
+import os
+
+client = OpenAI(
+    api_key=os.getenv("INFERENCE_KEY"),
+    base_url=os.getenv("INFERENCE_URL") + "/v1/"
+)
+
+def extract_resume_info(resume_text: str) -> dict:
+    system_prompt = """
+    You are a resume parser. Extract information and return ONLY valid JSON.
+
+    Required format:
+    {
+        "name": "full name",
+        "email": "email address",
+        "phone": "phone number or null",
+        "education": [
+            {
+                "degree": "degree name",
+                "institution": "school name",
+                "year": "graduation year"
+            }
+        ],
+        "experience": [
+            {
+                "title": "job title",
+                "company": "company name",
+                "duration": "time period",
+                "description": "brief description"
+            }
+        ],
+        "skills": ["skill1", "skill2", "skill3"]
+    }
+
+    Return only the JSON object with no additional text.
+    """
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": resume_text}
+        ],
+        temperature=0  # Lower temperature for more consistent output
+    )
+
+    # Extract and parse JSON
+    content = response.choices[0].message.content.strip()
+
+    # Remove markdown code blocks if present
+    if content.startswith("```"):
+        content = content.split("```")[1]
+        if content.startswith("json"):
+            content = content[4:]
+        content = content.strip()
+
+    return json.loads(content)
+
+# Example usage
+resume = """
+John Doe
+Email: john.doe@example.com | Phone: (555) 123-4567
+
+EDUCATION
+Bachelor of Science in Computer Science
+Stanford University, 2020
+
+EXPERIENCE
+Senior Software Engineer
+Tech Corp, 2020-2024
+Led development of microservices architecture serving 1M+ users
+
+Software Engineer Intern
+StartupXYZ, Summer 2019
+Built features for mobile app using React Native
+
+SKILLS
+Python, JavaScript, Docker, Kubernetes, AWS, PostgreSQL
+"""
+
+result = extract_resume_info(resume)
+print(json.dumps(result, indent=2))
+```
+
+## Choosing the right approach
+
+<Tabs>
+  <Tab title="Use tool calling when">
+    - You need guaranteed schema compliance
+    - Working with complex nested structures
+    - Integrating with typed languages (TypeScript, Python)
+    - Building production systems
+    - Validating data before database insertion
+  </Tab>
+
+  <Tab title="Use prompt engineering when">
+    - Tool calling isn't supported for your use case
+    - You need simpler, more flexible schemas
+    - Prototyping or experimenting
+    - The model needs to return explanations alongside data
+    - Working with legacy systems
+  </Tab>
+</Tabs>
+
+## Validation and error handling
+
+Always validate structured output before using it:
+
+```python
+from pydantic import BaseModel, validator, ValidationError
+from typing import List, Optional
+import json
+
+class ValidatedResponse(BaseModel):
+    status: str
+    data: dict
+    errors: List[str] = []
+
+    @validator('status')
+    def status_must_be_valid(cls, v):
+        if v not in ['success', 'error', 'partial']:
+            raise ValueError('Invalid status value')
+        return v
+
+def safe_structured_request(messages: list, tool: dict) -> Optional[dict]:
+    """
+    Make a structured output request with error handling
+    """
+    try:
+        response = client.chat.completions.create(
+            model="claude-4-5-sonnet",
+            messages=messages,
+            tools=[tool],
+            tool_choice={"type": "function", "function": {"name": tool["function"]["name"]}}
+        )
+
+        tool_call = response.choices[0].message.tool_calls[0]
+        data = json.loads(tool_call.function.arguments)
+
+        return {
+            "success": True,
+            "data": data,
+            "raw_response": response
+        }
+
+    except json.JSONDecodeError as e:
+        return {
+            "success": False,
+            "error": "Invalid JSON in response",
+            "details": str(e)
+        }
+    except ValidationError as e:
+        return {
+            "success": False,
+            "error": "Validation failed",
+            "details": e.errors()
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": "Request failed",
+            "details": str(e)
+        }
+
+# Usage
+result = safe_structured_request(messages, my_tool)
+if result["success"]:
+    process_data(result["data"])
+else:
+    log_error(result["error"], result["details"])
+```
+
+## Performance optimization
+
+<AccordionGroup>
+  <Accordion title="Choose the right model">
+    - **Claude 4.5 Haiku**: Best for simple extractions and high-volume use cases
+    - **Claude 4.5 Sonnet**: Balanced for most structured output tasks
+    - **Claude 4 Sonnet**: Complex reasoning or multi-step extraction
+
+    ```python
+    # For simple extraction
+    response = client.chat.completions.create(
+        model="claude-4-5-haiku",  # Fastest, most cost-effective
+        messages=messages,
+        tools=[simple_tool]
+    )
+
+    # For complex nested structures
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",  # Better at complex reasoning
+        messages=messages,
+        tools=[complex_tool]
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Batch processing">
+    Process multiple items efficiently:
+
+    ```python
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+
+    def process_single_item(item: str) -> dict:
+        response = client.chat.completions.create(
+            model="claude-4-5-haiku",
+            messages=[{"role": "user", "content": item}],
+            tools=[extraction_tool]
+        )
+        tool_call = response.choices[0].message.tool_calls[0]
+        return json.loads(tool_call.function.arguments)
+
+    def batch_process(items: list, max_workers: int = 5) -> list:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            results = list(executor.map(process_single_item, items))
+        return results
+
+    # Process 100 items concurrently
+    items = ["Extract info from: ..." for _ in range(100)]
+    results = batch_process(items)
+    ```
+  </Accordion>
+
+  <Accordion title="Caching repeated requests">
+    Cache results for frequently requested structured data:
+
+    ```python
+    from functools import lru_cache
+    import hashlib
+
+    def generate_cache_key(messages: list, tool: dict) -> str:
+        content = json.dumps(messages) + json.dumps(tool)
+        return hashlib.md5(content.encode()).hexdigest()
+
+    class StructuredOutputCache:
+        def __init__(self):
+            self.cache = {}
+
+        def get_or_create(self, messages: list, tool: dict) -> dict:
+            cache_key = generate_cache_key(messages, tool)
+
+            if cache_key in self.cache:
+                return self.cache[cache_key]
+
+            # Make the API call
+            response = client.chat.completions.create(
+                model="claude-4-5-sonnet",
+                messages=messages,
+                tools=[tool],
+                tool_choice={"type": "function", "function": {"name": tool["function"]["name"]}}
+            )
+
+            tool_call = response.choices[0].message.tool_calls[0]
+            result = json.loads(tool_call.function.arguments)
+
+            self.cache[cache_key] = result
+            return result
+
+    # Use it
+    cache = StructuredOutputCache()
+    result1 = cache.get_or_create(messages, tool)  # API call
+    result2 = cache.get_or_create(messages, tool)  # From cache
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Common patterns
+
+### Pattern 1: Multi-step extraction
+
+Extract information in stages for complex documents:
+
+```python
+from typing import List
+
+class DocumentSection(BaseModel):
+    title: str
+    content: str
+
+class DocumentSummary(BaseModel):
+    main_topic: str
+    key_points: List[str]
+    sections: List[DocumentSection]
+
+def multi_step_extraction(document: str) -> DocumentSummary:
+    # Step 1: Extract sections
+    sections_tool = pydantic_to_tool(
+        DocumentSection,
+        "extract_sections",
+        "Extract document sections"
+    )
+
+    # Step 2: Summarize each section
+    # Step 3: Combine into final structure
+    # Implementation details...
+    pass
+```
+
+### Pattern 2: Progressive validation
+
+Start with loose validation and tighten progressively:
+
+```python
+from pydantic import BaseModel, Field
+
+class LooseProduct(BaseModel):
+    name: Optional[str] = None
+    price: Optional[float] = None
+
+class StrictProduct(BaseModel):
+    name: str = Field(..., min_length=1)
+    price: float = Field(..., gt=0)
+    sku: str = Field(..., regex=r'^[A-Z]{3}-\d{4}$')
+
+# First attempt with loose validation
+try:
+    loose_data = extract_with_tool(LooseProduct)
+    # If successful, validate with strict schema
+    strict_product = StrictProduct(**loose_data.dict())
+except ValidationError:
+    # Handle missing or invalid fields
+    pass
+```
+
+### Pattern 3: Streaming with structured output
+
+Combine streaming with structured data:
+
+```python
+def streaming_structured_extraction(text: str):
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[{"role": "user", "content": text}],
+        tools=[extraction_tool],
+        stream=True
+    )
+
+    accumulated_args = ""
+
+    for chunk in response:
+        if chunk.choices[0].delta.tool_calls:
+            tool_call_chunk = chunk.choices[0].delta.tool_calls[0]
+            if tool_call_chunk.function.arguments:
+                accumulated_args += tool_call_chunk.function.arguments
+                # Optionally show progress
+                print(".", end="", flush=True)
+
+    # Parse complete response
+    final_data = json.loads(accumulated_args)
+    return final_data
+```
+
+## Testing structured output
+
+```python
+import pytest
+from pydantic import ValidationError
+
+def test_user_extraction():
+    """Test that user extraction produces valid data"""
+    response = extract_user_info("Jane Doe, jane@example.com, age 30")
+
+    assert response["name"] == "Jane Doe"
+    assert response["email"] == "jane@example.com"
+    assert response["age"] == 30
+    assert "@" in response["email"]
+
+def test_invalid_data_handling():
+    """Test that invalid data raises appropriate errors"""
+    with pytest.raises(ValidationError):
+        User(name="John", age=-5, email="invalid")
+
+def test_missing_fields():
+    """Test handling of missing required fields"""
+    response = extract_user_info("John Doe")
+    # Should handle gracefully or provide defaults
+    assert response.get("email") is None or response["email"] == ""
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Start simple" icon="seedling">
+    Begin with basic schemas and add complexity incrementally
+  </Card>
+  <Card title="Validate always" icon="check">
+    Use Pydantic or similar libraries to validate all structured output
+  </Card>
+  <Card title="Handle errors" icon="triangle-exclamation">
+    Implement robust error handling and retry logic
+  </Card>
+  <Card title="Monitor quality" icon="chart-line">
+    Track validation failures and adjust schemas accordingly
+  </Card>
+  <Card title="Use types" icon="code">
+    Leverage TypeScript or Python type hints for better DX
+  </Card>
+  <Card title="Document schemas" icon="book">
+    Add descriptions to all fields for better model understanding
+  </Card>
+</CardGroup>
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="OpenAI SDK compatibility" href="/inference-api/openai-compatibility" icon="code">
+    Learn about using the OpenAI SDK with Heroku
+  </Card>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Native API reference for chat completions
+  </Card>
+  <Card title="Pydantic integration" href="/ai-integrations/pydantic" icon="check-double">
+    Use Pydantic for data validation
+  </Card>
+  <Card title="Models overview" href="/inference-api/models" icon="sparkles">
+    Choose the right model for your use case
+  </Card>
+</CardGroup>
