@@ -6,7 +6,7 @@ fullWidth: true
 
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
   <p>
-    Heroku AI exposes OpenAI-compatible embedding models, including <code>cohere-embed-multilingual</code>. These notes adapt the OpenAI Cookbook’s retrieval patterns to Heroku’s stack so you can stand up semantic search, question answering, and summarization pipelines quickly. Primary references: <a href="https://cookbook.openai.com/examples/vector_databases/search_summarize" target="_blank" rel="noopener noreferrer">Search + Summarize</a> and <a href="https://cookbook.openai.com/examples/vector_databases/faq_bot" target="_blank" rel="noopener noreferrer">FAQ bot with embeddings</a>.
+    Heroku AI exposes OpenAI-compatible embedding models, including <code>cohere-embed-multilingual</code>. These notes adapt the OpenAI Cookbook's retrieval patterns to Heroku's stack so you can stand up semantic search, question answering, and summarization pipelines quickly. Primary references: <a href="https://cookbook.openai.com/examples/vector_databases/search_summarize" target="_blank" rel="noopener noreferrer">Search + Summarize</a> and <a href="https://cookbook.openai.com/examples/vector_databases/faq_bot" target="_blank" rel="noopener noreferrer">FAQ bot with embeddings</a>.
   </p>
 </section>
 
@@ -16,13 +16,14 @@ fullWidth: true
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #ff6b9d 0%, #ff9999 20%, #ffcc99 40%, #ffee99 60%, #e6d9ff 80%, #c5d9ff 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: '#1a1a2e',
-    marginBottom: '2rem'
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    marginBottom: '2rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0 }}>Core pipeline</h3>
-    <ol>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Core pipeline</h3>
+    <ol style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Chunk source documents (300–500 word windows with overlap).</li>
       <li>Embed chunks with <code>cohere-embed-multilingual</code> using the <code>search_document</code> input type.</li>
       <li>Persist vectors in Postgres + pgvector or another ANN store.</li>
@@ -65,18 +66,19 @@ Batch up to 96 strings per request for cost efficiency, mirroring the cookbook g
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(180deg, #ff66cc 0%, #ff99cc 25%, #ff99bb 50%, #ff9999 75%, #ffaaaa 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: '#1a1a2e',
-    marginBottom: '2rem'
+    background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    marginBottom: '2rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0 }}>Prompt template</h3>
-    <ul>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Prompt template</h3>
+    <ul style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>System message: define role, tone, and citation requirements.</li>
       <li>Human message: include the user question and formatted context snippets.</li>
       <li>Add explicit output rules (e.g., "If facts are missing, say you don't know.").</li>
     </ul>
-    <p style={{ marginBottom: 0 }}>
+    <p style={{ marginBottom: 0, opacity: 0.95, color: '#ffffff' }}>
       Follow the cookbook's recommendation to annotate each chunk with identifiers so you can cite sources back to the end user.
     </p>
   </div>
@@ -119,13 +121,14 @@ Use Haiku when you prioritize throughput; upgrade to Sonnet for harder questions
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #d9e9ff 0%, #c5d9ff 25%, #aac3ff 50%, #7fa8ff 75%, #5b8fff 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: '#1a1a2e',
-    marginBottom: '2rem'
+    background: 'linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    marginBottom: '2rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0 }}>Best practices</h3>
-    <ul>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Best practices</h3>
+    <ul style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Normalize text (lowercase, trim whitespace) before embedding.</li>
       <li>Refresh embeddings when source data changes; track versions in Postgres.</li>
       <li>Add automated evaluations (see our prompt patterns cookbook) to spot drift.</li>

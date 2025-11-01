@@ -1,0 +1,215 @@
+---
+title: "RubyLLM"
+description: "Use RubyLLM's unified Ruby API to interact with Heroku AI models alongside other AI providers."
+---
+
+[RubyLLM](https://rubyllm.com/) is a unified Ruby API for interacting with multiple AI providers including OpenAI, Anthropic, Gemini, and more. Since Heroku AI exposes OpenAI-compatible endpoints, you can use RubyLLM to call Claude models on Heroku AI with a consistent, idiomatic Ruby interface.
+
+## Installation and Setup
+
+Install the RubyLLM gem:
+
+```bash
+gem install ruby_llm
+```
+
+Or add to your `Gemfile`:
+
+```ruby
+gem 'ruby_llm'
+```
+
+Set up your Heroku AI credentials as environment variables:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a your-app)
+export INFERENCE_URL="https://us.inference.heroku.com/v1"
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a your-app)
+```
+
+## Configure RubyLLM for Heroku AI
+
+RubyLLM supports OpenAI-compatible endpoints through its OpenAI provider. Configure it to point to Heroku AI:
+
+```ruby
+require 'ruby_llm'
+
+RubyLLM.configure do |config|
+  config.openai_api_key = ENV['INFERENCE_KEY']
+  config.openai_base_url = ENV['INFERENCE_URL']
+end
+```
+
+## Basic Chat Completion
+
+Use RubyLLM's chat interface with Heroku AI models:
+
+```ruby
+chat = RubyLLM.chat(
+  provider: :openai,
+  model: ENV['INFERENCE_MODEL_ID'] || 'claude-3-5-sonnet'
+)
+
+response = chat.ask "What are the benefits of deploying AI apps on Heroku?"
+puts response.content
+```
+
+## Streaming Responses
+
+Stream responses for faster perceived latency:
+
+```ruby
+chat = RubyLLM.chat(
+  provider: :openai,
+  model: 'claude-3-5-haiku'
+)
+
+chat.ask "Explain Heroku's dyno architecture" do |chunk|
+  print chunk.content
+end
+```
+
+## Multi-turn Conversations
+
+RubyLLM maintains conversation context automatically:
+
+```ruby
+chat = RubyLLM.chat(
+  provider: :openai,
+  model: 'claude-3-5-sonnet'
+)
+
+# First turn
+chat.ask "I'm building a Rails API that needs to classify customer support tickets."
+
+# Follow-up question - context is preserved
+response = chat.ask "What Heroku AI model would you recommend for this?"
+puts response.content
+```
+
+## Using with Rails
+
+### Configuration
+
+Create an initializer at `config/initializers/ruby_llm.rb`:
+
+```ruby
+RubyLLM.configure do |config|
+  config.openai_api_key = ENV['INFERENCE_KEY']
+  config.openai_base_url = ENV['INFERENCE_URL']
+end
+```
+
+### Service Object Example
+
+Create a service to encapsulate AI interactions:
+
+```ruby
+# app/services/ai_assistant_service.rb
+class AiAssistantService
+  def initialize(model: ENV['INFERENCE_MODEL_ID'])
+    @chat = RubyLLM.chat(provider: :openai, model: model)
+  end
+
+  def answer(question)
+    @chat.ask(question).content
+  rescue StandardError => e
+    Rails.logger.error("AI request failed: #{e.message}")
+    "I'm sorry, I couldn't process that request."
+  end
+end
+```
+
+### Controller Usage
+
+```ruby
+class QuestionsController < ApplicationController
+  def create
+    assistant = AiAssistantService.new
+    answer = assistant.answer(params[:question])
+
+    render json: { answer: answer }
+  end
+end
+```
+
+## Structured Output
+
+Use RubyLLM's structured output feature for predictable responses:
+
+```ruby
+chat = RubyLLM.chat(
+  provider: :openai,
+  model: 'claude-3-5-sonnet',
+  response_format: { type: 'json_object' }
+)
+
+response = chat.ask(<<~PROMPT)
+  Analyze this support ticket and return JSON with keys: category, priority, suggested_response.
+
+  Ticket: "My app keeps crashing when I scale to more than 5 dynos."
+PROMPT
+
+data = JSON.parse(response.content)
+puts "Category: #{data['category']}"
+puts "Priority: #{data['priority']}"
+```
+
+## Advanced Configuration
+
+### Temperature and Token Control
+
+```ruby
+chat = RubyLLM.chat(
+  provider: :openai,
+  model: 'claude-3-5-haiku',
+  temperature: 0.7,
+  max_tokens: 1000
+)
+```
+
+### System Prompts
+
+Set a system message to guide model behavior:
+
+```ruby
+chat = RubyLLM.chat(
+  provider: :openai,
+  model: 'claude-3-5-sonnet',
+  system: "You are a Heroku expert. Answer questions concisely and cite docs when helpful."
+)
+```
+
+## Available Models
+
+RubyLLM works with any Heroku AI chat model. Popular options include:
+
+- `claude-3-5-sonnet` - Most capable, best for complex reasoning
+- `claude-3-5-haiku` - Fast and efficient, great for production workloads
+- `claude-4-sonnet` - Latest model with extended context
+
+See the complete list in [Heroku AI Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards).
+
+## Error Handling
+
+Wrap RubyLLM calls in proper error handling:
+
+```ruby
+begin
+  chat = RubyLLM.chat(provider: :openai, model: 'claude-3-5-sonnet')
+  response = chat.ask("Your question here")
+rescue RubyLLM::AuthenticationError
+  puts "Invalid API key. Check your INFERENCE_KEY environment variable."
+rescue RubyLLM::RateLimitError
+  puts "Rate limit exceeded. Try again in a moment."
+rescue RubyLLM::Error => e
+  puts "Request failed: #{e.message}"
+end
+```
+
+## Additional Resources
+
+- [RubyLLM Documentation](https://rubyllm.com/)
+- [Heroku AI Chat Completions API](/inference-api/chat-completions)
+- [Heroku AI Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards)
+- [AI Integrations](https://devcenter.heroku.com/categories/ai)

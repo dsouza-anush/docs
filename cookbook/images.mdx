@@ -16,13 +16,14 @@ fullWidth: true
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #ff6b9d 0%, #ff9999 20%, #ffcc99 40%, #ffee99 60%, #e6d9ff 80%, #c5d9ff 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: '#1a1a2e',
-    marginBottom: '2rem'
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    marginBottom: '2rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0 }}>When to enable</h3>
-    <ul>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>When to enable</h3>
+    <ul style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Logo or product color tweaks that must preserve surrounding detail.</li>
       <li>Portrait adjustments where faces need to stay recognizable.</li>
       <li>Localized edits (add/remove props) without altering the background.</li>
@@ -59,18 +60,19 @@ def edit_image(image_bytes: bytes, prompt: str) -> bytes:
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(180deg, #ff66cc 0%, #ff99cc 25%, #ff99bb 50%, #ff9999 75%, #ffaaaa 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: '#1a1a2e',
-    marginBottom: '2rem'
+    background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    marginBottom: '2rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0 }}>Workflow tips</h3>
-    <ul>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Workflow tips</h3>
+    <ul style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Store source images in Heroku Data for Redis or S3; pull by URL and feed to the edit endpoint.</li>
       <li>Run edits in a worker dyno and push results to a CDN (CloudFront/Fastly) via background jobs.</li>
       <li>Track prompt + output pairs in Postgres so designers can revert or reapply edits.</li>
     </ul>
-    <p style={{ marginBottom: 0 }}>
+    <p style={{ marginBottom: 0, opacity: 0.95, color: '#ffffff' }}>
       The cookbook suggests batching edits (resize, add/remove elements, face preservation) with helper functions and Pillow for preview generation.[^fidelity]
     </p>
   </div>
@@ -103,13 +105,14 @@ Wrap S3 uploads in retry logic (Heroku recommends `tenacity` or AWS exponential 
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #d9e9ff 0%, #c5d9ff 25%, #aac3ff 50%, #7fa8ff 75%, #5b8fff 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    color: '#1a1a2e',
-    marginBottom: '2rem'
+    background: 'linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    color: '#ffffff',
+    marginBottom: '2rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0 }}>Governance</h3>
-    <ul>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Governance</h3>
+    <ul style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Restrict edit prompts to pre-approved templates (color swaps, copy updates) to avoid off-brand outputs.</li>
       <li>Attach a simple React admin UI (served from Heroku) to preview before publishing.</li>
       <li>Emit provenance metadata (prompt, date, operator) with each asset to satisfy audit requests.</li>

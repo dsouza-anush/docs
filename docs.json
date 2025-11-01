@@ -87,7 +87,8 @@
             "pages": [
               "ai-integrations/ai-sdk",
               "ai-integrations/llamaindex",
-              "ai-integrations/pydantic"
+              "ai-integrations/pydantic",
+              "ai-integrations/rubyllm"
             ]
           }
         ]
@@ -202,8 +203,10 @@
           {
             "group": "Integrations",
             "pages": [
+              "ai-integrations/ai-sdk",
               "ai-integrations/llamaindex",
-              "ai-integrations/pydantic"
+              "ai-integrations/pydantic",
+              "ai-integrations/rubyllm"
             ]
           }
         ]
