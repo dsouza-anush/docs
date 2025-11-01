@@ -16,20 +16,21 @@ fullWidth: true
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'linear-gradient(135deg, #ffb3d9 0%, #ffcba4 50%, #fff5d6 100%)',
+    border: '1px solid rgba(255,255,255,0.2)',
     color: '#ffffff',
     marginBottom: '2rem',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+    textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Template anatomy</h3>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '700' }}>Template anatomy</h3>
     <ul style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li><strong>System message</strong>: role, tone, forbidden behaviors.</li>
       <li><strong>Instructions block</strong>: numbered steps to follow (use bullet formatting from the cookbook).</li>
       <li><strong>Reference data</strong>: optional context, clearly delimited.</li>
       <li><strong>Output contract</strong>: JSON schema or textual requirements to aid parsing.</li>
     </ul>
-    <p style={{ marginBottom: 0, opacity: 0.95, color: '#ffffff' }}>
+    <p style={{ marginBottom: 0, color: '#ffffff' }}>
       Keep variants in source control so changes can be reviewed just like code.
     </p>
   </div>
@@ -65,19 +66,20 @@ Store prompts alongside unit tests so changes must pass automated checks before 
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'linear-gradient(135deg, #f5a3d7 0%, #ffc4e8 50%, #ffe5f5 100%)',
+    border: '1px solid rgba(255,255,255,0.2)',
     color: '#ffffff',
     marginBottom: '2rem',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+    textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Checker workflow</h3>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '700' }}>Checker workflow</h3>
     <ol style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Run prompt text through heuristic checkers (linting length, missing sections).</li>
       <li>Optionally call the chat completions API with a "critic" system message to flag contradictions or formatting gaps (inspired by the cookbook's multi-agent loop).</li>
       <li>Return actionable feedback for human review.</li>
     </ol>
-    <p style={{ marginBottom: 0, opacity: 0.95, color: '#ffffff' }}>
+    <p style={{ marginBottom: 0, color: '#ffffff' }}>
       Keep the critic prompt deterministic (low temperature) and limit output to a structured checklist.
     </p>
   </div>
@@ -118,19 +120,20 @@ Haiku keeps costs low for CI pipelines; switch to Sonnet for more nuanced critiq
   <div style={{
     padding: '2rem',
     borderRadius: '16px',
-    background: 'linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)',
-    border: '1px solid rgba(255,255,255,0.15)',
+    background: 'linear-gradient(135deg, #d4e4ff 0%, #b8d0ff 50%, #9fc5ff 100%)',
+    border: '1px solid rgba(255,255,255,0.2)',
     color: '#ffffff',
     marginBottom: '2rem',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+    textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
   }}>
-    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '600' }}>Cycle overview</h3>
+    <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '700' }}>Cycle overview</h3>
     <ol style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li><strong>Collect</strong> failing traces from production and label failure modes.</li>
       <li><strong>Measure</strong> with LLM graders scoring binary pass/fail outcomes.</li>
       <li><strong>Improve</strong> prompts or context, re-run graders, and deploy if scores rise.</li>
     </ol>
-    <p style={{ marginBottom: 0, opacity: 0.95, color: '#ffffff' }}>
+    <p style={{ marginBottom: 0, color: '#ffffff' }}>
       Align graders with human expectations using the cookbook's TPR/TNR approach.
     </p>
   </div>
