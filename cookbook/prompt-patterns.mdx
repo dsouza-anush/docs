@@ -12,146 +12,146 @@ fullWidth: true
 
 ## Structure prompts for reuse
 
-<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
   <div style={{
-    padding: '2.25rem',
-    borderRadius: '1.75rem',
-    background: 'linear-gradient(160deg, rgba(96,76,220,0.45) 0%, rgba(54,40,154,0.6) 100%)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F9FAFF'
+    padding: '2rem',
+    borderRadius: '16px',
+    background: 'linear-gradient(135deg, #ff6b9d 0%, #ff9999 20%, #ffcc99 40%, #ffee99 60%, #e6d9ff 80%, #c5d9ff 100%)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#1a1a2e',
+    marginBottom: '2rem'
   }}>
-    <h3>Template anatomy</h3>
+    <h3 style={{ marginTop: 0 }}>Template anatomy</h3>
     <ul>
       <li><strong>System message</strong>: role, tone, forbidden behaviors.</li>
       <li><strong>Instructions block</strong>: numbered steps to follow (use bullet formatting from the cookbook).</li>
       <li><strong>Reference data</strong>: optional context, clearly delimited.</li>
       <li><strong>Output contract</strong>: JSON schema or textual requirements to aid parsing.</li>
     </ul>
-    <p>
+    <p style={{ marginBottom: 0 }}>
       Keep variants in source control so changes can be reviewed just like code.
     </p>
   </div>
-  <div style={{
-    padding: '2.25rem',
-    borderRadius: '1.75rem',
-    background: 'rgba(12,10,24,0.65)',
-    border: '1px solid rgba(255,255,255,0.06)'
-  }}>
-    ```python
-    PROMPT = {
-        "role": "system",
-        "content": (
-            "You are a Heroku AI support assistant.\n"
-            "# Style\n"
-            "- Be concise.\n"
-            "- Cite docs pages when helpful.\n"
-            "# Disallowed\n"
-            "- Never invent plan names or pricing.\n"
-            "# Output\n"
-            "Respond in Markdown with a short list of actions."
-        ),
-    }
-    ```
-    <p>
-      Store prompts alongside unit tests so changes must pass automated checks before deployment.
-    </p>
-  </div>
+</section>
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+
+```python
+PROMPT = {
+    "role": "system",
+    "content": (
+        "You are a Heroku AI support assistant.\n"
+        "# Style\n"
+        "- Be concise.\n"
+        "- Cite docs pages when helpful.\n"
+        "# Disallowed\n"
+        "- Never invent plan names or pricing.\n"
+        "# Output\n"
+        "Respond in Markdown with a short list of actions."
+    ),
+}
+```
+
+<Note>
+Store prompts alongside unit tests so changes must pass automated checks before deployment.
+</Note>
+
 </section>
 
 ## Automated prompt reviews
 
-<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
   <div style={{
-    padding: '2.25rem',
-    borderRadius: '1.75rem',
-    background: 'linear-gradient(160deg, rgba(30,118,255,0.45) 0%, rgba(20,72,180,0.6) 100%)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F9FAFF'
+    padding: '2rem',
+    borderRadius: '16px',
+    background: 'linear-gradient(180deg, #ff66cc 0%, #ff99cc 25%, #ff99bb 50%, #ff9999 75%, #ffaaaa 100%)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#1a1a2e',
+    marginBottom: '2rem'
   }}>
-    <h3>Checker workflow</h3>
+    <h3 style={{ marginTop: 0 }}>Checker workflow</h3>
     <ol>
       <li>Run prompt text through heuristic checkers (linting length, missing sections).</li>
-      <li>Optionally call the chat completions API with a “critic” system message to flag contradictions or formatting gaps (inspired by the cookbook’s multi-agent loop).</li>
+      <li>Optionally call the chat completions API with a "critic" system message to flag contradictions or formatting gaps (inspired by the cookbook's multi-agent loop).</li>
       <li>Return actionable feedback for human review.</li>
     </ol>
-    <p>
+    <p style={{ marginBottom: 0 }}>
       Keep the critic prompt deterministic (low temperature) and limit output to a structured checklist.
-    </p>
-  </div>
-  <div style={{
-    padding: '2.25rem',
-    borderRadius: '1.75rem',
-    background: 'rgba(12,10,24,0.65)',
-    border: '1px solid rgba(255,255,255,0.06)'
-  }}>
-    ```python
-    def audit_prompt(candidate: str) -> str:
-        critic = client.chat.completions.create(
-            model="claude-3-5-haiku",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are PromptChecker.\n"
-                        "Identify contradictions, missing output rules, or unclear tone.\n"
-                        "Respond as JSON with keys: has_issue (bool), notes (array of strings)."
-                    ),
-                },
-                {"role": "user", "content": candidate},
-            ],
-            temperature=0.0,
-            max_tokens=500,
-        )
-        return critic.choices[0].message.content
-    ```
-    <p>
-      Haiku keeps costs low for CI pipelines; switch to Sonnet for more nuanced critiques.
     </p>
   </div>
 </section>
 
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+
+```python
+def audit_prompt(candidate: str) -> str:
+    critic = client.chat.completions.create(
+        model="claude-3-5-haiku",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are PromptChecker.\n"
+                    "Identify contradictions, missing output rules, or unclear tone.\n"
+                    "Respond as JSON with keys: has_issue (bool), notes (array of strings)."
+                ),
+            },
+            {"role": "user", "content": candidate},
+        ],
+        temperature=0.0,
+        max_tokens=500,
+    )
+    return critic.choices[0].message.content
+```
+
+<Note>
+Haiku keeps costs low for CI pipelines; switch to Sonnet for more nuanced critiques.
+</Note>
+
+</section>
+
 ## Evaluation flywheel
 
-<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)', display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
   <div style={{
-    padding: '2.25rem',
-    borderRadius: '1.75rem',
-    background: 'linear-gradient(160deg, rgba(42,176,206,0.45) 0%, rgba(18,96,150,0.62) 100%)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#F9FAFF'
+    padding: '2rem',
+    borderRadius: '16px',
+    background: 'linear-gradient(135deg, #d9e9ff 0%, #c5d9ff 25%, #aac3ff 50%, #7fa8ff 75%, #5b8fff 100%)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    color: '#1a1a2e',
+    marginBottom: '2rem'
   }}>
-    <h3>Cycle overview</h3>
+    <h3 style={{ marginTop: 0 }}>Cycle overview</h3>
     <ol>
       <li><strong>Collect</strong> failing traces from production and label failure modes.</li>
       <li><strong>Measure</strong> with LLM graders scoring binary pass/fail outcomes.</li>
       <li><strong>Improve</strong> prompts or context, re-run graders, and deploy if scores rise.</li>
     </ol>
-    <p>
-      Align graders with human expectations using the cookbook’s TPR/TNR approach.
+    <p style={{ marginBottom: 0 }}>
+      Align graders with human expectations using the cookbook's TPR/TNR approach.
     </p>
   </div>
-  <div style={{
-    padding: '2.25rem',
-    borderRadius: '1.75rem',
-    background: 'rgba(12,10,24,0.65)',
-    border: '1px solid rgba(255,255,255,0.06)'
-  }}>
-    ```python
-    def run_eval(example: dict) -> bool:
-        response = client.chat.completions.create(
-            model="claude-3-5-sonnet",
-            messages=[
-                {"role": "system", "content": "Judge if the assistant followed policy. Reply PASS or FAIL."},
-                {"role": "user", "content": example["transcript"]},
-            ],
-            temperature=0.0,
-            max_tokens=10,
-        )
-        verdict = response.choices[0].message.content.strip().upper()
-        return verdict == "PASS"
-    ```
-    <p>
-      Run graders inside Heroku Scheduler or CI; persist scores to Postgres so you can chart quality over time.
-    </p>
-  </div>
+</section>
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+
+```python
+def run_eval(example: dict) -> bool:
+    response = client.chat.completions.create(
+        model="claude-3-5-sonnet",
+        messages=[
+            {"role": "system", "content": "Judge if the assistant followed policy. Reply PASS or FAIL."},
+            {"role": "user", "content": example["transcript"]},
+        ],
+        temperature=0.0,
+        max_tokens=10,
+    )
+    verdict = response.choices[0].message.content.strip().upper()
+    return verdict == "PASS"
+```
+
+<Note>
+Run graders inside Heroku Scheduler or CI; persist scores to Postgres so you can chart quality over time.
+</Note>
+
 </section>
