@@ -26,9 +26,9 @@ fullWidth: true
     <h3 style={{ marginTop: 0, color: '#ffffff', fontWeight: '700' }}>Core pipeline</h3>
     <ol style={{ color: '#ffffff', lineHeight: '1.7' }}>
       <li>Chunk source documents (300–500 word windows with overlap).</li>
-      <li>Embed chunks with <code>cohere-embed-multilingual</code> using the <code>search_document</code> input type.</li>
+      <li>Embed chunks with <code>cohere-embed-multilingual</code> via the Embeddings API.</li>
       <li>Persist vectors in Postgres + pgvector or another ANN store.</li>
-      <li>At query time, embed the question (<code>search_query</code> type), retrieve top-k matches, and assemble a prompt.</li>
+      <li>At query time, embed the question, retrieve top-k matches, and assemble a prompt.</li>
       <li>Send prompt + context to <code>claude-3-5-sonnet</code> or <code>claude-3-5-haiku</code> via the Chat Completions API.</li>
     </ol>
   </div>
@@ -45,12 +45,10 @@ client = OpenAI(
     api_key=os.environ["INFERENCE_KEY"],
 )
 
-def embed_texts(texts: list[str], input_type: str) -> list[list[float]]:
+def embed_texts(texts: list[str]) -> list[list[float]]:
     result = client.embeddings.create(
         model="cohere-embed-multilingual",
         input=texts,
-        encoding_format="float",
-        input_type=input_type,
     )
     return [item.embedding for item in result.data]
 ```
