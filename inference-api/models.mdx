@@ -62,6 +62,30 @@ fullWidth: true
         padding: '2.3rem 2.1rem',
         borderRadius: '1.75rem',
         color: '#F9FAFF',
+        background: 'linear-gradient(160deg, rgba(180,130,255,0.62) 0%, rgba(130,90,220,0.56) 40%, rgba(60,40,140,0.76) 100%)',
+        boxShadow: '0 26px 60px rgba(140,100,240,0.28)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        backdropFilter: 'blur(18px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.9rem'
+      }}
+    >
+      <div style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Claude Opus 4.5 <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.15rem 0.5rem', borderRadius: '0.5rem', fontSize: '0.7rem', marginLeft: '0.5rem' }}>NEW</span></div>
+      <div style={{ fontSize: '1.12rem', fontWeight: 600, lineHeight: 1.32 }}>
+        Next-generation frontier model with autonomous coding and enhanced reasoning.
+      </div>
+      <div style={{ fontSize: '0.92rem', opacity: 0.85 }}>Best for complex agentic workflows, strategic analysis, and multi-step reasoning tasks.</div>
+      <span style={{ fontSize: '0.88rem', opacity: 0.8 }}>View details →</span>
+    </a>
+
+    <a
+      href="#chat-models"
+      style={{
+        textDecoration: 'none',
+        padding: '2.3rem 2.1rem',
+        borderRadius: '1.75rem',
+        color: '#F9FAFF',
         background: 'linear-gradient(160deg, rgba(105,90,255,0.58) 0%, rgba(72,60,200,0.52) 40%, rgba(35,30,110,0.72) 100%)',
         boxShadow: '0 26px 60px rgba(80,68,220,0.23)',
         border: '1px solid rgba(255,255,255,0.1)',
@@ -134,6 +158,7 @@ fullWidth: true
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2.5rem', padding: '0 min(8vw, 96px)' }}>
   | Model | Category | Strength | Relative cost | Context window | Extended thinking | Vision | Link |
   | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Claude Opus 4.5 | Chat | Frontier model with autonomous coding | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 4.5 Sonnet | Chat | High-performance balanced model with speed | Balanced | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 4 Sonnet | Chat | Deep reasoning with chain-of-thought | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.7 Sonnet | Chat | High intelligence with extended thinking | High | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
@@ -141,10 +166,17 @@ fullWidth: true
   | Claude 4.5 Haiku | Chat | Fast and highly cost-effective | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.5 Haiku | Chat | Lowest latency, great for scale | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 3.0 Haiku | Chat | Legacy low-cost option | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Amazon Nova 2 Lite | Chat | Fast with extended context and reasoning | Low | 1M tokens | ✓ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Amazon Nova Pro | Chat | Enterprise-first generalist | High | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Amazon Nova Lite | Chat | Efficient conversational model | Low | Medium | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Kimi K2 Thinking | Chat | Chain-of-thought open-weight model | Balanced | Large | ✓ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | MiniMax M2 | Chat | Programming and tool-calling specialist | Balanced | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Qwen3 235B | Chat | Complex reasoning and agentic coding | Balanced | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Qwen3 Coder 480B | Chat | Agentic coding specialist | Balanced | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | OpenAI GPT OSS 120B | Chat | Open-weight experimentation | Self-managed | 128K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Cohere Embed Multilingual | Embeddings | Multilingual semantic search | Per 1M tokens | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Cohere Rerank 3.5 | Rerank | Multilingual semantic reranking | Per search unit | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Amazon Rerank 1.0 | Rerank | High-performing AWS-backed reranker | Per search unit | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Stable Image Ultra | Image | High fidelity image synthesis | Per image | — | — | — | [Pricing](/inference-api/pricing#model-pricing-overview) |
 </section>
 
@@ -158,6 +190,43 @@ Advanced language models for assistants, copilots, and automated workflows.
 
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
 <AccordionGroup>
+  <Accordion title="Claude Opus 4.5 (frontier model)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Next-generation frontier LLM from Anthropic.</li>
+          <li>Autonomous coding capabilities with effort control.</li>
+          <li>Enhanced reasoning for complex multi-step tasks.</li>
+          <li>Multimodal: accepts images, PDFs, and mixed media.</li>
+          <li>200K token window with extended thinking support.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Complex agentic workflows requiring autonomy.</li>
+          <li>Strategic analysis and research tasks.</li>
+          <li>Advanced coding assistants and code generation.</li>
+          <li>High-stakes decision support systems.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Use effort control to balance cost vs. reasoning depth.</li>
+          <li>Reserve for tasks that exceed Sonnet capabilities.</li>
+          <li>Stream responses for long-running agent tasks.</li>
+          <li>Combine with tool calling for autonomous workflows.</li>
+        </ul>
+        <Callout title="Model ID">
+          `claude-opus-4-5`
+        </Callout>
+        <Callout title="Availability">
+          US, EU
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
   <Accordion title="Claude 4.5 Sonnet (high-performance balance)">
     <Columns cols={2}>
       <div>
@@ -460,6 +529,176 @@ Advanced language models for assistants, copilots, and automated workflows.
       </div>
     </Columns>
   </Accordion>
+
+  <Accordion title="Amazon Nova 2 Lite (fast reasoning with 1M context)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Fast and cost-effective with 1M token context window.</li>
+          <li>Extended thinking with three intensity levels (low, medium, high).</li>
+          <li>Built-in tools: code interpreter and web grounding.</li>
+          <li>Remote MCP tool support for agentic workflows.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>High-volume conversational applications.</li>
+          <li>Document processing and business automation.</li>
+          <li>Cost-sensitive deployments requiring reasoning.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Use thinking intensity controls to balance speed vs. reasoning.</li>
+          <li>Leverage 1M context for large document analysis.</li>
+          <li>Built-in code interpreter reduces need for external tools.</li>
+        </ul>
+        <Callout title="Model ID">
+          `amazon-nova-2-lite`
+        </Callout>
+        <Callout title="Availability">
+          US, EU
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
+  <Accordion title="Kimi K2 Thinking (chain-of-thought reasoning)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Open-weight LLM from Moonshot AI with chain-of-thought.</li>
+          <li>Extended thinking for complex reasoning tasks.</li>
+          <li>Strong performance on multi-step problem solving.</li>
+          <li>Transparent reasoning process in responses.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Mathematical and logical reasoning tasks.</li>
+          <li>Research and analysis requiring step-by-step thinking.</li>
+          <li>Educational applications showing work process.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Allow for longer response times due to thinking steps.</li>
+          <li>US-only availability—plan deployments accordingly.</li>
+          <li>Extract intermediate reasoning for debugging.</li>
+        </ul>
+        <Callout title="Model ID">
+          `kimi-k2-thinking`
+        </Callout>
+        <Callout title="Availability">
+          US only
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
+  <Accordion title="MiniMax M2 (programming and tools)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Optimized for conversational chat and tool-calling.</li>
+          <li>Strong programming task capabilities.</li>
+          <li>Efficient for high-throughput applications.</li>
+          <li>Good balance of speed and quality.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Code generation and programming assistants.</li>
+          <li>Tool-enabled workflows and agents.</li>
+          <li>Technical support and developer copilots.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>US-only availability—consider alternatives for EU.</li>
+          <li>Leverage tool-calling for structured outputs.</li>
+          <li>Test against Claude for quality comparison.</li>
+        </ul>
+        <Callout title="Model ID">
+          `minimax-m2`
+        </Callout>
+        <Callout title="Availability">
+          US only
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
+  <Accordion title="Qwen3 235B (complex reasoning)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Large-scale model for complex reasoning tasks.</li>
+          <li>Strong conversational and tool-calling support.</li>
+          <li>Agentic coding capabilities for automated workflows.</li>
+          <li>Excellent multilingual understanding.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Complex reasoning and analysis tasks.</li>
+          <li>Agentic coding and autonomous development.</li>
+          <li>Multilingual applications and content.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>US-only availability—plan deployments accordingly.</li>
+          <li>Use for tasks requiring deep reasoning capabilities.</li>
+          <li>Monitor latency for time-sensitive applications.</li>
+        </ul>
+        <Callout title="Model ID">
+          `qwen3-235b`
+        </Callout>
+        <Callout title="Availability">
+          US only
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
+  <Accordion title="Qwen3 Coder 480B (agentic coding specialist)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Largest Qwen model optimized for coding tasks.</li>
+          <li>Agentic coding with autonomous development capabilities.</li>
+          <li>Tool-calling for IDE and workflow integrations.</li>
+          <li>Strong performance across programming languages.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Automated code generation and refactoring.</li>
+          <li>Complex coding agents and development tools.</li>
+          <li>Code review and analysis at scale.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>US-only availability—ideal for US-based dev teams.</li>
+          <li>Expect higher latency due to model size.</li>
+          <li>Combine with tool-calling for IDE integration.</li>
+        </ul>
+        <Callout title="Model ID">
+          `qwen3-coder-480b`
+        </Callout>
+        <Callout title="Availability">
+          US only
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
 </AccordionGroup>
 </section>
 
@@ -542,14 +781,92 @@ Generate photorealistic and stylized visuals straight from prompts.
 </AccordionGroup>
 </section>
 
+## Rerank models
+
+Improve search quality by ranking documents based on semantic relevance to a query.
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+<AccordionGroup>
+  <Accordion title="Cohere Rerank 3.5 (multilingual)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>Enhanced reasoning with broad data compatibility.</li>
+          <li>Multilingual support for global applications.</li>
+          <li>Up to 1000 documents per request.</li>
+          <li>Optimized for RAG pipeline integration.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Retrieval-Augmented Generation (RAG) pipelines.</li>
+          <li>Semantic search result ranking.</li>
+          <li>Multilingual document retrieval.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Use after initial vector search to improve relevance.</li>
+          <li>Set `top_n` to limit results and reduce latency.</li>
+          <li>Rate limit: 250 requests per minute.</li>
+        </ul>
+        <Callout title="Model ID">
+          `cohere-rerank-3-5`
+        </Callout>
+        <Callout title="Availability">
+          US, EU
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+
+  <Accordion title="Amazon Rerank 1.0 (AWS-backed)">
+    <Columns cols={2}>
+      <div>
+        <h4>Highlights</h4>
+        <ul>
+          <li>High-performing reranker backed by AWS infrastructure.</li>
+          <li>Seamless integration with AWS ecosystem.</li>
+          <li>Enterprise-grade reliability and scaling.</li>
+          <li>Consistent performance for production workloads.</li>
+        </ul>
+        <h4>Best for</h4>
+        <ul>
+          <li>Enterprise search applications.</li>
+          <li>AWS-native RAG implementations.</li>
+          <li>High-volume reranking workloads.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Operational tips</h4>
+        <ul>
+          <li>Ideal for teams already using AWS services.</li>
+          <li>Rate limit: 200 requests per minute.</li>
+          <li>Pair with Cohere embeddings for full RAG pipeline.</li>
+        </ul>
+        <Callout title="Model ID">
+          `amazon-rerank-1-0`
+        </Callout>
+        <Callout title="Availability">
+          US, EU
+        </Callout>
+      </div>
+    </Columns>
+  </Accordion>
+</AccordionGroup>
+</section>
+
 ## Model selection playbooks
 
 ### Picking a default chat model
 
-1. Prototype with **Claude 4.5 Haiku** for fast, cost-effective performance.
+1. Prototype with **Claude 4.5 Haiku** or **Nova 2 Lite** for fast, cost-effective performance.
 2. Upgrade to **Claude 4.5 Sonnet** for balanced performance on complex tasks.
 3. Escalate to **Claude 4 Sonnet** for high-stakes workflows (compliance, financial analysis, multi-step coding).
-4. Use **Nova Lite** or **Nova Pro** if you need tighter alignment with AWS governance.
+4. Reach for **Claude Opus 4.5** for complex agentic workflows and autonomous coding tasks.
+5. Use **Nova Pro** if you need tighter alignment with AWS governance.
+6. Try **Qwen3 Coder 480B** or **Kimi K2 Thinking** for specialized coding or reasoning tasks (US only).
 
 ### Cost and performance controls
 
@@ -593,6 +910,9 @@ Generate photorealistic and stylized visuals straight from prompts.
   </Card>
   <Card title="Embeddings API" href="/inference-api/embeddings" icon="vector-square">
     Build RAG, semantic search, and clustering pipelines.
+  </Card>
+  <Card title="Rerank API" href="/inference-api/rerank" icon="arrow-up-wide-short">
+    Improve search relevance by reranking documents semantically.
   </Card>
   <Card title="Image Generation API" href="/inference-api/images-generations" icon="image">
     Turn prompts into assets for marketing, product, and design.

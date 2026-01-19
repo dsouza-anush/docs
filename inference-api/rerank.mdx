@@ -1,0 +1,402 @@
+---
+title: "Rerank"
+description: "Rank documents by semantic relevance to a query for improved RAG and search results"
+---
+
+The `/v1/rerank` endpoint ranks a list of documents by their semantic relevance to a given query. This is essential for Retrieval-Augmented Generation (RAG) pipelines, semantic search, and question-answering applications where you need to surface the most relevant content.
+
+<Note>
+  **Improve RAG Quality**: Use reranking after initial retrieval to boost the relevance of documents passed to your LLM, improving response accuracy and reducing hallucinations.
+</Note>
+
+## Base URL
+
+```
+https://us.inference.heroku.com
+```
+
+## Authentication
+
+All requests must include an `Authorization` header with your Heroku Inference API key:
+
+```bash
+Authorization: Bearer YOUR_RERANK_KEY
+```
+
+You can get your API key from your Heroku app's `RERANK_KEY` config variable (assuming you created the model resource with an `--as RERANK` flag).
+
+## Available Models
+
+| Model | Description | Rate Limit | Availability |
+| --- | --- | --- | --- |
+| `cohere-rerank-3-5` | Enhanced reasoning with broad data compatibility and multilingual support | 250 RPM | US, EU |
+| `amazon-rerank-1-0` | High-performing reranker backed by AWS | 200 RPM | US, EU |
+
+## Request Parameters
+
+### model
+**string** · required
+
+ID of the rerank model to use.
+
+Example: `"cohere-rerank-3-5"` or `"amazon-rerank-1-0"`
+
+### query
+**string** · required
+
+The search query or question to rank documents against.
+
+Example: `"How do I optimize database connection pooling?"`
+
+### documents
+**array** · required
+
+List of document strings to rank. Maximum of 1000 documents per request.
+
+<CodeGroup>
+```json Example
+[
+  "Connection pooling reduces overhead by reusing existing connections.",
+  "You can monitor application performance using built-in metrics.",
+  "Set max pool size based on your dyno count and concurrent queries."
+]
+```
+</CodeGroup>
+
+### top_n
+**integer** · optional
+
+Return only the top N most relevant documents. If not specified, all documents are returned ranked by relevance.
+
+Example: `10`
+
+## Response
+
+### id
+**string**
+
+Unique identifier for the rerank request (UUID format).
+
+### results
+**array**
+
+List of ranked documents, ordered by relevance score (highest first).
+
+<Accordion title="Result Object">
+Each object in the results array includes:
+
+**index** (integer): Original position of the document in the input array (0-indexed)
+
+**relevance_score** (float): Relevance score between 0 and 1, where higher values indicate greater relevance to the query
+</Accordion>
+
+### meta
+**object**
+
+API version and billing information.
+
+- `api_version.version` (string): API version number
+- `api_version.is_experimental` (boolean): Whether this API is experimental
+- `billed_units.search_units` (integer): Number of search units consumed for billing
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+eval $(heroku config -a $APP_NAME --shell | grep '^RERANK_' | sed 's/^/export /' | tee >(cat >&2))
+
+curl $RERANK_URL/v1/rerank \
+  -H "Authorization: Bearer $RERANK_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere-rerank-3-5",
+    "query": "How do I optimize database connection pooling?",
+    "documents": [
+      "Connection pooling reduces overhead by reusing existing database connections instead of creating new ones for each request.",
+      "You can monitor application performance using built-in metrics and logging tools.",
+      "Set max pool size based on your dyno count and expected concurrent queries to prevent connection exhaustion.",
+      "Regular database backups are essential for disaster recovery planning."
+    ],
+    "top_n": 2
+  }'
+```
+
+```python Python (requests)
+import os
+import requests
+
+url = f"{os.getenv('RERANK_URL')}/v1/rerank"
+headers = {
+    "Authorization": f"Bearer {os.getenv('RERANK_KEY')}",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": "cohere-rerank-3-5",
+    "query": "How do I optimize database connection pooling?",
+    "documents": [
+        "Connection pooling reduces overhead by reusing existing database connections.",
+        "You can monitor application performance using built-in metrics.",
+        "Set max pool size based on your dyno count and concurrent queries.",
+        "Regular database backups are essential for disaster recovery."
+    ],
+    "top_n": 2
+}
+
+response = requests.post(url, headers=headers, json=data)
+results = response.json()
+
+# Get the most relevant documents
+for result in results["results"]:
+    print(f"Document {result['index']}: score {result['relevance_score']:.4f}")
+```
+
+```python Python (Cohere SDK)
+import os
+import cohere
+
+# Initialize with Heroku endpoint
+co = cohere.Client(
+    api_key=os.getenv("RERANK_KEY"),
+    base_url=os.getenv("RERANK_URL")
+)
+
+documents = [
+    "Connection pooling reduces overhead by reusing existing connections.",
+    "You can monitor application performance using built-in metrics.",
+    "Set max pool size based on your dyno count and concurrent queries.",
+    "Regular database backups are essential for disaster recovery."
+]
+
+response = co.rerank(
+    model="cohere-rerank-3-5",
+    query="How do I optimize database connection pooling?",
+    documents=documents,
+    top_n=2
+)
+
+for result in response.results:
+    print(f"Document {result.index}: {documents[result.index]}")
+    print(f"Relevance: {result.relevance_score:.4f}\n")
+```
+
+```javascript JavaScript (fetch)
+const response = await fetch(
+  `${process.env.RERANK_URL}/v1/rerank`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.RERANK_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'cohere-rerank-3-5',
+      query: 'How do I optimize database connection pooling?',
+      documents: [
+        'Connection pooling reduces overhead by reusing existing connections.',
+        'You can monitor application performance using built-in metrics.',
+        'Set max pool size based on your dyno count and concurrent queries.',
+        'Regular database backups are essential for disaster recovery.'
+      ],
+      top_n: 2
+    })
+  }
+);
+
+const data = await response.json();
+data.results.forEach(result => {
+  console.log(`Document ${result.index}: score ${result.relevance_score}`);
+});
+```
+
+```typescript TypeScript
+interface RerankResult {
+  index: number;
+  relevance_score: number;
+}
+
+interface RerankResponse {
+  id: string;
+  results: RerankResult[];
+  meta: {
+    api_version: { version: string; is_experimental: boolean };
+    billed_units: { search_units: number };
+  };
+}
+
+async function rerankDocuments(
+  query: string,
+  documents: string[],
+  topN?: number
+): Promise<RerankResponse> {
+  const response = await fetch(
+    `${process.env.RERANK_URL}/v1/rerank`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RERANK_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'cohere-rerank-3-5',
+        query,
+        documents,
+        ...(topN && { top_n: topN })
+      })
+    }
+  );
+
+  return response.json();
+}
+
+// Usage
+const results = await rerankDocuments(
+  'How do I optimize database connection pooling?',
+  [
+    'Connection pooling reduces overhead by reusing existing connections.',
+    'You can monitor application performance using built-in metrics.',
+    'Set max pool size based on dyno count and concurrent queries.'
+  ],
+  2
+);
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+
+uri = URI("#{ENV['RERANK_URL']}/v1/rerank")
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV['RERANK_KEY']}"
+request['Content-Type'] = 'application/json'
+
+request.body = {
+  model: 'cohere-rerank-3-5',
+  query: 'How do I optimize database connection pooling?',
+  documents: [
+    'Connection pooling reduces overhead by reusing existing connections.',
+    'You can monitor application performance using built-in metrics.',
+    'Set max pool size based on dyno count and concurrent queries.',
+    'Regular database backups are essential for disaster recovery.'
+  ],
+  top_n: 2
+}.to_json
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+results = JSON.parse(response.body)
+results['results'].each do |result|
+  puts "Document #{result['index']}: score #{result['relevance_score']}"
+end
+```
+
+</CodeGroup>
+
+### Response Example
+
+```json
+{
+  "id": "f844c7c3-c357-4476-9a9d-d2de06f2106f",
+  "results": [
+    {
+      "index": 0,
+      "relevance_score": 0.6740
+    },
+    {
+      "index": 2,
+      "relevance_score": 0.5308
+    }
+  ],
+  "meta": {
+    "api_version": {
+      "version": "2",
+      "is_experimental": false
+    },
+    "billed_units": {
+      "search_units": 1
+    }
+  }
+}
+```
+
+## Use Cases
+
+### RAG Pipeline Enhancement
+
+Reranking is most powerful when combined with initial retrieval. First retrieve candidates using embeddings, then rerank to surface the most relevant documents before passing them to your LLM.
+
+```python
+import os
+import requests
+
+def rag_with_rerank(query: str, retrieved_docs: list[str], top_k: int = 3):
+    """
+    Rerank retrieved documents and return the most relevant ones.
+    """
+    # Step 1: Rerank the retrieved documents
+    rerank_response = requests.post(
+        f"{os.getenv('RERANK_URL')}/v1/rerank",
+        headers={
+            "Authorization": f"Bearer {os.getenv('RERANK_KEY')}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "cohere-rerank-3-5",
+            "query": query,
+            "documents": retrieved_docs,
+            "top_n": top_k
+        }
+    )
+
+    reranked = rerank_response.json()["results"]
+
+    # Step 2: Get the top documents in ranked order
+    top_docs = [retrieved_docs[r["index"]] for r in reranked]
+
+    # Step 3: Pass to LLM for generation
+    context = "\n\n".join(top_docs)
+    return context, reranked
+```
+
+### Semantic Search
+
+Improve search result quality by reranking keyword or vector search results based on semantic relevance.
+
+### Question Answering
+
+Identify the most relevant documents for answering user questions, reducing the context window needed and improving answer accuracy.
+
+## Error Responses
+
+| Status Code | Description | Common Causes |
+| --- | --- | --- |
+| 400 | Bad Request | Missing required fields, documents exceed 1000 limit, invalid JSON |
+| 401 | Unauthorized | Missing or invalid authorization token |
+| 403 | Forbidden | No access to the requested model |
+| 404 | Not Found | Invalid model ID |
+| 429 | Too Many Requests | Rate limit exceeded (250 RPM for Cohere, 200 RPM for Amazon) |
+| 500 | Internal Server Error | Backend service errors |
+
+<Tip>
+  Implement exponential backoff when handling 429 errors to gracefully handle rate limits.
+</Tip>
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Embeddings" href="/inference-api/embeddings" icon="vector-square">
+    Generate embeddings for initial retrieval before reranking
+  </Card>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Generate responses using reranked context
+  </Card>
+  <Card title="Vector Database" href="/vector-database/pgvector" icon="database">
+    Store and query embeddings with pgvector
+  </Card>
+  <Card title="Embeddings + RAG Cookbook" href="/cookbook/embeddings-rag" icon="book">
+    Build complete RAG pipelines
+  </Card>
+</CardGroup>

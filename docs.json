@@ -58,6 +58,7 @@
               "inference-api/openai-compatibility",
               "inference-api/structured-output",
               "inference-api/embeddings",
+              "inference-api/rerank",
               "inference-api/images-generations",
               "inference-api/mcp-servers"
             ]
@@ -181,6 +182,7 @@
               "inference-api/chat-completions",
               "inference-api/agents-heroku",
               "inference-api/embeddings",
+              "inference-api/rerank",
               "inference-api/images-generations",
               "inference-api/mcp-servers"
             ]

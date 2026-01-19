@@ -47,6 +47,7 @@ Tokens are pieces of text that models process:
 
     | Model | Input pricing | Output pricing | Extended thinking | Provider reference |
     | --- | --- | --- | --- | --- |
+    | Claude Opus 4.5 | $5.00 / 1M tokens | $25.00 / 1M tokens | $25.00 / 1M tokens | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Claude 4.5 Sonnet | $3.00 / 1M tokens | $15.00 / 1M tokens | $15.00 / 1M tokens | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Claude 4 Sonnet | $3.00 / 1M tokens | $15.00 / 1M tokens | $15.00 / 1M tokens | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Claude 3.7 Sonnet | $3.00 / 1M tokens | $15.00 / 1M tokens | $15.00 / 1M tokens | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
@@ -54,14 +55,21 @@ Tokens are pieces of text that models process:
     | Claude 4.5 Haiku | $1.00 / 1M tokens | $5.00 / 1M tokens | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Claude 3.5 Haiku | $0.80 / 1M tokens | $4.00 / 1M tokens | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Claude 3.0 Haiku | $0.25 / 1M tokens | $1.25 / 1M tokens | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | Amazon Nova 2 Lite | $0.30 / 1M tokens | $2.50 / 1M tokens | Available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Amazon Nova Pro | $0.80 / 1M tokens | $3.20 / 1M tokens | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | Amazon Nova Lite | $0.06 / 1M tokens | $0.24 / 1M tokens | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | Kimi K2 Thinking | See provider | See provider | Available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | MiniMax M2 | See provider | See provider | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | Qwen3 235B | See provider | See provider | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+    | Qwen3 Coder 480B | See provider | See provider | Not available | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
     | OpenAI GPT OSS 120B | Contact for pricing | Contact for pricing | Not available | [Monitor in Heroku Dashboard](https://dashboard.heroku.com/) |
 
     **Best-fit guidance**
+    - Claude Opus 4.5: frontier capabilities for complex agentic workflows (premium pricing).
     - Claude Sonnet models: balanced or advanced reasoning with extended thinking support.
     - Claude Haiku models: latency-sensitive, cost-optimized workloads.
     - Amazon Nova: workloads standardized on AWS Bedrock billing.
+    - Kimi K2, MiniMax, Qwen: specialized models for coding and reasoning (US only).
     - GPT OSS 120B: experimentation and custom deployments with open-source weights.
 
     <Tip>
@@ -90,6 +98,25 @@ Tokens are pieces of text that models process:
     - Reuse negative prompts to avoid generating unusable images.
     - Standardize on a small set of resolutions for easier budgeting.
   </Tab>
+
+  <Tab title="Rerank Models">
+    Reranking is billed per search, where each search can rank up to 1000 documents against a query.
+
+    | Model | Pricing | Rate limit | Provider reference |
+    | --- | --- | --- | --- |
+    | Cohere Rerank 3.5 | $2.00 / 1,000 searches | 250 RPM | [Cohere pricing](https://cohere.com/pricing) |
+    | Amazon Rerank 1.0 | See provider pricing | 200 RPM | [AWS Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) |
+
+    **Cost optimization**
+    - Use `top_n` parameter to return only the most relevant documents.
+    - Batch reranking requests when possible.
+    - Cache rerank results for repeated queries.
+
+    **Use cases**
+    - Improve RAG pipeline relevance before sending context to LLMs.
+    - Boost semantic search result quality.
+    - Question-answering systems with better document selection.
+  </Tab>
 </Tabs>
 
 ## Cost Comparison
@@ -101,6 +128,7 @@ Relative cost per task (lower is better):
 ```
 Claude 3.0 Haiku     ██░░░░░░░░░░░░░░░░░░ Most cost-efficient
 Claude 3.5 Haiku     ███░░░░░░░░░░░░░░░░░ Very cost-efficient
+Amazon Nova 2 Lite   ████░░░░░░░░░░░░░░░░ Cost-efficient
 Amazon Nova Lite     ████░░░░░░░░░░░░░░░░ Cost-efficient
 Claude 4.5 Haiku     █████░░░░░░░░░░░░░░░ Cost-efficient
 Claude 3.5 Sonnet    ████████░░░░░░░░░░░░ Moderate
@@ -108,6 +136,7 @@ Claude 4.5 Sonnet    ████████░░░░░░░░░░░�
 Amazon Nova Pro      ██████████░░░░░░░░░░ Moderate
 Claude 3.7 Sonnet    ███████████████░░░░░ Higher cost
 Claude 4 Sonnet      ████████████████████ Premium
+Claude Opus 4.5      ████████████████████ Frontier (highest)
 ```
 
 ### Example costs
