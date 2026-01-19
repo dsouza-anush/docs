@@ -1,0 +1,410 @@
+---
+title: "Extended Thinking Examples"
+description: "Use Claude's extended thinking for complex reasoning, math, and multi-step problem solving"
+---
+
+Extended thinking lets Claude "think out loud" before responding, dramatically improving performance on complex reasoning tasks. Learn when and how to use it effectively.
+
+## What is Extended Thinking?
+
+Extended thinking gives Claude a "scratchpad" to work through problems step-by-step before providing a final answer. It's like showing your work in math class.
+
+```
+Without Extended Thinking:
+User: "Is 17 prime?"
+Claude: "Yes" (fast, simple)
+
+With Extended Thinking:
+User: "Prove that there are infinitely many primes"
+Claude: [Thinks through Euclid's proof step by step]
+       [Considers edge cases]
+       [Formulates clear explanation]
+       Final Answer: "Here's Euclid's elegant proof..."
+```
+
+## When to Use Extended Thinking
+
+| Use Case | Extended Thinking? | Why |
+|----------|-------------------|-----|
+| Simple Q&A | No | Overhead not needed |
+| Math proofs | Yes | Step-by-step reasoning helps |
+| Code debugging | Yes | Systematic analysis improves accuracy |
+| Strategic analysis | Yes | Trade-off consideration benefits |
+| Content generation | Usually no | Creative tasks don't need it |
+| Complex planning | Yes | Multi-step reasoning required |
+
+## Basic Usage
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+def ask_with_thinking(
+    question: str,
+    budget_tokens: int = 5000
+) -> dict:
+    """Ask a question with extended thinking enabled."""
+
+    response = client.chat.completions.create(
+        model="claude-4-sonnet",  # Supports extended thinking
+        messages=[
+            {"role": "user", "content": question}
+        ],
+        max_tokens=2000,
+        extra_body={
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": budget_tokens
+            }
+        }
+    )
+
+    return {
+        "answer": response.choices[0].message.content,
+        "usage": {
+            "input": response.usage.prompt_tokens,
+            "output": response.usage.completion_tokens,
+            "thinking": getattr(response.usage, 'thinking_tokens', 0)
+        }
+    }
+
+# Example: Complex reasoning
+result = ask_with_thinking(
+    "A farmer has 17 sheep. All but 9 run away. How many sheep does the farmer have left? Walk through your reasoning.",
+    budget_tokens=3000
+)
+print(result["answer"])
+```
+
+## Streaming Extended Thinking
+
+```python
+def stream_with_thinking(question: str) -> str:
+    """Stream response with thinking, showing progress."""
+
+    response = client.chat.completions.create(
+        model="claude-4-sonnet",
+        messages=[{"role": "user", "content": question}],
+        stream=True,
+        extra_body={
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": 5000
+            }
+        }
+    )
+
+    thinking_content = ""
+    answer_content = ""
+    current_block = None
+
+    print("Thinking", end="", flush=True)
+
+    for chunk in response:
+        delta = chunk.choices[0].delta
+
+        # Check for content block type changes
+        if hasattr(delta, 'content_block_type'):
+            current_block = delta.content_block_type
+            if current_block == "text":
+                print("\n\nAnswer:", flush=True)
+
+        # Accumulate content
+        if delta.content:
+            if current_block == "thinking":
+                thinking_content += delta.content
+                print(".", end="", flush=True)  # Progress indicator
+            else:
+                answer_content += delta.content
+                print(delta.content, end="", flush=True)
+
+    print("\n")
+    return answer_content
+
+# Example
+stream_with_thinking(
+    "Explain why P=NP being true would revolutionize computer science"
+)
+```
+
+## Thinking Budget Strategies
+
+```python
+from dataclasses import dataclass
+from typing import Literal
+
+@dataclass
+class ThinkingConfig:
+    budget: int
+    description: str
+
+THINKING_LEVELS = {
+    "minimal": ThinkingConfig(1000, "Quick verification"),
+    "standard": ThinkingConfig(5000, "Normal reasoning"),
+    "deep": ThinkingConfig(10000, "Complex analysis"),
+    "extensive": ThinkingConfig(20000, "Research-level thinking")
+}
+
+def select_thinking_level(task_type: str) -> ThinkingConfig:
+    """Select appropriate thinking level for task type."""
+
+    task_mapping = {
+        "math": "deep",
+        "code_review": "standard",
+        "debugging": "deep",
+        "summarization": "minimal",
+        "strategy": "extensive",
+        "simple_qa": "minimal",
+        "proof": "extensive"
+    }
+
+    level = task_mapping.get(task_type, "standard")
+    return THINKING_LEVELS[level]
+
+def smart_thinking_request(question: str, task_type: str) -> dict:
+    """Make request with appropriate thinking budget."""
+
+    config = select_thinking_level(task_type)
+
+    response = client.chat.completions.create(
+        model="claude-4-sonnet",
+        messages=[{"role": "user", "content": question}],
+        extra_body={
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": config.budget
+            }
+        }
+    )
+
+    return {
+        "answer": response.choices[0].message.content,
+        "thinking_level": task_type,
+        "budget_used": config.budget
+    }
+
+# Examples
+result = smart_thinking_request(
+    "Write a SQL query to find duplicate records",
+    task_type="code_review"
+)
+
+result = smart_thinking_request(
+    "Prove that the square root of 2 is irrational",
+    task_type="proof"
+)
+```
+
+## Real-World Examples
+
+### Complex Math Problem
+
+```python
+math_problem = """
+A ball is thrown vertically upward with an initial velocity of 20 m/s.
+Taking g = 10 m/s², calculate:
+1. The maximum height reached
+2. The time to reach maximum height
+3. The total time of flight
+4. The velocity when the ball returns to the starting point
+
+Show all work.
+"""
+
+result = ask_with_thinking(math_problem, budget_tokens=8000)
+print(result["answer"])
+```
+
+### Code Debugging
+
+```python
+debug_request = """
+This Python function is supposed to find the longest palindromic substring,
+but it has bugs. Find and fix them:
+
+```python
+def longest_palindrome(s):
+    if len(s) < 2:
+        return s
+
+    longest = ""
+    for i in range(len(s)):
+        # Odd length palindromes
+        left, right = i, i
+        while left >= 0 and right < len(s) and s[left] == s[right]:
+            if right - left > len(longest):
+                longest = s[left:right]
+            left -= 1
+            right += 1
+
+    return longest
+```
+
+Analyze the code systematically and provide the corrected version.
+"""
+
+result = ask_with_thinking(debug_request, budget_tokens=6000)
+print(result["answer"])
+```
+
+### Strategic Analysis
+
+```python
+strategy_question = """
+We're a B2B SaaS startup with $2M ARR considering two paths:
+1. Raise Series A ($10M at $40M valuation) and grow aggressively
+2. Bootstrap to profitability, grow slower, maintain control
+
+Our metrics:
+- 15% MoM growth
+- 18-month runway
+- 85% gross margin
+- $50K average contract value
+
+Analyze the trade-offs and recommend a path with reasoning.
+"""
+
+result = ask_with_thinking(strategy_question, budget_tokens=15000)
+print(result["answer"])
+```
+
+## Cost Considerations
+
+Extended thinking uses additional tokens:
+
+```python
+def estimate_thinking_cost(
+    input_tokens: int,
+    output_tokens: int,
+    thinking_tokens: int,
+    model: str = "claude-4-sonnet"
+) -> dict:
+    """Estimate cost including thinking tokens."""
+
+    # Claude 4 Sonnet rates
+    rates = {
+        "input": 3.00,    # per 1M
+        "output": 15.00,  # per 1M
+        "thinking": 15.00 # Same as output
+    }
+
+    costs = {
+        "input": (input_tokens / 1_000_000) * rates["input"],
+        "output": (output_tokens / 1_000_000) * rates["output"],
+        "thinking": (thinking_tokens / 1_000_000) * rates["thinking"]
+    }
+
+    costs["total"] = sum(costs.values())
+
+    return {
+        "tokens": {
+            "input": input_tokens,
+            "output": output_tokens,
+            "thinking": thinking_tokens
+        },
+        "costs": {k: f"${v:.6f}" for k, v in costs.items()}
+    }
+
+# Example
+print(estimate_thinking_cost(500, 1000, 5000))
+# Thinking adds significant cost for complex problems
+```
+
+## Conditional Thinking
+
+Only use extended thinking when needed:
+
+```python
+def smart_query(question: str) -> dict:
+    """Use extended thinking only for complex questions."""
+
+    # Detect if question needs deep thinking
+    complexity_indicators = [
+        "prove", "analyze", "compare", "trade-off",
+        "step by step", "debug", "why does", "explain how"
+    ]
+
+    needs_thinking = any(
+        indicator in question.lower()
+        for indicator in complexity_indicators
+    )
+
+    # Also check question length
+    if len(question.split()) > 50:
+        needs_thinking = True
+
+    if needs_thinking:
+        return ask_with_thinking(question, budget_tokens=5000)
+    else:
+        # Regular request without thinking
+        response = client.chat.completions.create(
+            model="claude-4-5-sonnet",  # Faster model for simple queries
+            messages=[{"role": "user", "content": question}],
+            max_tokens=1000
+        )
+        return {"answer": response.choices[0].message.content}
+
+# Auto-selects appropriate mode
+smart_query("What's 2+2?")  # No thinking
+smart_query("Prove the Pythagorean theorem")  # With thinking
+```
+
+## Extracting Thinking for Debugging
+
+```python
+def get_thinking_trace(question: str) -> dict:
+    """Get both thinking and answer for debugging/analysis."""
+
+    response = client.chat.completions.create(
+        model="claude-4-sonnet",
+        messages=[{"role": "user", "content": question}],
+        extra_body={
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": 5000
+            }
+        }
+    )
+
+    # Parse content blocks
+    thinking = ""
+    answer = ""
+
+    for block in response.choices[0].message.content_blocks:
+        if block.type == "thinking":
+            thinking = block.thinking
+        elif block.type == "text":
+            answer = block.text
+
+    return {
+        "thinking": thinking,
+        "answer": answer,
+        "tokens": {
+            "thinking": getattr(response.usage, 'thinking_tokens', 0),
+            "output": response.usage.completion_tokens
+        }
+    }
+
+# Use for debugging model behavior
+result = get_thinking_trace("Why is the sky blue?")
+print("THINKING PROCESS:")
+print(result["thinking"])
+print("\nFINAL ANSWER:")
+print(result["answer"])
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Models Overview" href="/inference-api/models" icon="sparkles">
+    Which models support extended thinking
+  </Card>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Extended thinking costs
+  </Card>
+</CardGroup>

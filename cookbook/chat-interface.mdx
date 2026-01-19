@@ -1,0 +1,510 @@
+---
+title: "Build a Chat Interface"
+description: "Create a complete chat application with streaming responses, message history, and Heroku deployment"
+---
+
+Build a production-ready chat interface with real-time streaming responses. This tutorial covers the full stack: React frontend, Python backend, message persistence, and Heroku deployment.
+
+## What You'll Build
+
+- React chat UI with real-time streaming
+- Python/Flask backend with streaming API
+- Message history stored in Postgres
+- Rate limiting per user
+- One-click Heroku deployment
+
+## Project Structure
+
+```
+chat-app/
+├── backend/
+│   ├── app.py
+│   ├── requirements.txt
+│   └── Procfile
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── Chat.tsx
+│   │   └── api.ts
+│   └── package.json
+└── README.md
+```
+
+## Backend: Flask API with Streaming
+
+Create `backend/app.py`:
+
+```python
+import os
+import json
+from flask import Flask, request, Response, jsonify, stream_with_context
+from flask_cors import CORS
+from openai import OpenAI
+import psycopg2
+from datetime import datetime
+import hashlib
+
+app = Flask(__name__)
+CORS(app)
+
+# Initialize OpenAI client
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+def get_db():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
+# ----- Database Setup -----
+def init_db():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY,
+            conversation_id TEXT REFERENCES conversations(id),
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+# Initialize on startup
+with app.app_context():
+    init_db()
+
+# ----- Rate Limiting -----
+rate_limits = {}  # In production, use Redis
+
+def check_rate_limit(user_id: str, limit: int = 20) -> bool:
+    """Simple rate limiting: 20 requests per minute per user."""
+    now = datetime.now()
+    key = f"{user_id}:{now.minute}"
+
+    if key not in rate_limits:
+        rate_limits[key] = 0
+
+    rate_limits[key] += 1
+    return rate_limits[key] <= limit
+
+# ----- API Endpoints -----
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    """Stream chat completion response."""
+    data = request.json
+    user_id = data.get("user_id", "anonymous")
+    conversation_id = data.get("conversation_id")
+    message = data.get("message", "")
+
+    if not message:
+        return jsonify({"error": "Message required"}), 400
+
+    if not check_rate_limit(user_id):
+        return jsonify({"error": "Rate limit exceeded"}), 429
+
+    # Get or create conversation
+    conn = get_db()
+    cur = conn.cursor()
+
+    if not conversation_id:
+        conversation_id = hashlib.md5(f"{user_id}{datetime.now()}".encode()).hexdigest()[:16]
+        cur.execute(
+            "INSERT INTO conversations (id, user_id) VALUES (%s, %s)",
+            (conversation_id, user_id)
+        )
+
+    # Save user message
+    cur.execute(
+        "INSERT INTO messages (conversation_id, role, content) VALUES (%s, %s, %s)",
+        (conversation_id, "user", message)
+    )
+    conn.commit()
+
+    # Get conversation history
+    cur.execute(
+        "SELECT role, content FROM messages WHERE conversation_id = %s ORDER BY created_at",
+        (conversation_id,)
+    )
+    history = [{"role": row[0], "content": row[1]} for row in cur.fetchall()]
+
+    cur.close()
+    conn.close()
+
+    # Stream response
+    def generate():
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            *history
+        ]
+
+        response = client.chat.completions.create(
+            model=os.getenv("INFERENCE_MODEL_ID", "claude-4-5-sonnet"),
+            messages=messages,
+            max_tokens=1000,
+            stream=True
+        )
+
+        full_response = ""
+
+        for chunk in response:
+            if chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                full_response += content
+                yield f"data: {json.dumps({'content': content})}\n\n"
+
+        # Save assistant message
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO messages (conversation_id, role, content) VALUES (%s, %s, %s)",
+            (conversation_id, "assistant", full_response)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        yield f"data: {json.dumps({'done': True, 'conversation_id': conversation_id})}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+@app.route("/api/conversations/<conversation_id>", methods=["GET"])
+def get_conversation(conversation_id):
+    """Get conversation history."""
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT role, content, created_at FROM messages WHERE conversation_id = %s ORDER BY created_at",
+        (conversation_id,)
+    )
+
+    messages = [
+        {"role": row[0], "content": row[1], "timestamp": row[2].isoformat()}
+        for row in cur.fetchall()
+    ]
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"messages": messages})
+
+@app.route("/api/conversations", methods=["GET"])
+def list_conversations():
+    """List user's conversations."""
+    user_id = request.args.get("user_id", "anonymous")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT c.id, c.created_at, m.content
+        FROM conversations c
+        JOIN messages m ON m.conversation_id = c.id
+        WHERE c.user_id = %s AND m.role = 'user'
+        AND m.created_at = (SELECT MIN(created_at) FROM messages WHERE conversation_id = c.id)
+        ORDER BY c.created_at DESC
+        LIMIT 20
+        """,
+        (user_id,)
+    )
+
+    conversations = [
+        {"id": row[0], "created_at": row[1].isoformat(), "preview": row[2][:50]}
+        for row in cur.fetchall()
+    ]
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"conversations": conversations})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+```
+
+Create `backend/requirements.txt`:
+
+```
+flask==3.0.0
+flask-cors==4.0.0
+openai==1.12.0
+psycopg2-binary==2.9.9
+gunicorn==21.2.0
+```
+
+Create `backend/Procfile`:
+
+```
+web: gunicorn app:app
+```
+
+## Frontend: React Chat UI
+
+Create `frontend/src/Chat.tsx`:
+
+```tsx
+import React, { useState, useRef, useEffect } from 'react';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export function Chat() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || isStreaming) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    setIsStreaming(true);
+
+    // Add user message immediately
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+
+    // Add empty assistant message for streaming
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          conversation_id: conversationId,
+          user_id: 'demo-user'
+        })
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.content) {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1].content += data.content;
+                return updated;
+              });
+            }
+
+            if (data.conversation_id) {
+              setConversationId(data.conversation_id);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1].content = 'Sorry, an error occurred.';
+        return updated;
+      });
+    }
+
+    setIsStreaming(false);
+  };
+
+  return (
+    <div className="chat-container">
+      <div className="messages">
+        {messages.map((msg, i) => (
+          <div key={i} className={`message ${msg.role}`}>
+            <div className="message-content">{msg.content}</div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="input-area">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Type a message..."
+          disabled={isStreaming}
+        />
+        <button onClick={sendMessage} disabled={isStreaming}>
+          {isStreaming ? '...' : 'Send'}
+        </button>
+      </div>
+
+      <style>{`
+        .chat-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+
+        .messages {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px 0;
+        }
+
+        .message {
+          margin-bottom: 16px;
+          padding: 12px 16px;
+          border-radius: 12px;
+          max-width: 80%;
+        }
+
+        .message.user {
+          background: #007bff;
+          color: white;
+          margin-left: auto;
+        }
+
+        .message.assistant {
+          background: #f1f1f1;
+          color: #333;
+        }
+
+        .input-area {
+          display: flex;
+          gap: 12px;
+          padding-top: 20px;
+          border-top: 1px solid #eee;
+        }
+
+        input {
+          flex: 1;
+          padding: 12px 16px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          font-size: 16px;
+        }
+
+        button {
+          padding: 12px 24px;
+          background: #007bff;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+        }
+
+        button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+      `}</style>
+    </div>
+  );
+}
+```
+
+## Deploy to Heroku
+
+```bash
+# Create Heroku app
+heroku create my-chat-app
+
+# Add Postgres
+heroku addons:create heroku-postgresql:essential-0
+
+# Add Managed Inference
+heroku ai:models:create claude-4-5-sonnet --app my-chat-app
+
+# Deploy backend
+cd backend
+git init
+heroku git:remote -a my-chat-app
+git add . && git commit -m "Initial"
+git push heroku main
+
+# Build and deploy frontend (static files)
+cd ../frontend
+npm run build
+# Serve from backend or use Heroku static buildpack
+```
+
+## Production Enhancements
+
+### Add Authentication
+
+```python
+from functools import wraps
+from flask import request
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not verify_token(auth_header):
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
+```
+
+### Add WebSocket Support
+
+For true real-time updates, consider using WebSockets with Flask-SocketIO.
+
+### Add Message Reactions
+
+```sql
+ALTER TABLE messages ADD COLUMN feedback TEXT;
+
+-- Track thumbs up/down for quality monitoring
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Full API reference
+  </Card>
+  <Card title="Streaming Guide" href="/inference-api/chat-completions#streaming" icon="stream">
+    Streaming best practices
+  </Card>
+</CardGroup>

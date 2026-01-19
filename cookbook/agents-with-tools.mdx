@@ -1,0 +1,402 @@
+---
+title: "Agentic Workflows with Tools"
+description: "Build AI agents that query databases, execute code, and perform multi-step tasks autonomously"
+---
+
+Build agents that go beyond chat to perform real actions - querying your database, running code, reading documents, and executing multi-step workflows autonomously.
+
+## What You'll Build
+
+An AI agent that can:
+- Query your Postgres database with natural language
+- Execute Python code for calculations
+- Chain multiple tool calls together
+- Handle errors and recover gracefully
+
+## Prerequisites
+
+- Heroku app with Managed Inference add-on
+- Heroku Postgres database
+- A second app (or the same app) where tools will execute
+
+## Understanding the Agent Loop
+
+```
+User: "What were our top 5 products last month?"
+    ↓
+Agent analyzes request
+    ↓
+Agent decides: "I need to query the database"
+    ↓
+Tool executes: SELECT * FROM sales...
+    ↓
+Agent receives results
+    ↓
+Agent formats and responds to user
+```
+
+## Basic Agent with Database Access
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL"),
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+def query_database(question: str) -> str:
+    """Use an agent to answer questions about your database."""
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a data analyst assistant. Use the pg_psql tool to query the database and answer questions.
+
+Database schema:
+- users (id, name, email, created_at)
+- orders (id, user_id, total, status, created_at)
+- products (id, name, price, category)
+- order_items (order_id, product_id, quantity)
+
+Always explain what query you're running and summarize results clearly."""
+            },
+            {
+                "role": "user",
+                "content": question
+            }
+        ],
+        tools=[
+            {
+                "type": "heroku_tool",
+                "name": "pg_psql",
+                "description": "Execute SQL queries on the database",
+                "runtime_params": {
+                    "target_app_name": os.getenv("TARGET_APP_NAME"),
+                    "dyno_size": "standard-1x",
+                    "ttl_seconds": 30,
+                    "max_calls": 3,
+                    "tool_params": {
+                        "db_attachment": "DATABASE_URL"
+                    }
+                }
+            }
+        ],
+        stream=False
+    )
+
+    return response.choices[0].message.content
+
+# Example usage
+result = query_database("What are our top 5 products by revenue this month?")
+print(result)
+```
+
+## Agent with Code Execution
+
+```python
+def analyze_with_code(request: str) -> str:
+    """Agent that can run Python code for analysis."""
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a data analyst with Python execution capabilities.
+
+When you need to:
+- Perform calculations → use code_exec_python
+- Query data → use pg_psql
+- Combine both for complex analysis
+
+Always validate your results before presenting them."""
+            },
+            {
+                "role": "user",
+                "content": request
+            }
+        ],
+        tools=[
+            {
+                "type": "heroku_tool",
+                "name": "pg_psql",
+                "description": "Query the database",
+                "runtime_params": {
+                    "target_app_name": os.getenv("TARGET_APP_NAME"),
+                    "ttl_seconds": 30,
+                    "max_calls": 2
+                }
+            },
+            {
+                "type": "heroku_tool",
+                "name": "code_exec_python",
+                "description": "Execute Python code for analysis",
+                "runtime_params": {
+                    "target_app_name": os.getenv("TARGET_APP_NAME"),
+                    "ttl_seconds": 60,
+                    "max_calls": 3
+                }
+            }
+        ]
+    )
+
+    return response.choices[0].message.content
+
+# Example: Complex analysis
+result = analyze_with_code("""
+Query our monthly revenue for the past 6 months,
+then calculate the month-over-month growth rate
+and project next month's revenue using linear regression.
+""")
+```
+
+## Multi-Tool Agent with Document Reading
+
+```python
+def research_agent(question: str, doc_url: str = None) -> str:
+    """Agent that can query data, read documents, and run code."""
+
+    tools = [
+        {
+            "type": "heroku_tool",
+            "name": "pg_psql",
+            "description": "Query database for internal data",
+            "runtime_params": {
+                "target_app_name": os.getenv("TARGET_APP_NAME"),
+                "ttl_seconds": 30,
+                "max_calls": 2
+            }
+        },
+        {
+            "type": "heroku_tool",
+            "name": "code_exec_python",
+            "description": "Run Python for calculations and data processing",
+            "runtime_params": {
+                "target_app_name": os.getenv("TARGET_APP_NAME"),
+                "ttl_seconds": 60,
+                "max_calls": 3
+            }
+        },
+        {
+            "type": "heroku_tool",
+            "name": "doc_reader",
+            "description": "Read and parse documents (PDF, HTML)",
+            "runtime_params": {
+                "target_app_name": os.getenv("TARGET_APP_NAME"),
+                "ttl_seconds": 30,
+                "max_calls": 2
+            }
+        }
+    ]
+
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a research assistant with access to:
+- Database (pg_psql) - for internal data
+- Python (code_exec_python) - for calculations
+- Document reader (doc_reader) - for external documents
+
+Approach complex questions step by step:
+1. Identify what information you need
+2. Gather data using appropriate tools
+3. Analyze and synthesize
+4. Present clear findings"""
+        },
+        {
+            "role": "user",
+            "content": question
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=messages,
+        tools=tools,
+        stream=True  # Stream for better UX on long operations
+    )
+
+    # Collect streamed response
+    full_response = ""
+    for chunk in response:
+        if chunk.choices[0].delta.content:
+            full_response += chunk.choices[0].delta.content
+            print(chunk.choices[0].delta.content, end="", flush=True)
+
+    return full_response
+```
+
+## Error Handling and Recovery
+
+```python
+def robust_agent(question: str, max_retries: int = 2) -> str:
+    """Agent with error handling and retry logic."""
+
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a helpful assistant with database access.
+
+Error handling rules:
+- If a query fails, try to fix it (check syntax, table names)
+- If data is missing, acknowledge it clearly
+- Never make up data - only report what you find
+- If you can't complete the task after trying, explain why"""
+        },
+        {
+            "role": "user",
+            "content": question
+        }
+    ]
+
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model="claude-4-5-sonnet",
+                messages=messages,
+                tools=[
+                    {
+                        "type": "heroku_tool",
+                        "name": "pg_psql",
+                        "runtime_params": {
+                            "target_app_name": os.getenv("TARGET_APP_NAME"),
+                            "ttl_seconds": 30,
+                            "max_calls": 3
+                        }
+                    }
+                ]
+            )
+
+            return response.choices[0].message.content
+
+        except Exception as e:
+            if attempt < max_retries:
+                # Add error context for retry
+                messages.append({
+                    "role": "user",
+                    "content": f"The previous attempt failed with: {str(e)}. Please try again with a different approach."
+                })
+            else:
+                return f"I was unable to complete this request after {max_retries + 1} attempts. Error: {str(e)}"
+```
+
+## Practical Example: Sales Dashboard Agent
+
+```python
+class SalesAgent:
+    """Production-ready sales analytics agent."""
+
+    def __init__(self):
+        self.client = OpenAI(
+            base_url=os.getenv("INFERENCE_URL") + "/v1",
+            api_key=os.getenv("INFERENCE_KEY")
+        )
+        self.target_app = os.getenv("TARGET_APP_NAME")
+
+    def _get_tools(self):
+        return [
+            {
+                "type": "heroku_tool",
+                "name": "pg_psql",
+                "description": "Query sales database",
+                "runtime_params": {
+                    "target_app_name": self.target_app,
+                    "ttl_seconds": 30,
+                    "max_calls": 5
+                }
+            },
+            {
+                "type": "heroku_tool",
+                "name": "code_exec_python",
+                "description": "Run analytics code",
+                "runtime_params": {
+                    "target_app_name": self.target_app,
+                    "ttl_seconds": 60,
+                    "max_calls": 3
+                }
+            }
+        ]
+
+    def daily_summary(self) -> str:
+        return self._query(
+            "Generate a daily sales summary including: total revenue, "
+            "number of orders, top 3 products, and comparison to yesterday."
+        )
+
+    def revenue_forecast(self, days: int = 30) -> str:
+        return self._query(
+            f"Analyze the past 90 days of revenue and forecast the next {days} days. "
+            "Use Python for the forecasting calculation."
+        )
+
+    def customer_analysis(self, segment: str = None) -> str:
+        query = "Analyze our customer base: average order value, repeat purchase rate, churn risk."
+        if segment:
+            query += f" Focus on the {segment} segment."
+        return self._query(query)
+
+    def _query(self, question: str) -> str:
+        response = self.client.chat.completions.create(
+            model="claude-4-5-sonnet",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are a sales analytics expert.
+
+Database schema:
+- orders (id, user_id, total, created_at, status)
+- order_items (order_id, product_id, quantity, price)
+- products (id, name, category, price)
+- users (id, name, email, created_at, segment)
+
+Always provide actionable insights, not just data."""
+                },
+                {"role": "user", "content": question}
+            ],
+            tools=self._get_tools()
+        )
+
+        return response.choices[0].message.content
+
+# Usage
+agent = SalesAgent()
+print(agent.daily_summary())
+print(agent.revenue_forecast(14))
+```
+
+## Security Best Practices
+
+<Warning>
+**Important security considerations:**
+- Always validate user input before passing to agents
+- Use read-only database users when possible
+- Set appropriate `max_calls` limits
+- Monitor agent actions in production
+- Never expose raw SQL to end users
+</Warning>
+
+```python
+# Sanitize user input
+def sanitize_question(question: str) -> str:
+    # Remove potential SQL injection attempts
+    dangerous_patterns = ["DROP", "DELETE", "TRUNCATE", "UPDATE", "INSERT"]
+    for pattern in dangerous_patterns:
+        if pattern in question.upper():
+            raise ValueError(f"Query contains restricted operation: {pattern}")
+    return question
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    All available built-in tools
+  </Card>
+  <Card title="Agents API" href="/inference-api/agents-heroku" icon="robot">
+    Full agents documentation
+  </Card>
+</CardGroup>

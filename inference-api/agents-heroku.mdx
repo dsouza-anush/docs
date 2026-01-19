@@ -9,6 +9,17 @@ The `/v1/agents/heroku` endpoint allows you to interact with an agentic system p
   View our [available agent models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) and [Heroku Tools](https://devcenter.heroku.com/articles/heroku-inference-tools) to see which models and tools are supported.
 </Note>
 
+## Common Mistakes
+
+<Warning>
+**Avoid these common pitfalls:**
+- **Missing `target_app_name`**: Every tool needs a target app - this is where the tool executes
+- **Tool messages without matching IDs**: When responding to tool calls, `tool_call_id` must match exactly
+- **TTL too short**: Default 120s may not be enough for complex operations; consider your task duration
+- **Not using streaming**: Agent loops can take time; use `stream: true` to show progress
+- **Forgetting max_calls**: Set reasonable limits to prevent runaway tool execution loops
+</Warning>
+
 ## Base URL
 
 ```

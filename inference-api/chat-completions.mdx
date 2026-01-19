@@ -13,6 +13,17 @@ The `/v1/chat/completions` endpoint generates conversational completions for a p
   View our [available chat models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
 </Note>
 
+## Common Mistakes
+
+<Warning>
+**Avoid these common pitfalls:**
+- **Missing `max_tokens`**: Always set `max_tokens` to control response length and costs
+- **Wrong model ID**: Use the exact model ID (e.g., `claude-4-5-sonnet`, not `claude-4.5-sonnet`)
+- **Forgetting to stream**: For chat UIs, always enable `stream: true` to avoid timeout errors and improve UX
+- **High temperature for factual tasks**: Use `temperature: 0` for deterministic, factual outputs
+- **Not handling rate limits**: Implement exponential backoff for 429 errors
+</Warning>
+
 ## Base URL
 
 ```

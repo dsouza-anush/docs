@@ -3,6 +3,28 @@ title: "pgvector on Heroku Postgres"
 description: "Store and query vector embeddings in Postgres for semantic search, RAG, and similarity matching"
 ---
 
+## What are Vector Embeddings?
+
+**Vectors** are lists of numbers that represent the meaning of text, images, or other data. When you convert text to a vector (called an "embedding"), similar concepts end up with similar number patterns.
+
+**Example**: The sentences "I love dogs" and "I adore puppies" would have very similar vectors, even though they use different words.
+
+<Note>
+**Why 1536 dimensions?** Different embedding models output different vector sizes. Cohere Embed Multilingual outputs 1024-dimensional vectors. OpenAI's models use 1536. Always match your `VECTOR(n)` column size to your embedding model's output dimension.
+</Note>
+
+## Prerequisites Checklist
+
+Before you start, make sure you have:
+
+- [ ] A Heroku Postgres database (Essential-0 or higher with PostgreSQL 14+, or Standard-tier with PostgreSQL 15+)
+- [ ] A Heroku app with the Managed Inference add-on (for generating embeddings)
+- [ ] Basic SQL knowledge
+
+<Warning>
+**Not sure what dimension to use?** Check your embedding model's documentation. For Heroku's Cohere Embed Multilingual, use `VECTOR(1024)`.
+</Warning>
+
 The pgvector extension for Heroku Postgres adds support for vector data types and similarity search operations. Use it to build semantic search, recommendation systems, and retrieval-augmented generation (RAG) applications.
 
 ## Quick Start

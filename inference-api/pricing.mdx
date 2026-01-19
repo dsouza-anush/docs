@@ -3,6 +3,18 @@ title: "Pricing"
 description: "Understand costs for Heroku Managed Inference and Agents models"
 ---
 
+## TL;DR - Quick Cost Guide
+
+<Note>
+**Estimate your costs quickly:**
+- **Chat models**: $0.25-$25 per 1M tokens depending on model (Haiku cheapest, Opus most expensive)
+- **Embeddings**: Cohere rate per 1M tokens - batch up to 96 texts per request
+- **Images**: Per-image pricing matching Stability rates
+- **Reranking**: $2 per 1,000 searches (Cohere Rerank 3.5)
+
+**Cost optimization in one line**: Use Haiku for simple tasks, Sonnet for complex ones, and batch your requests.
+</Note>
+
 Heroku Managed Inference and Agents uses token-based pricing that matches the standard rates from each model provider. You pay only for what you use, with no upfront costs or minimum commitments.
 
 <Note>

@@ -1,0 +1,453 @@
+---
+title: "Prompt Optimization"
+description: "Improve AI output quality through structured prompts, evaluation, and iterative refinement"
+---
+
+Get better results from AI models through systematic prompt engineering, A/B testing, and automated evaluation.
+
+## The Prompt Optimization Loop
+
+```
+1. Write initial prompt
+       ↓
+2. Test with sample inputs
+       ↓
+3. Evaluate outputs (manual + automated)
+       ↓
+4. Identify failure patterns
+       ↓
+5. Refine prompt
+       ↓
+6. Repeat until quality threshold met
+```
+
+## Prompt Templates
+
+### Structured System Prompts
+
+```python
+def build_system_prompt(
+    role: str,
+    task: str,
+    constraints: list[str],
+    output_format: str,
+    examples: list[dict] = None
+) -> str:
+    """Build a well-structured system prompt."""
+
+    prompt_parts = [
+        f"# Role\nYou are {role}.",
+        f"\n# Task\n{task}",
+        f"\n# Constraints\n" + "\n".join(f"- {c}" for c in constraints),
+        f"\n# Output Format\n{output_format}"
+    ]
+
+    if examples:
+        examples_text = "\n\n".join([
+            f"Input: {ex['input']}\nOutput: {ex['output']}"
+            for ex in examples
+        ])
+        prompt_parts.append(f"\n# Examples\n{examples_text}")
+
+    return "\n".join(prompt_parts)
+
+# Example: Customer support classifier
+support_prompt = build_system_prompt(
+    role="a customer support ticket classifier",
+    task="Classify incoming tickets into categories and priority levels",
+    constraints=[
+        "Only use the predefined categories: billing, technical, account, other",
+        "Priority levels: urgent, high, medium, low",
+        "If uncertain, classify as 'other' with 'medium' priority",
+        "Never make up categories"
+    ],
+    output_format='JSON: {"category": "...", "priority": "...", "confidence": 0.0-1.0}',
+    examples=[
+        {
+            "input": "I can't log into my account and I have a demo in 1 hour!",
+            "output": '{"category": "account", "priority": "urgent", "confidence": 0.95}'
+        },
+        {
+            "input": "How do I change my billing address?",
+            "output": '{"category": "billing", "priority": "low", "confidence": 0.9}'
+        }
+    ]
+)
+```
+
+### Few-Shot Prompting
+
+```python
+def create_few_shot_prompt(
+    task_description: str,
+    examples: list[dict],
+    input_text: str
+) -> list[dict]:
+    """Create a few-shot learning prompt."""
+
+    messages = [
+        {"role": "system", "content": task_description}
+    ]
+
+    # Add examples as conversation turns
+    for ex in examples:
+        messages.append({"role": "user", "content": ex["input"]})
+        messages.append({"role": "assistant", "content": ex["output"]})
+
+    # Add the actual query
+    messages.append({"role": "user", "content": input_text})
+
+    return messages
+
+# Example: Sentiment analysis with few-shot
+sentiment_examples = [
+    {"input": "This product is amazing!", "output": "positive"},
+    {"input": "Worst purchase ever.", "output": "negative"},
+    {"input": "It's okay, nothing special.", "output": "neutral"},
+    {"input": "I love some features but hate others.", "output": "mixed"}
+]
+
+messages = create_few_shot_prompt(
+    "Classify the sentiment of the following text as: positive, negative, neutral, or mixed.",
+    sentiment_examples,
+    "The interface is beautiful but it crashes constantly."
+)
+```
+
+### Chain-of-Thought Prompting
+
+```python
+def chain_of_thought_prompt(question: str) -> str:
+    """Create a prompt that encourages step-by-step reasoning."""
+
+    return f"""Please solve this problem step by step:
+
+Question: {question}
+
+Think through this carefully:
+1. First, identify what we know
+2. Then, determine what we need to find
+3. Work through the logic step by step
+4. Check your reasoning
+5. State your final answer
+
+Show your work:"""
+
+# Example
+cot_prompt = chain_of_thought_prompt(
+    "If a train travels 120 miles in 2 hours, then stops for 30 minutes, "
+    "then travels another 90 miles in 1.5 hours, what is its average speed "
+    "for the entire journey?"
+)
+```
+
+## A/B Testing Prompts
+
+```python
+import random
+from dataclasses import dataclass
+from typing import Callable
+
+@dataclass
+class PromptVariant:
+    name: str
+    prompt: str
+    weight: float = 0.5
+
+class PromptABTest:
+    """A/B test different prompt variants."""
+
+    def __init__(self, variants: list[PromptVariant]):
+        self.variants = variants
+        self.results = {v.name: {"calls": 0, "scores": []} for v in variants}
+
+    def select_variant(self) -> PromptVariant:
+        """Select a variant based on weights."""
+        weights = [v.weight for v in self.variants]
+        return random.choices(self.variants, weights=weights)[0]
+
+    def record_result(self, variant_name: str, score: float):
+        """Record the quality score for a variant."""
+        self.results[variant_name]["calls"] += 1
+        self.results[variant_name]["scores"].append(score)
+
+    def get_stats(self) -> dict:
+        """Get statistics for each variant."""
+        stats = {}
+        for name, data in self.results.items():
+            if data["scores"]:
+                stats[name] = {
+                    "calls": data["calls"],
+                    "avg_score": sum(data["scores"]) / len(data["scores"]),
+                    "min_score": min(data["scores"]),
+                    "max_score": max(data["scores"])
+                }
+        return stats
+
+# Example: Test two prompt styles
+test = PromptABTest([
+    PromptVariant(
+        name="concise",
+        prompt="Summarize in 2-3 sentences:",
+        weight=0.5
+    ),
+    PromptVariant(
+        name="detailed",
+        prompt="Provide a comprehensive summary with key points:",
+        weight=0.5
+    )
+])
+
+# In your application
+def summarize_with_test(text: str, evaluator: Callable) -> str:
+    variant = test.select_variant()
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {"role": "system", "content": variant.prompt},
+            {"role": "user", "content": text}
+        ]
+    )
+
+    result = response.choices[0].message.content
+
+    # Score the result (could be automated or from user feedback)
+    score = evaluator(text, result)
+    test.record_result(variant.name, score)
+
+    return result
+
+# After running for a while
+print(test.get_stats())
+```
+
+## Automated Evaluation
+
+```python
+from openai import OpenAI
+import json
+
+def evaluate_response(
+    question: str,
+    response: str,
+    criteria: list[str]
+) -> dict:
+    """Use a model to evaluate response quality."""
+
+    eval_prompt = f"""Evaluate the following response based on these criteria:
+{chr(10).join(f'- {c}' for c in criteria)}
+
+Question: {question}
+
+Response: {response}
+
+Rate each criterion from 1-5 and explain briefly.
+Return as JSON:
+{{
+    "scores": {{"criterion_name": {{"score": 1-5, "reason": "..."}}}},
+    "overall": 1-5,
+    "suggestions": ["improvement suggestion 1", "..."]
+}}"""
+
+    eval_response = client.chat.completions.create(
+        model="claude-4-5-haiku",  # Fast model for evaluation
+        messages=[{"role": "user", "content": eval_prompt}],
+        temperature=0
+    )
+
+    try:
+        content = eval_response.choices[0].message.content
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        return json.loads(content.strip())
+    except:
+        return {"error": "Failed to parse evaluation"}
+
+# Example
+question = "Explain quantum computing to a 10-year-old"
+response = "Quantum computers are like magic calculators that can think about many answers at the same time..."
+
+evaluation = evaluate_response(
+    question,
+    response,
+    criteria=[
+        "Age-appropriate language",
+        "Accuracy of explanation",
+        "Engagement/interest factor",
+        "Completeness"
+    ]
+)
+
+print(json.dumps(evaluation, indent=2))
+```
+
+## Prompt Refinement Workflow
+
+```python
+class PromptRefiner:
+    """Systematic prompt improvement workflow."""
+
+    def __init__(self, initial_prompt: str):
+        self.current_prompt = initial_prompt
+        self.history = [{"version": 0, "prompt": initial_prompt, "scores": []}]
+
+    def test_prompt(
+        self,
+        test_cases: list[dict],
+        evaluator: Callable
+    ) -> dict:
+        """Test current prompt against test cases."""
+
+        results = []
+
+        for case in test_cases:
+            response = client.chat.completions.create(
+                model="claude-4-5-sonnet",
+                messages=[
+                    {"role": "system", "content": self.current_prompt},
+                    {"role": "user", "content": case["input"]}
+                ]
+            )
+
+            output = response.choices[0].message.content
+            score = evaluator(case, output)
+
+            results.append({
+                "input": case["input"],
+                "expected": case.get("expected"),
+                "actual": output,
+                "score": score
+            })
+
+        avg_score = sum(r["score"] for r in results) / len(results)
+        self.history[-1]["scores"] = [r["score"] for r in results]
+
+        return {
+            "avg_score": avg_score,
+            "results": results,
+            "failures": [r for r in results if r["score"] < 0.7]
+        }
+
+    def refine_prompt(self, test_results: dict) -> str:
+        """Use AI to suggest prompt improvements."""
+
+        failures = test_results["failures"]
+        if not failures:
+            return self.current_prompt
+
+        failure_summary = "\n".join([
+            f"Input: {f['input']}\nExpected: {f['expected']}\nActual: {f['actual'][:200]}"
+            for f in failures[:3]
+        ])
+
+        refinement_response = client.chat.completions.create(
+            model="claude-4-5-sonnet",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert at improving AI prompts."
+                },
+                {
+                    "role": "user",
+                    "content": f"""Current prompt:
+{self.current_prompt}
+
+This prompt is failing on these cases:
+{failure_summary}
+
+Suggest an improved version of the prompt that would handle these cases better.
+Return only the improved prompt, nothing else."""
+                }
+            ]
+        )
+
+        new_prompt = refinement_response.choices[0].message.content
+        self.current_prompt = new_prompt
+        self.history.append({
+            "version": len(self.history),
+            "prompt": new_prompt,
+            "scores": []
+        })
+
+        return new_prompt
+
+    def get_history(self) -> list:
+        return self.history
+
+# Example workflow
+refiner = PromptRefiner(
+    "Extract the person's name and age from the text."
+)
+
+test_cases = [
+    {"input": "John is 25 years old", "expected": {"name": "John", "age": 25}},
+    {"input": "The patient, Mary Smith (age 45), arrived at noon", "expected": {"name": "Mary Smith", "age": 45}},
+    {"input": "Dr. James Brown, 62, presented the findings", "expected": {"name": "James Brown", "age": 62}},
+]
+
+def score_extraction(case, output):
+    # Simple scoring based on presence of expected values
+    expected = case["expected"]
+    if expected["name"] in output and str(expected["age"]) in output:
+        return 1.0
+    elif expected["name"] in output or str(expected["age"]) in output:
+        return 0.5
+    return 0.0
+
+# Iterate until good enough
+for iteration in range(3):
+    results = refiner.test_prompt(test_cases, score_extraction)
+    print(f"Iteration {iteration}: avg_score = {results['avg_score']:.2f}")
+
+    if results["avg_score"] >= 0.9:
+        print("Good enough!")
+        break
+
+    refiner.refine_prompt(results)
+
+print(f"\nFinal prompt:\n{refiner.current_prompt}")
+```
+
+## Common Prompt Patterns
+
+### Output Formatting
+
+```python
+# Force JSON output
+json_prompt = """Respond only with valid JSON. No other text.
+Format: {"field1": "value", "field2": "value"}"""
+
+# Force specific structure
+structured_prompt = """Respond in this exact format:
+SUMMARY: [one sentence summary]
+KEY POINTS:
+- [point 1]
+- [point 2]
+CONCLUSION: [final thought]"""
+```
+
+### Error Prevention
+
+```python
+# Prevent hallucination
+grounded_prompt = """Answer based ONLY on the provided context.
+If the answer is not in the context, say "I don't have that information."
+Never make up facts."""
+
+# Prevent off-topic responses
+focused_prompt = """Stay focused on the specific question asked.
+Do not provide unsolicited advice or go off on tangents.
+If the question is unclear, ask for clarification."""
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Structured Output" href="/inference-api/structured-output" icon="code">
+    Get JSON responses reliably
+  </Card>
+  <Card title="Models Overview" href="/inference-api/models" icon="sparkles">
+    Choose the right model
+  </Card>
+</CardGroup>

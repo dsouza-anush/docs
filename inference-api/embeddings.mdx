@@ -13,6 +13,17 @@ The `/v1/embeddings` endpoint generates vector embeddings (numerical representat
   View our [available embedding models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
 </Note>
 
+## Common Mistakes
+
+<Warning>
+**Avoid these common pitfalls:**
+- **Mismatched dimensions**: Your `VECTOR(n)` column must match your model's output (Cohere = 1024 dimensions)
+- **Wrong `input_type`**: Use `search_document` when indexing, `search_query` when searching - mixing them hurts quality
+- **Not batching**: Always batch up to 96 strings per request to reduce costs and latency
+- **Text too long**: Keep inputs under 512 tokens for best results; chunk longer documents first
+- **Forgetting normalization**: Lowercase and trim whitespace before embedding for consistent results
+</Warning>
+
 ## Base URL
 
 ```

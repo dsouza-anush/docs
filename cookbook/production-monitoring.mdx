@@ -1,0 +1,453 @@
+---
+title: "Production Monitoring & Debugging"
+description: "Set up logging, track costs, monitor latency, and debug AI applications in production"
+---
+
+Ship AI features with confidence using comprehensive monitoring, cost tracking, and debugging tools.
+
+## What You'll Build
+
+- Request/response logging
+- Token usage and cost tracking
+- Latency monitoring
+- Quality metrics dashboard
+- Debug tools for production issues
+
+## Logging Setup
+
+```python
+import os
+import json
+import time
+import logging
+from datetime import datetime
+from functools import wraps
+from openai import OpenAI
+import psycopg2
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(message)s'
+)
+logger = logging.getLogger("ai_monitor")
+
+class AIMonitor:
+    """Comprehensive monitoring for AI API calls."""
+
+    def __init__(self):
+        self.client = OpenAI(
+            base_url=os.getenv("INFERENCE_URL") + "/v1",
+            api_key=os.getenv("INFERENCE_KEY")
+        )
+
+    def log_request(
+        self,
+        request_id: str,
+        model: str,
+        messages: list,
+        params: dict,
+        response: dict,
+        latency_ms: float,
+        error: str = None
+    ):
+        """Log a complete request/response cycle."""
+
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": request_id,
+            "model": model,
+            "input_tokens": response.get("usage", {}).get("prompt_tokens", 0),
+            "output_tokens": response.get("usage", {}).get("completion_tokens", 0),
+            "latency_ms": round(latency_ms, 2),
+            "status": "error" if error else "success",
+            "error": error,
+            "params": {
+                "temperature": params.get("temperature"),
+                "max_tokens": params.get("max_tokens"),
+                "stream": params.get("stream", False)
+            }
+        }
+
+        # Log to stdout (for Heroku logs)
+        logger.info(json.dumps(log_entry))
+
+        # Optionally store in database
+        self._store_log(log_entry)
+
+        return log_entry
+
+    def _store_log(self, log_entry: dict):
+        """Store log in database for analysis."""
+        try:
+            conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+            cur = conn.cursor()
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS ai_logs (
+                    id SERIAL PRIMARY KEY,
+                    request_id TEXT,
+                    timestamp TIMESTAMP,
+                    model TEXT,
+                    input_tokens INTEGER,
+                    output_tokens INTEGER,
+                    latency_ms FLOAT,
+                    status TEXT,
+                    error TEXT,
+                    params JSONB,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+
+            cur.execute(
+                """
+                INSERT INTO ai_logs
+                (request_id, timestamp, model, input_tokens, output_tokens,
+                 latency_ms, status, error, params)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    log_entry["request_id"],
+                    log_entry["timestamp"],
+                    log_entry["model"],
+                    log_entry["input_tokens"],
+                    log_entry["output_tokens"],
+                    log_entry["latency_ms"],
+                    log_entry["status"],
+                    log_entry["error"],
+                    json.dumps(log_entry["params"])
+                )
+            )
+
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to store log: {e}")
+
+# ----- Monitored Client -----
+class MonitoredAIClient:
+    """AI client with built-in monitoring."""
+
+    # Cost per 1M tokens (approximate)
+    COSTS = {
+        "claude-4-5-haiku": {"input": 0.80, "output": 4.00},
+        "claude-4-5-sonnet": {"input": 3.00, "output": 15.00},
+        "claude-4-sonnet": {"input": 3.00, "output": 15.00},
+    }
+
+    def __init__(self):
+        self.client = OpenAI(
+            base_url=os.getenv("INFERENCE_URL") + "/v1",
+            api_key=os.getenv("INFERENCE_KEY")
+        )
+        self.monitor = AIMonitor()
+
+    def chat(
+        self,
+        messages: list,
+        model: str = "claude-4-5-sonnet",
+        request_id: str = None,
+        **kwargs
+    ) -> dict:
+        """Make a monitored chat completion request."""
+
+        import uuid
+        request_id = request_id or str(uuid.uuid4())[:8]
+
+        start_time = time.time()
+        error = None
+        response_data = {}
+
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                **kwargs
+            )
+
+            response_data = {
+                "content": response.choices[0].message.content,
+                "usage": {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens
+                },
+                "model": response.model
+            }
+
+        except Exception as e:
+            error = str(e)
+            raise
+
+        finally:
+            latency_ms = (time.time() - start_time) * 1000
+
+            self.monitor.log_request(
+                request_id=request_id,
+                model=model,
+                messages=messages,
+                params=kwargs,
+                response=response_data,
+                latency_ms=latency_ms,
+                error=error
+            )
+
+        return response_data
+
+    def estimate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
+        """Estimate cost for a request."""
+        costs = self.COSTS.get(model, {"input": 3.00, "output": 15.00})
+
+        input_cost = (input_tokens / 1_000_000) * costs["input"]
+        output_cost = (output_tokens / 1_000_000) * costs["output"]
+
+        return round(input_cost + output_cost, 6)
+```
+
+## Analytics Dashboard
+
+```python
+from flask import Flask, jsonify
+from datetime import datetime, timedelta
+
+app = Flask(__name__)
+
+def get_db():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
+@app.route("/api/metrics/summary")
+def metrics_summary():
+    """Get summary metrics for the last 24 hours."""
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Last 24 hours
+    since = datetime.utcnow() - timedelta(hours=24)
+
+    cur.execute("""
+        SELECT
+            COUNT(*) as total_requests,
+            SUM(input_tokens) as total_input_tokens,
+            SUM(output_tokens) as total_output_tokens,
+            AVG(latency_ms) as avg_latency,
+            PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms) as p95_latency,
+            COUNT(CASE WHEN status = 'error' THEN 1 END) as error_count
+        FROM ai_logs
+        WHERE timestamp > %s
+    """, (since,))
+
+    row = cur.fetchone()
+
+    # Calculate cost
+    cur.execute("""
+        SELECT model, SUM(input_tokens), SUM(output_tokens)
+        FROM ai_logs
+        WHERE timestamp > %s
+        GROUP BY model
+    """, (since,))
+
+    total_cost = 0
+    for model, input_tokens, output_tokens in cur.fetchall():
+        costs = MonitoredAIClient.COSTS.get(model, {"input": 3.00, "output": 15.00})
+        total_cost += (input_tokens / 1_000_000) * costs["input"]
+        total_cost += (output_tokens / 1_000_000) * costs["output"]
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "period": "24h",
+        "total_requests": row[0],
+        "total_input_tokens": row[1],
+        "total_output_tokens": row[2],
+        "avg_latency_ms": round(row[3], 2) if row[3] else 0,
+        "p95_latency_ms": round(row[4], 2) if row[4] else 0,
+        "error_count": row[5],
+        "error_rate": round(row[5] / row[0] * 100, 2) if row[0] else 0,
+        "estimated_cost": f"${total_cost:.4f}"
+    })
+
+@app.route("/api/metrics/by-model")
+def metrics_by_model():
+    """Get metrics broken down by model."""
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    since = datetime.utcnow() - timedelta(hours=24)
+
+    cur.execute("""
+        SELECT
+            model,
+            COUNT(*) as requests,
+            AVG(latency_ms) as avg_latency,
+            SUM(input_tokens) as input_tokens,
+            SUM(output_tokens) as output_tokens
+        FROM ai_logs
+        WHERE timestamp > %s
+        GROUP BY model
+        ORDER BY requests DESC
+    """, (since,))
+
+    models = []
+    for row in cur.fetchall():
+        costs = MonitoredAIClient.COSTS.get(row[0], {"input": 3.00, "output": 15.00})
+        cost = (row[3] / 1_000_000) * costs["input"] + (row[4] / 1_000_000) * costs["output"]
+
+        models.append({
+            "model": row[0],
+            "requests": row[1],
+            "avg_latency_ms": round(row[2], 2),
+            "input_tokens": row[3],
+            "output_tokens": row[4],
+            "cost": f"${cost:.4f}"
+        })
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"models": models})
+
+@app.route("/api/metrics/errors")
+def recent_errors():
+    """Get recent errors for debugging."""
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT request_id, timestamp, model, error, params
+        FROM ai_logs
+        WHERE status = 'error'
+        ORDER BY timestamp DESC
+        LIMIT 20
+    """)
+
+    errors = [
+        {
+            "request_id": row[0],
+            "timestamp": row[1].isoformat(),
+            "model": row[2],
+            "error": row[3],
+            "params": row[4]
+        }
+        for row in cur.fetchall()
+    ]
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"errors": errors})
+```
+
+## Alerting
+
+```python
+import requests
+
+def check_and_alert():
+    """Check metrics and send alerts if thresholds exceeded."""
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Check error rate (last hour)
+    cur.execute("""
+        SELECT
+            COUNT(*) as total,
+            COUNT(CASE WHEN status = 'error' THEN 1 END) as errors
+        FROM ai_logs
+        WHERE timestamp > NOW() - INTERVAL '1 hour'
+    """)
+
+    total, errors = cur.fetchone()
+    error_rate = errors / total * 100 if total > 0 else 0
+
+    alerts = []
+
+    if error_rate > 5:
+        alerts.append(f"High error rate: {error_rate:.1f}% in last hour")
+
+    # Check latency (p95 > 5000ms)
+    cur.execute("""
+        SELECT PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms)
+        FROM ai_logs
+        WHERE timestamp > NOW() - INTERVAL '1 hour'
+    """)
+
+    p95 = cur.fetchone()[0]
+    if p95 and p95 > 5000:
+        alerts.append(f"High latency: P95 = {p95:.0f}ms in last hour")
+
+    cur.close()
+    conn.close()
+
+    # Send alerts (Slack example)
+    if alerts:
+        send_slack_alert("\n".join(alerts))
+
+def send_slack_alert(message: str):
+    """Send alert to Slack."""
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    if webhook_url:
+        requests.post(webhook_url, json={"text": f":warning: AI Alert:\n{message}"})
+```
+
+## Debug Mode
+
+```python
+class DebugClient(MonitoredAIClient):
+    """Client with additional debugging capabilities."""
+
+    def __init__(self, debug: bool = False):
+        super().__init__()
+        self.debug = debug
+
+    def chat(self, messages: list, **kwargs):
+        if self.debug:
+            print(f"\n{'='*50}")
+            print("REQUEST:")
+            print(f"Model: {kwargs.get('model', 'claude-4-5-sonnet')}")
+            print(f"Messages: {json.dumps(messages, indent=2)}")
+            print(f"Params: {json.dumps(kwargs, indent=2)}")
+            print(f"{'='*50}\n")
+
+        response = super().chat(messages, **kwargs)
+
+        if self.debug:
+            print(f"\n{'='*50}")
+            print("RESPONSE:")
+            print(f"Content: {response['content'][:500]}...")
+            print(f"Usage: {response['usage']}")
+            print(f"{'='*50}\n")
+
+        return response
+
+# Usage
+client = DebugClient(debug=os.getenv("DEBUG", "false").lower() == "true")
+```
+
+## Heroku CLI Integration
+
+```bash
+# View recent AI logs
+heroku logs --app my-app --source app | grep "ai_monitor"
+
+# Filter by request ID
+heroku logs --app my-app | grep "req_abc123"
+
+# Get error logs only
+heroku logs --app my-app | grep '"status":"error"'
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Understand costs
+  </Card>
+  <Card title="Rate Limits" href="/inference-api/rate-limits" icon="gauge">
+    Rate limit handling
+  </Card>
+</CardGroup>

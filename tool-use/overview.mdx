@@ -1,0 +1,153 @@
+---
+title: "Tool Use Overview"
+description: "Understand when to use built-in Heroku tools vs custom MCP servers for AI agent workflows"
+---
+
+## What is Tool Use?
+
+Tool use enables AI models to perform actions beyond generating text. Instead of just answering questions, your AI can:
+
+- Execute code and return results
+- Query databases for real data
+- Read and parse documents
+- Call external APIs
+- Perform calculations
+- Take actions in your systems
+
+## Types of Tools on Heroku AI
+
+Heroku provides two ways to give your AI models access to tools:
+
+### 1. Built-in Heroku Tools
+
+Pre-configured tools that work out of the box with the `/v1/agents/heroku` endpoint.
+
+| Tool | What it does | Use case |
+|------|--------------|----------|
+| `code_exec_python` | Execute Python code | Data analysis, calculations, file processing |
+| `code_exec_ruby` | Execute Ruby code | Ruby-specific operations |
+| `code_exec_node` | Execute Node.js code | JavaScript operations |
+| `code_exec_go` | Execute Go code | Go-specific operations |
+| `pg_psql` | Run SQL queries | Database queries, data retrieval |
+| `doc_reader` | Parse documents | Extract text from PDFs, HTML pages |
+
+**Advantages:**
+- Zero setup required
+- Pre-integrated with Heroku security
+- Managed and maintained by Heroku
+
+**Learn more:** [Heroku Tools documentation](/tool-use/heroku-tools)
+
+### 2. Custom MCP Servers
+
+Deploy your own Model Context Protocol servers to create custom tools.
+
+**Advantages:**
+- Full control over tool behavior
+- Connect to any external system
+- Custom business logic
+- No upper limit on execution time
+
+**Learn more:** [Working with MCP](/tool-use/working-with-mcp)
+
+## Decision Guide: Which Should You Use?
+
+```
+Do you need a standard operation (code execution, SQL, document parsing)?
+├── YES → Use built-in Heroku tools
+└── NO → Do you need to connect to external APIs or custom systems?
+    ├── YES → Create a custom MCP server
+    └── NO → Built-in tools probably cover your use case
+```
+
+### Use Built-in Heroku Tools When:
+
+- You need to execute code in Python, Ruby, Node.js, or Go
+- You want to query your Heroku Postgres database
+- You need to read and parse documents (PDF, HTML)
+- You want the simplest setup possible
+- Execution time is under the standard dyno limits
+
+### Use Custom MCP Servers When:
+
+- You need to call proprietary or third-party APIs
+- You have custom business logic that doesn't fit standard tools
+- You need longer execution times (no `ttl_seconds` limit with MCP)
+- You want to integrate with systems outside Heroku
+- You need tools specific to your domain (e.g., internal inventory lookup)
+
+## How Tool Calling Works
+
+When you send a request to the agents endpoint, the model can decide to call tools:
+
+```
+1. User sends a message
+   ↓
+2. Model analyzes the request
+   ↓
+3. Model decides a tool is needed
+   ↓
+4. Heroku executes the tool in a secure, isolated dyno
+   ↓
+5. Tool result is returned to the model
+   ↓
+6. Model generates a response using the tool result
+```
+
+## Quick Example
+
+Here's how to use built-in tools with the agents endpoint:
+
+```python
+from openai import OpenAI
+import os
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL"),
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "user", "content": "Calculate the factorial of 10 using Python"}
+    ],
+    extra_body={
+        "heroku_tools": ["code_exec_python"]
+    }
+)
+
+print(response.choices[0].message.content)
+```
+
+The model will:
+1. Recognize it needs to run Python code
+2. Call the `code_exec_python` tool with appropriate code
+3. Return the result (3,628,800) in its response
+
+## Security Considerations
+
+<Warning>
+**Tool execution is powerful.** Consider these security practices:
+- Always validate inputs before passing to tools
+- Use the principle of least privilege (only enable tools you need)
+- Monitor tool usage for unexpected patterns
+- Consider rate limiting for production applications
+</Warning>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    Detailed guide to built-in tools
+  </Card>
+  <Card title="Working with MCP" href="/tool-use/working-with-mcp" icon="plug">
+    Deploy custom MCP servers
+  </Card>
+  <Card title="Agents API" href="/inference-api/agents-heroku" icon="robot">
+    Full agents endpoint documentation
+  </Card>
+  <Card title="Chat vs Agents" href="/inference-api/chat-vs-agents" icon="comments">
+    When to use chat vs agents endpoints
+  </Card>
+</CardGroup>

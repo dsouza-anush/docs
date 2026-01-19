@@ -1,0 +1,434 @@
+---
+title: "Batch Processing with Embeddings"
+description: "Process large document sets efficiently with batching, progress tracking, and failure recovery"
+---
+
+Process 100,000+ documents efficiently with batched embedding generation, progress tracking, checkpointing, and failure recovery.
+
+## What You'll Build
+
+- Efficient batch embedding pipeline
+- Progress tracking and logging
+- Checkpoint/resume on failure
+- Rate limit handling
+
+## The Challenge
+
+Processing large document sets has challenges:
+- API rate limits (requests per minute)
+- Memory constraints (can't load all docs at once)
+- Failure recovery (don't restart from scratch)
+- Progress visibility (know where you are)
+
+## Solution Architecture
+
+```
+Documents (100K+)
+    ↓
+Chunk into batches (96 docs each)
+    ↓
+Process with rate limiting
+    ↓
+Checkpoint progress
+    ↓
+Store embeddings
+    ↓
+Resume on failure
+```
+
+## Implementation
+
+```python
+import os
+import json
+import time
+import logging
+from pathlib import Path
+from dataclasses import dataclass
+from typing import Generator, Optional
+from openai import OpenAI
+import psycopg2
+from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@dataclass
+class BatchConfig:
+    batch_size: int = 96  # Max for Cohere
+    requests_per_minute: int = 100
+    checkpoint_every: int = 10  # batches
+    checkpoint_file: str = "embedding_checkpoint.json"
+
+class BatchEmbeddingPipeline:
+    def __init__(self, config: BatchConfig = None):
+        self.config = config or BatchConfig()
+        self.client = OpenAI(
+            base_url=os.getenv("EMBEDDING_URL") + "/v1",
+            api_key=os.getenv("EMBEDDING_KEY")
+        )
+        self.stats = {
+            "processed": 0,
+            "failed": 0,
+            "start_time": None,
+            "last_checkpoint": None
+        }
+
+    # ----- Document Loading -----
+    def load_documents(self, source: str) -> Generator[dict, None, None]:
+        """
+        Load documents from various sources.
+        Yields one document at a time to handle large datasets.
+        """
+        if source.endswith(".jsonl"):
+            # JSONL file
+            with open(source, "r") as f:
+                for line in f:
+                    yield json.loads(line)
+
+        elif source.endswith(".csv"):
+            # CSV file
+            import csv
+            with open(source, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    yield {"id": row.get("id"), "content": row.get("content", row.get("text"))}
+
+        elif os.path.isdir(source):
+            # Directory of text files
+            for filepath in Path(source).glob("**/*.txt"):
+                with open(filepath, "r") as f:
+                    yield {
+                        "id": str(filepath),
+                        "content": f.read(),
+                        "metadata": {"filename": filepath.name}
+                    }
+        else:
+            raise ValueError(f"Unknown source type: {source}")
+
+    # ----- Batching -----
+    def batch_documents(
+        self,
+        documents: Generator,
+        start_from: int = 0
+    ) -> Generator[list[dict], None, None]:
+        """Yield batches of documents, optionally skipping to resume."""
+
+        batch = []
+        doc_count = 0
+
+        for doc in documents:
+            doc_count += 1
+
+            # Skip already processed docs
+            if doc_count <= start_from:
+                continue
+
+            batch.append(doc)
+
+            if len(batch) >= self.config.batch_size:
+                yield batch
+                batch = []
+
+        # Yield remaining
+        if batch:
+            yield batch
+
+    # ----- Rate Limiting -----
+    def rate_limit(self):
+        """Simple rate limiting."""
+        delay = 60 / self.config.requests_per_minute
+        time.sleep(delay)
+
+    # ----- Embedding Generation -----
+    def generate_embeddings(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings for a batch of texts."""
+
+        max_retries = 3
+        retry_delay = 5
+
+        for attempt in range(max_retries):
+            try:
+                response = self.client.embeddings.create(
+                    model="cohere-embed-multilingual",
+                    input=texts,
+                    extra_body={"input_type": "search_document"}
+                )
+                return [item.embedding for item in response.data]
+
+            except Exception as e:
+                if "rate" in str(e).lower() and attempt < max_retries - 1:
+                    logger.warning(f"Rate limited, waiting {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    raise
+
+    # ----- Checkpointing -----
+    def save_checkpoint(self, processed_count: int, batch_num: int):
+        """Save progress checkpoint."""
+
+        checkpoint = {
+            "processed_count": processed_count,
+            "batch_num": batch_num,
+            "timestamp": datetime.now().isoformat(),
+            "stats": self.stats
+        }
+
+        with open(self.config.checkpoint_file, "w") as f:
+            json.dump(checkpoint, f)
+
+        self.stats["last_checkpoint"] = processed_count
+        logger.info(f"Checkpoint saved: {processed_count} documents processed")
+
+    def load_checkpoint(self) -> Optional[dict]:
+        """Load checkpoint if exists."""
+
+        if not os.path.exists(self.config.checkpoint_file):
+            return None
+
+        with open(self.config.checkpoint_file, "r") as f:
+            return json.load(f)
+
+    # ----- Storage -----
+    def store_embeddings(self, documents: list[dict], embeddings: list[list[float]]):
+        """Store embeddings in database."""
+
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+        cur = conn.cursor()
+
+        for doc, embedding in zip(documents, embeddings):
+            cur.execute(
+                """
+                INSERT INTO documents (id, content, metadata, embedding)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    content = EXCLUDED.content,
+                    embedding = EXCLUDED.embedding
+                """,
+                (
+                    doc.get("id") or hash(doc["content"]),
+                    doc["content"],
+                    json.dumps(doc.get("metadata", {})),
+                    embedding
+                )
+            )
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+    # ----- Main Processing -----
+    def process(self, source: str, resume: bool = True):
+        """
+        Process all documents from source.
+
+        Args:
+            source: Path to documents (file, directory, or database query)
+            resume: Whether to resume from checkpoint
+        """
+        self.stats["start_time"] = time.time()
+
+        # Check for existing checkpoint
+        start_from = 0
+        if resume:
+            checkpoint = self.load_checkpoint()
+            if checkpoint:
+                start_from = checkpoint["processed_count"]
+                logger.info(f"Resuming from checkpoint: {start_from} documents")
+
+        # Process batches
+        documents = self.load_documents(source)
+        batches = self.batch_documents(documents, start_from)
+
+        batch_num = start_from // self.config.batch_size
+
+        for batch in batches:
+            batch_num += 1
+
+            try:
+                # Generate embeddings
+                texts = [doc["content"][:2000] for doc in batch]  # Truncate if needed
+                embeddings = self.generate_embeddings(texts)
+
+                # Store results
+                self.store_embeddings(batch, embeddings)
+
+                # Update stats
+                self.stats["processed"] += len(batch)
+
+                # Rate limit
+                self.rate_limit()
+
+                # Checkpoint periodically
+                if batch_num % self.config.checkpoint_every == 0:
+                    self.save_checkpoint(self.stats["processed"], batch_num)
+
+                # Log progress
+                elapsed = time.time() - self.stats["start_time"]
+                rate = self.stats["processed"] / elapsed * 60
+                logger.info(
+                    f"Batch {batch_num}: {self.stats['processed']} docs "
+                    f"({rate:.0f} docs/min)"
+                )
+
+            except Exception as e:
+                self.stats["failed"] += len(batch)
+                logger.error(f"Batch {batch_num} failed: {e}")
+
+                # Save checkpoint before potential crash
+                self.save_checkpoint(self.stats["processed"], batch_num)
+                raise
+
+        # Final stats
+        elapsed = time.time() - self.stats["start_time"]
+        logger.info(
+            f"Complete! Processed {self.stats['processed']} documents "
+            f"in {elapsed/60:.1f} minutes"
+        )
+
+        # Clean up checkpoint
+        if os.path.exists(self.config.checkpoint_file):
+            os.remove(self.config.checkpoint_file)
+
+        return self.stats
+
+# ----- Usage -----
+if __name__ == "__main__":
+    import sys
+
+    source = sys.argv[1] if len(sys.argv) > 1 else "documents/"
+
+    config = BatchConfig(
+        batch_size=96,
+        requests_per_minute=100,
+        checkpoint_every=10
+    )
+
+    pipeline = BatchEmbeddingPipeline(config)
+    stats = pipeline.process(source, resume=True)
+
+    print(f"\nFinal stats: {json.dumps(stats, indent=2)}")
+```
+
+## Parallel Processing (Advanced)
+
+For even faster processing with multiple workers:
+
+```python
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import queue
+
+class ParallelEmbeddingPipeline(BatchEmbeddingPipeline):
+    def __init__(self, config: BatchConfig = None, workers: int = 3):
+        super().__init__(config)
+        self.workers = workers
+
+    def process_parallel(self, source: str):
+        """Process with multiple workers."""
+
+        # Load all batches into queue
+        documents = list(self.load_documents(source))
+        batches = list(self.batch_documents(iter(documents)))
+
+        results = []
+        failed_batches = []
+
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = {
+                executor.submit(self._process_batch, batch, i): i
+                for i, batch in enumerate(batches)
+            }
+
+            for future in as_completed(futures):
+                batch_idx = futures[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                    logger.info(f"Batch {batch_idx} complete")
+                except Exception as e:
+                    failed_batches.append(batch_idx)
+                    logger.error(f"Batch {batch_idx} failed: {e}")
+
+        return {
+            "successful": len(results),
+            "failed": len(failed_batches),
+            "failed_batches": failed_batches
+        }
+
+    def _process_batch(self, batch: list[dict], batch_idx: int) -> dict:
+        """Process a single batch (thread-safe)."""
+
+        texts = [doc["content"][:2000] for doc in batch]
+        embeddings = self.generate_embeddings(texts)
+        self.store_embeddings(batch, embeddings)
+
+        return {"batch_idx": batch_idx, "count": len(batch)}
+```
+
+## Progress Dashboard
+
+```python
+from flask import Flask, jsonify
+import threading
+
+app = Flask(__name__)
+pipeline_stats = {}
+
+@app.route("/status")
+def get_status():
+    return jsonify(pipeline_stats)
+
+def run_pipeline_with_monitoring(source: str):
+    global pipeline_stats
+
+    def update_stats(stats):
+        pipeline_stats.update(stats)
+
+    pipeline = BatchEmbeddingPipeline()
+
+    # Run pipeline in background
+    def run():
+        result = pipeline.process(source)
+        update_stats(result)
+
+    thread = threading.Thread(target=run)
+    thread.start()
+
+    return thread
+```
+
+## Cost Estimation
+
+```python
+def estimate_cost(document_count: int, avg_tokens_per_doc: int = 200) -> dict:
+    """Estimate embedding costs."""
+
+    total_tokens = document_count * avg_tokens_per_doc
+    cost_per_million = 0.10  # Cohere approximate rate
+
+    estimated_cost = (total_tokens / 1_000_000) * cost_per_million
+
+    return {
+        "documents": document_count,
+        "estimated_tokens": total_tokens,
+        "estimated_cost": f"${estimated_cost:.2f}",
+        "batches": document_count // 96 + 1,
+        "estimated_time_minutes": document_count / 96 * 0.6  # ~0.6s per batch
+    }
+
+# Example
+print(estimate_cost(100_000))
+# {'documents': 100000, 'estimated_cost': '$2.00', 'estimated_time_minutes': 625}
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Embeddings API" href="/inference-api/embeddings" icon="vector-square">
+    Full API documentation
+  </Card>
+  <Card title="pgvector Guide" href="/vector-database/pgvector" icon="database">
+    Vector storage setup
+  </Card>
+</CardGroup>

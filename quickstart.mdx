@@ -5,11 +5,34 @@ description: "Make your first API call to Heroku AI and build a simple web searc
 
 Make your first API call to Heroku AI and build a simple web search assistant using Claude models.
 
-## Prerequisites
+## Before You Start
 
-* A [Heroku account](https://signup.heroku.com/)
-* [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) installed
-* An inference API key (generated during model provisioning)
+<Warning>
+**Don't have a model provisioned yet?** Jump to [Provisioning your first model](#provisioning-your-first-model) at the bottom of this page, then come back here.
+</Warning>
+
+### Prerequisites Checklist
+
+<Steps>
+  <Step title="Heroku account">
+    [Sign up for Heroku](https://signup.heroku.com/) if you haven't already.
+  </Step>
+  <Step title="Heroku CLI installed">
+    [Install the Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) to manage apps and models.
+  </Step>
+  <Step title="Model provisioned">
+    You need a model attached to your app. This gives you an `INFERENCE_KEY` (your API authentication token) and `INFERENCE_URL` (the API endpoint).
+  </Step>
+</Steps>
+
+### Key Terms
+
+| Term | What it means |
+|------|---------------|
+| **Inference Key** | Your API authentication token (like a password for API calls) |
+| **Inference URL** | The API endpoint URL where you send requests |
+| **Model Resource** | A managed AI model instance attached to your Heroku app |
+| **Config Vars** | Heroku's secure environment variables (where your keys are stored) |
 
 ## Call the API
 

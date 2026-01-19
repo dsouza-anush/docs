@@ -3,7 +3,32 @@ title: "Working with MCP"
 description: "Deploy and register custom Model Context Protocol servers to extend AI agents with custom tools"
 ---
 
-Model Context Protocol (MCP) is an open standard that enables developers to connect large language models to custom tools, services, and data sources. With Heroku's Managed Inference and Agents add-on, you can deploy MCP servers and automatically integrate them with your AI models.
+## What is MCP and Why Use It?
+
+**Model Context Protocol (MCP)** is an open standard that lets AI models call external tools and services. Think of it as giving your AI assistant the ability to:
+
+- Execute code in different languages
+- Query databases
+- Read and parse documents
+- Call external APIs
+- Perform any custom operation you define
+
+**Example scenario**: You want your AI chatbot to look up real-time inventory data. Instead of the AI hallucinating numbers, MCP lets it call your inventory API and return actual data.
+
+<Note>
+**When to use MCP vs built-in Heroku tools:**
+- Use **built-in Heroku tools** for common tasks (code execution, SQL queries, document reading) - they're pre-configured
+- Use **custom MCP servers** when you need tools specific to your business (custom APIs, proprietary systems, specialized workflows)
+</Note>
+
+## Prerequisites Checklist
+
+Before you start, make sure you have:
+
+- [ ] A Heroku account with an app created
+- [ ] Heroku CLI installed and logged in
+- [ ] A Heroku Managed Inference model provisioned (or you'll create one)
+- [ ] Basic familiarity with deploying apps to Heroku
 
 ## Quick Start
 

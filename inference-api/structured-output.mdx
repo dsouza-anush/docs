@@ -3,6 +3,26 @@ title: "Structured output"
 description: "Generate consistent, validated JSON responses from language models using tool calling and prompt engineering"
 ---
 
+## TL;DR - Get Structured JSON
+
+<Note>
+**Two methods to get reliable JSON from Claude models:**
+
+1. **Tool calling (recommended)**: Define a function schema, force the model to call it, parse the arguments as JSON
+2. **Prompt engineering (fallback)**: Instruct the model to output JSON only, validate with Pydantic
+
+**Quick example** - Force structured output with tool calling:
+```python
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Extract: John, 30, john@email.com"}],
+    tools=[your_schema_tool],
+    tool_choice={"type": "function", "function": {"name": "your_function"}}
+)
+data = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+```
+</Note>
+
 Structured output ensures AI models return data in a predictable, machine-readable format. While Heroku's OpenAI-compatible API doesn't support OpenAI's native `response_format` parameter, you can achieve reliable structured output using tool calling and prompt engineering techniques.
 
 ## What is structured output?

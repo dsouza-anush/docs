@@ -1,0 +1,371 @@
+---
+title: "Complete RAG Tutorial"
+description: "Build a full retrieval-augmented generation application from scratch with Heroku AI and pgvector"
+---
+
+Build a production-ready RAG (Retrieval-Augmented Generation) application in under 30 minutes. This tutorial takes you from zero to a working knowledge-based chatbot that answers questions using your own documents.
+
+## What You'll Build
+
+A Q&A system that:
+1. Loads and chunks your documents
+2. Generates embeddings with Cohere
+3. Stores vectors in Heroku Postgres with pgvector
+4. Retrieves relevant context for user questions
+5. Generates accurate, grounded answers with Claude
+
+## Prerequisites
+
+- Heroku account with CLI installed
+- Python 3.9+
+- A Heroku app with:
+  - Managed Inference add-on (Claude model + Cohere embeddings)
+  - Heroku Postgres (Essential-0 or higher)
+
+## Step 1: Set Up Your Project
+
+```bash
+mkdir rag-app && cd rag-app
+python -m venv venv && source venv/bin/activate
+pip install openai psycopg2-binary python-dotenv
+```
+
+Create a `.env` file with your Heroku config vars:
+
+```bash
+# Get these from: heroku config --app your-app
+INFERENCE_URL=https://us.inference.heroku.com
+INFERENCE_KEY=your-inference-key
+INFERENCE_MODEL_ID=claude-4-5-sonnet
+EMBEDDING_URL=https://us.inference.heroku.com
+EMBEDDING_KEY=your-embedding-key
+EMBEDDING_MODEL_ID=cohere-embed-multilingual
+DATABASE_URL=your-postgres-url
+```
+
+## Step 2: Set Up pgvector
+
+Connect to your database and enable the extension:
+
+```bash
+heroku pg:psql -a your-app
+```
+
+```sql
+-- Enable pgvector
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create documents table
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    embedding VECTOR(1024),  -- Cohere outputs 1024 dimensions
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create index for fast similarity search
+CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
+```
+
+## Step 3: Create the RAG Application
+
+Create `rag.py`:
+
+```python
+import os
+import psycopg2
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Initialize clients
+embedding_client = OpenAI(
+    base_url=os.getenv("EMBEDDING_URL") + "/v1",
+    api_key=os.getenv("EMBEDDING_KEY")
+)
+
+chat_client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+def get_db_connection():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
+# ----- STEP 1: Chunk Documents -----
+def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
+    """Split text into overlapping chunks."""
+    words = text.split()
+    chunks = []
+
+    for i in range(0, len(words), chunk_size - overlap):
+        chunk = " ".join(words[i:i + chunk_size])
+        if chunk:
+            chunks.append(chunk)
+
+    return chunks
+
+# ----- STEP 2: Generate Embeddings -----
+def generate_embeddings(texts: list[str]) -> list[list[float]]:
+    """Generate embeddings for a batch of texts (max 96 per request)."""
+    embeddings = []
+
+    # Batch into groups of 96
+    for i in range(0, len(texts), 96):
+        batch = texts[i:i + 96]
+        response = embedding_client.embeddings.create(
+            model=os.getenv("EMBEDDING_MODEL_ID"),
+            input=batch,
+            extra_body={"input_type": "search_document"}
+        )
+        embeddings.extend([item.embedding for item in response.data])
+
+    return embeddings
+
+# ----- STEP 3: Store in Database -----
+def store_documents(chunks: list[str], metadata: dict = None):
+    """Store document chunks with their embeddings."""
+    embeddings = generate_embeddings(chunks)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    for chunk, embedding in zip(chunks, embeddings):
+        cur.execute(
+            """
+            INSERT INTO documents (content, metadata, embedding)
+            VALUES (%s, %s, %s)
+            """,
+            (chunk, metadata or {}, embedding)
+        )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    print(f"Stored {len(chunks)} document chunks")
+
+# ----- STEP 4: Retrieve Relevant Context -----
+def retrieve_context(query: str, top_k: int = 3) -> list[str]:
+    """Find the most relevant document chunks for a query."""
+    # Generate query embedding
+    response = embedding_client.embeddings.create(
+        model=os.getenv("EMBEDDING_MODEL_ID"),
+        input=[query],
+        extra_body={"input_type": "search_query"}
+    )
+    query_embedding = response.data[0].embedding
+
+    # Search database
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT content, 1 - (embedding <=> %s::vector) AS similarity
+        FROM documents
+        ORDER BY embedding <=> %s::vector
+        LIMIT %s
+        """,
+        (query_embedding, query_embedding, top_k)
+    )
+
+    results = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [row[0] for row in results]
+
+# ----- STEP 5: Generate Answer -----
+def answer_question(question: str) -> str:
+    """Answer a question using RAG."""
+    # Retrieve relevant context
+    context_chunks = retrieve_context(question)
+
+    if not context_chunks:
+        return "I don't have any relevant information to answer that question."
+
+    # Format context with citations
+    context = "\n\n".join([
+        f"[Source {i+1}]: {chunk}"
+        for i, chunk in enumerate(context_chunks)
+    ])
+
+    # Generate answer
+    response = chat_client.chat.completions.create(
+        model=os.getenv("INFERENCE_MODEL_ID"),
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a helpful assistant that answers questions based on the provided context.
+
+Rules:
+- Only use information from the provided context
+- Cite sources using [Source N] format
+- If the context doesn't contain the answer, say "I don't have information about that"
+- Be concise and accurate"""
+            },
+            {
+                "role": "user",
+                "content": f"Context:\n{context}\n\nQuestion: {question}"
+            }
+        ],
+        temperature=0.2,
+        max_tokens=500
+    )
+
+    return response.choices[0].message.content
+
+# ----- Main Functions -----
+def index_document(filepath: str):
+    """Load and index a document."""
+    with open(filepath, "r") as f:
+        content = f.read()
+
+    chunks = chunk_text(content)
+    store_documents(chunks, {"source": filepath})
+    print(f"Indexed {filepath}: {len(chunks)} chunks")
+
+def chat():
+    """Interactive Q&A loop."""
+    print("RAG Chatbot ready! Type 'quit' to exit.\n")
+
+    while True:
+        question = input("You: ").strip()
+        if question.lower() == "quit":
+            break
+        if not question:
+            continue
+
+        answer = answer_question(question)
+        print(f"\nAssistant: {answer}\n")
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        # Index documents
+        for filepath in sys.argv[1:]:
+            index_document(filepath)
+    else:
+        # Start chat
+        chat()
+```
+
+## Step 4: Index Your Documents
+
+```bash
+# Index a single document
+python rag.py docs/product-guide.txt
+
+# Index multiple documents
+python rag.py docs/*.txt docs/*.md
+```
+
+## Step 5: Ask Questions
+
+```bash
+python rag.py
+# RAG Chatbot ready! Type 'quit' to exit.
+#
+# You: How do I deploy my app?
+# Assistant: Based on the documentation [Source 1], you can deploy...
+```
+
+## Deploy to Heroku
+
+Create `Procfile`:
+```
+web: python app.py
+```
+
+Create `app.py` for a web interface:
+
+```python
+from flask import Flask, request, jsonify
+from rag import answer_question
+
+app = Flask(__name__)
+
+@app.route("/ask", methods=["POST"])
+def ask():
+    data = request.json
+    question = data.get("question", "")
+
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
+
+    answer = answer_question(question)
+    return jsonify({"answer": answer})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+```
+
+Deploy:
+```bash
+pip freeze > requirements.txt
+git init && git add . && git commit -m "RAG app"
+heroku git:remote -a your-app
+git push heroku main
+```
+
+## Optimization Tips
+
+### Improve Retrieval Quality
+
+```python
+# Use reranking for better results
+def retrieve_with_rerank(query: str, top_k: int = 3) -> list[str]:
+    # Get more candidates than needed
+    candidates = retrieve_context(query, top_k=10)
+
+    # Rerank with Cohere
+    rerank_response = embedding_client.post(
+        "/v1/rerank",
+        json={
+            "model": "cohere-rerank-3-5",
+            "query": query,
+            "documents": candidates,
+            "top_n": top_k
+        }
+    )
+
+    return [candidates[r["index"]] for r in rerank_response["results"]]
+```
+
+### Handle Long Documents
+
+```python
+# Use larger chunks with more overlap for technical docs
+chunks = chunk_text(content, chunk_size=800, overlap=200)
+```
+
+### Add Metadata Filtering
+
+```sql
+-- Add filters to your search
+SELECT content FROM documents
+WHERE metadata->>'category' = 'technical'
+ORDER BY embedding <=> %s::vector
+LIMIT 5;
+```
+
+## Next Steps
+
+- Add a [chat interface](/cookbook/chat-interface) for users
+- Implement [search + rerank](/cookbook/search-rerank) for better accuracy
+- Set up [production monitoring](/cookbook/production-monitoring)
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="pgvector Guide" href="/vector-database/pgvector" icon="database">
+    Deep dive into vector operations
+  </Card>
+  <Card title="Embeddings API" href="/inference-api/embeddings" icon="vector-square">
+    Full embeddings documentation
+  </Card>
+</CardGroup>

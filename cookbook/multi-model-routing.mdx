@@ -1,0 +1,370 @@
+---
+title: "Multi-Model Chatbot with Fallback"
+description: "Route requests to the right model based on complexity to optimize cost and quality"
+---
+
+Build a smart chatbot that automatically routes requests to the optimal model - using cheap, fast models for simple queries and premium models for complex ones. This can reduce costs by 5-10x while maintaining quality.
+
+## The Strategy
+
+```
+User Request
+    ↓
+Analyze Complexity
+    ↓
+├── Simple → Claude 4.5 Haiku ($0.80/1M input)
+├── Medium → Claude 4.5 Sonnet ($3.00/1M input)
+└── Complex → Claude 4 Sonnet with extended thinking ($3.00/1M + thinking tokens)
+```
+
+## Prerequisites
+
+- Heroku app with multiple Claude models provisioned
+- Python 3.9+
+
+## Implementation
+
+Create `smart_router.py`:
+
+```python
+import os
+import re
+from openai import OpenAI
+from dataclasses import dataclass
+from typing import Literal
+
+# Initialize client
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+@dataclass
+class ModelConfig:
+    model_id: str
+    max_tokens: int
+    temperature: float
+    use_extended_thinking: bool = False
+
+# Model configurations by tier
+MODELS = {
+    "fast": ModelConfig(
+        model_id="claude-4-5-haiku",
+        max_tokens=500,
+        temperature=0.3
+    ),
+    "balanced": ModelConfig(
+        model_id="claude-4-5-sonnet",
+        max_tokens=1000,
+        temperature=0.5
+    ),
+    "premium": ModelConfig(
+        model_id="claude-4-sonnet",
+        max_tokens=2000,
+        temperature=0.7,
+        use_extended_thinking=True
+    )
+}
+
+# ----- Complexity Analysis -----
+def analyze_complexity(message: str) -> Literal["fast", "balanced", "premium"]:
+    """Determine which model tier to use based on message complexity."""
+
+    message_lower = message.lower()
+    word_count = len(message.split())
+
+    # Premium indicators: complex reasoning, code, analysis
+    premium_patterns = [
+        r'\b(analyze|compare|evaluate|design|architect)\b',
+        r'\b(step[- ]by[- ]step|explain why|reasoning)\b',
+        r'\b(code|debug|refactor|implement)\b',
+        r'\b(trade[- ]?offs?|pros and cons)\b',
+        r'```',  # Code blocks
+    ]
+
+    # Balanced indicators: moderate complexity
+    balanced_patterns = [
+        r'\b(how (do|does|can|should))\b',
+        r'\b(what (is|are) the (best|difference))\b',
+        r'\b(summarize|explain|describe)\b',
+        r'\?.*\?',  # Multiple questions
+    ]
+
+    # Check premium patterns
+    for pattern in premium_patterns:
+        if re.search(pattern, message_lower):
+            return "premium"
+
+    # Check balanced patterns
+    for pattern in balanced_patterns:
+        if re.search(pattern, message_lower):
+            return "balanced"
+
+    # Length-based heuristics
+    if word_count > 200:
+        return "balanced"
+    if word_count > 500:
+        return "premium"
+
+    # Default to fast for simple queries
+    return "fast"
+
+# ----- Smart Router -----
+def route_and_respond(
+    messages: list[dict],
+    force_tier: str = None
+) -> tuple[str, str, dict]:
+    """
+    Route to optimal model and get response.
+
+    Returns: (response_text, model_used, usage_stats)
+    """
+    # Get the last user message for analysis
+    user_message = ""
+    for msg in reversed(messages):
+        if msg["role"] == "user":
+            user_message = msg["content"]
+            break
+
+    # Determine tier
+    tier = force_tier or analyze_complexity(user_message)
+    config = MODELS[tier]
+
+    # Build request
+    request_params = {
+        "model": config.model_id,
+        "messages": messages,
+        "max_tokens": config.max_tokens,
+        "temperature": config.temperature,
+    }
+
+    # Add extended thinking for premium tier
+    if config.use_extended_thinking:
+        request_params["extra_body"] = {
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": 5000
+            }
+        }
+
+    # Make request
+    response = client.chat.completions.create(**request_params)
+
+    return (
+        response.choices[0].message.content,
+        config.model_id,
+        {
+            "tier": tier,
+            "input_tokens": response.usage.prompt_tokens,
+            "output_tokens": response.usage.completion_tokens,
+        }
+    )
+
+# ----- Fallback Logic -----
+def respond_with_fallback(messages: list[dict]) -> tuple[str, str, dict]:
+    """
+    Try fast model first, escalate if quality seems low.
+    """
+    tiers = ["fast", "balanced", "premium"]
+
+    for tier in tiers:
+        response, model, stats = route_and_respond(messages, force_tier=tier)
+
+        # Quality checks
+        if tier != "premium":
+            # Check for uncertainty markers
+            uncertainty_markers = [
+                "i'm not sure",
+                "i don't know",
+                "i cannot",
+                "unclear",
+                "ambiguous"
+            ]
+
+            if any(marker in response.lower() for marker in uncertainty_markers):
+                print(f"Escalating from {tier} due to uncertainty")
+                continue
+
+            # Check for very short responses on complex queries
+            if len(response.split()) < 20 and len(messages[-1]["content"].split()) > 50:
+                print(f"Escalating from {tier} due to short response")
+                continue
+
+        return response, model, stats
+
+    # Should never reach here, but return last response
+    return response, model, stats
+
+# ----- Cost Tracking -----
+class CostTracker:
+    # Approximate costs per 1M tokens
+    COSTS = {
+        "claude-4-5-haiku": {"input": 0.80, "output": 4.00},
+        "claude-4-5-sonnet": {"input": 3.00, "output": 15.00},
+        "claude-4-sonnet": {"input": 3.00, "output": 15.00},
+    }
+
+    def __init__(self):
+        self.total_cost = 0
+        self.requests_by_tier = {"fast": 0, "balanced": 0, "premium": 0}
+
+    def track(self, model: str, stats: dict):
+        costs = self.COSTS.get(model, {"input": 3.00, "output": 15.00})
+
+        input_cost = (stats["input_tokens"] / 1_000_000) * costs["input"]
+        output_cost = (stats["output_tokens"] / 1_000_000) * costs["output"]
+
+        request_cost = input_cost + output_cost
+        self.total_cost += request_cost
+        self.requests_by_tier[stats["tier"]] += 1
+
+        return request_cost
+
+    def summary(self):
+        return {
+            "total_cost": f"${self.total_cost:.4f}",
+            "requests": self.requests_by_tier
+        }
+
+# ----- Interactive Demo -----
+def chat():
+    """Interactive chat with smart routing."""
+    tracker = CostTracker()
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
+
+    print("Smart Router Chat - Type 'stats' for cost info, 'quit' to exit\n")
+
+    while True:
+        user_input = input("You: ").strip()
+
+        if user_input.lower() == "quit":
+            print(f"\nSession stats: {tracker.summary()}")
+            break
+
+        if user_input.lower() == "stats":
+            print(f"Stats: {tracker.summary()}\n")
+            continue
+
+        if not user_input:
+            continue
+
+        messages.append({"role": "user", "content": user_input})
+
+        response, model, stats = route_and_respond(messages)
+        cost = tracker.track(model, stats)
+
+        messages.append({"role": "assistant", "content": response})
+
+        print(f"\n[{stats['tier'].upper()} - {model} - ${cost:.6f}]")
+        print(f"Assistant: {response}\n")
+
+if __name__ == "__main__":
+    chat()
+```
+
+## Usage Examples
+
+```python
+# Simple query → Haiku
+route_and_respond([
+    {"role": "user", "content": "What's the capital of France?"}
+])
+# Returns: ("Paris...", "claude-4-5-haiku", {...})
+
+# Medium query → Sonnet
+route_and_respond([
+    {"role": "user", "content": "Explain the difference between SQL and NoSQL databases"}
+])
+# Returns: ("SQL databases use...", "claude-4-5-sonnet", {...})
+
+# Complex query → Claude 4 Sonnet with thinking
+route_and_respond([
+    {"role": "user", "content": "Analyze the trade-offs between microservices and monolithic architecture for a startup with 5 developers"}
+])
+# Returns: ("Let me think through this...", "claude-4-sonnet", {...})
+```
+
+## A/B Testing Model Quality
+
+```python
+import random
+
+def ab_test_response(messages: list[dict]) -> dict:
+    """Compare responses from different tiers."""
+
+    results = {}
+    for tier in ["fast", "balanced", "premium"]:
+        response, model, stats = route_and_respond(messages, force_tier=tier)
+        results[tier] = {
+            "response": response,
+            "model": model,
+            "tokens": stats["input_tokens"] + stats["output_tokens"]
+        }
+
+    return results
+
+# Run A/B test
+test_results = ab_test_response([
+    {"role": "user", "content": "Explain quantum computing in simple terms"}
+])
+
+for tier, data in test_results.items():
+    print(f"\n=== {tier.upper()} ({data['model']}) ===")
+    print(f"Tokens: {data['tokens']}")
+    print(f"Response: {data['response'][:200]}...")
+```
+
+## Production Considerations
+
+### Rate Limiting by Tier
+
+```python
+from functools import wraps
+import time
+
+tier_limits = {
+    "fast": 100,      # 100 RPM
+    "balanced": 50,   # 50 RPM
+    "premium": 20     # 20 RPM
+}
+
+# Implement rate limiting per tier
+```
+
+### Logging for Analysis
+
+```python
+import logging
+import json
+
+def log_request(tier: str, model: str, stats: dict, latency: float):
+    logging.info(json.dumps({
+        "tier": tier,
+        "model": model,
+        "input_tokens": stats["input_tokens"],
+        "output_tokens": stats["output_tokens"],
+        "latency_ms": latency * 1000
+    }))
+```
+
+## Cost Savings Example
+
+| Scenario | All Premium | Smart Routing | Savings |
+|----------|-------------|---------------|---------|
+| 10K simple queries | $50 | $8 | 84% |
+| 5K medium queries | $30 | $15 | 50% |
+| 1K complex queries | $10 | $10 | 0% |
+| **Total** | **$90** | **$33** | **63%** |
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Models Overview" href="/inference-api/models" icon="sparkles">
+    Compare model capabilities
+  </Card>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Detailed pricing information
+  </Card>
+</CardGroup>

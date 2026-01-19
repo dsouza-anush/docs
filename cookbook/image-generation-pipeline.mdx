@@ -1,0 +1,432 @@
+---
+title: "Image Generation Pipeline"
+description: "Build automated image generation workflows with consistent styling, batch processing, and cost optimization"
+---
+
+Build a production image generation pipeline using Stable Image Ultra. Generate consistent product images, marketing assets, and creative content at scale.
+
+## What You'll Build
+
+- Consistent brand image generation
+- Batch processing for multiple images
+- Draft-to-final quality pipeline (cost optimization)
+- Image URL storage and gallery
+
+## Prerequisites
+
+- Heroku app with Stable Image Ultra model
+- Heroku Postgres for storing image URLs
+- Python 3.9+
+
+## Basic Image Generation
+
+```python
+import os
+import requests
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+def generate_image(
+    prompt: str,
+    aspect_ratio: str = "1:1",
+    seed: int = None,
+    negative_prompt: str = None
+) -> str:
+    """Generate a single image and return the URL."""
+
+    request_body = {
+        "prompt": prompt,
+        "model": "stable-image-ultra",
+        "aspect_ratio": aspect_ratio,
+    }
+
+    if seed:
+        request_body["seed"] = seed
+
+    if negative_prompt:
+        request_body["negative_prompt"] = negative_prompt
+
+    response = client.images.generate(**request_body)
+
+    return response.data[0].url
+
+# Example
+image_url = generate_image(
+    prompt="A modern tech startup office with natural lighting, minimalist design",
+    aspect_ratio="16:9"
+)
+print(f"Generated: {image_url}")
+```
+
+## Consistent Brand Styling
+
+Use seeds and style templates for brand consistency:
+
+```python
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class BrandStyle:
+    name: str
+    style_suffix: str
+    negative_prompt: str
+    default_seed: int
+
+# Define brand styles
+BRAND_STYLES = {
+    "modern_tech": BrandStyle(
+        name="Modern Tech",
+        style_suffix="minimalist design, clean lines, soft natural lighting, professional photography, 8k",
+        negative_prompt="cluttered, dark, amateur, blurry, watermark, text",
+        default_seed=42
+    ),
+    "warm_lifestyle": BrandStyle(
+        name="Warm Lifestyle",
+        style_suffix="warm tones, cozy atmosphere, golden hour lighting, lifestyle photography",
+        negative_prompt="cold, clinical, harsh lighting, artificial",
+        default_seed=123
+    ),
+    "bold_marketing": BrandStyle(
+        name="Bold Marketing",
+        style_suffix="vibrant colors, dynamic composition, high contrast, attention-grabbing",
+        negative_prompt="muted, boring, static, amateur",
+        default_seed=789
+    )
+}
+
+def generate_branded_image(
+    subject: str,
+    style_key: str,
+    aspect_ratio: str = "1:1",
+    custom_seed: int = None
+) -> dict:
+    """Generate an image with consistent brand styling."""
+
+    style = BRAND_STYLES.get(style_key)
+    if not style:
+        raise ValueError(f"Unknown style: {style_key}")
+
+    full_prompt = f"{subject}, {style.style_suffix}"
+    seed = custom_seed or style.default_seed
+
+    response = client.images.generate(
+        model="stable-image-ultra",
+        prompt=full_prompt,
+        negative_prompt=style.negative_prompt,
+        seed=seed,
+        aspect_ratio=aspect_ratio
+    )
+
+    return {
+        "url": response.data[0].url,
+        "prompt": full_prompt,
+        "seed": seed,
+        "style": style_key
+    }
+
+# Generate consistent product images
+products = ["wireless headphones", "smart watch", "laptop stand"]
+
+for product in products:
+    result = generate_branded_image(
+        subject=f"Product photo of {product} on white background",
+        style_key="modern_tech"
+    )
+    print(f"{product}: {result['url']}")
+```
+
+## Batch Processing Pipeline
+
+```python
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+import psycopg2
+from datetime import datetime
+
+class ImagePipeline:
+    def __init__(self):
+        self.client = OpenAI(
+            base_url=os.getenv("INFERENCE_URL") + "/v1",
+            api_key=os.getenv("INFERENCE_KEY")
+        )
+
+    def generate_batch(
+        self,
+        prompts: list[dict],
+        max_concurrent: int = 5
+    ) -> list[dict]:
+        """Generate multiple images concurrently."""
+
+        results = []
+
+        with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+            futures = []
+
+            for prompt_config in prompts:
+                future = executor.submit(
+                    self._generate_single,
+                    prompt_config
+                )
+                futures.append((prompt_config, future))
+
+            for config, future in futures:
+                try:
+                    result = future.result()
+                    results.append({
+                        "success": True,
+                        "config": config,
+                        "url": result
+                    })
+                except Exception as e:
+                    results.append({
+                        "success": False,
+                        "config": config,
+                        "error": str(e)
+                    })
+
+        return results
+
+    def _generate_single(self, config: dict) -> str:
+        response = self.client.images.generate(
+            model="stable-image-ultra",
+            prompt=config["prompt"],
+            aspect_ratio=config.get("aspect_ratio", "1:1"),
+            seed=config.get("seed"),
+            negative_prompt=config.get("negative_prompt")
+        )
+        return response.data[0].url
+
+    def store_results(self, results: list[dict], campaign_id: str):
+        """Store generated images in database."""
+
+        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+        cur = conn.cursor()
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS generated_images (
+                id SERIAL PRIMARY KEY,
+                campaign_id TEXT,
+                prompt TEXT,
+                url TEXT,
+                seed INTEGER,
+                aspect_ratio TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+
+        for result in results:
+            if result["success"]:
+                cur.execute(
+                    """
+                    INSERT INTO generated_images
+                    (campaign_id, prompt, url, seed, aspect_ratio)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (
+                        campaign_id,
+                        result["config"]["prompt"],
+                        result["url"],
+                        result["config"].get("seed"),
+                        result["config"].get("aspect_ratio", "1:1")
+                    )
+                )
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+# Example: Generate product catalog
+pipeline = ImagePipeline()
+
+catalog_prompts = [
+    {"prompt": "Professional headphones on marble surface, studio lighting", "seed": 100},
+    {"prompt": "Wireless earbuds in charging case, minimalist background", "seed": 101},
+    {"prompt": "Smart speaker on wooden desk, cozy home office", "seed": 102},
+    {"prompt": "Tablet with stylus, creative workspace setup", "seed": 103},
+    {"prompt": "Fitness tracker on wrist, outdoor running scene", "seed": 104},
+]
+
+results = pipeline.generate_batch(catalog_prompts, max_concurrent=3)
+pipeline.store_results(results, campaign_id="product-catalog-2024")
+
+print(f"Generated {sum(1 for r in results if r['success'])} images")
+```
+
+## Cost Optimization: Draft-to-Final Pipeline
+
+Generate low-res drafts first, then create final versions of approved images:
+
+```python
+class DraftFinalPipeline:
+    """Two-stage pipeline: cheap drafts, then quality finals."""
+
+    def __init__(self):
+        self.client = OpenAI(
+            base_url=os.getenv("INFERENCE_URL") + "/v1",
+            api_key=os.getenv("INFERENCE_KEY")
+        )
+
+    def generate_drafts(self, prompts: list[str], variations: int = 3) -> list[dict]:
+        """Generate multiple draft variations for review."""
+
+        drafts = []
+
+        for prompt in prompts:
+            for i in range(variations):
+                seed = hash(prompt + str(i)) % 1000000
+
+                # Lower resolution for drafts (if supported)
+                result = self.client.images.generate(
+                    model="stable-image-ultra",
+                    prompt=prompt,
+                    seed=seed,
+                    aspect_ratio="1:1"
+                )
+
+                drafts.append({
+                    "prompt": prompt,
+                    "seed": seed,
+                    "url": result.data[0].url,
+                    "variation": i
+                })
+
+        return drafts
+
+    def generate_finals(self, approved_drafts: list[dict]) -> list[dict]:
+        """Generate high-quality versions of approved drafts."""
+
+        finals = []
+
+        for draft in approved_drafts:
+            # Same seed = same image, just higher quality
+            result = self.client.images.generate(
+                model="stable-image-ultra",
+                prompt=draft["prompt"],
+                seed=draft["seed"],
+                aspect_ratio="16:9"  # Higher res for finals
+            )
+
+            finals.append({
+                "prompt": draft["prompt"],
+                "seed": draft["seed"],
+                "url": result.data[0].url,
+                "draft_url": draft["url"]
+            })
+
+        return finals
+
+# Workflow example
+pipeline = DraftFinalPipeline()
+
+# Step 1: Generate drafts for review
+prompts = [
+    "Modern office space with plants",
+    "Team collaboration meeting room"
+]
+
+drafts = pipeline.generate_drafts(prompts, variations=3)
+print(f"Generated {len(drafts)} draft variations")
+
+# Step 2: Human reviews and approves best drafts
+# (In production, this would be a UI/API call)
+approved = [drafts[0], drafts[4]]  # Approve first and fifth
+
+# Step 3: Generate final versions
+finals = pipeline.generate_finals(approved)
+print(f"Generated {len(finals)} final images")
+```
+
+## Prompt Engineering for Images
+
+```python
+def build_product_prompt(
+    product_name: str,
+    background: str = "white",
+    lighting: str = "studio",
+    angle: str = "front",
+    additional: str = ""
+) -> str:
+    """Build optimized product photography prompts."""
+
+    components = [
+        f"Professional product photography of {product_name}",
+        f"{angle} view angle",
+        f"{background} background",
+        f"{lighting} lighting",
+        "high detail",
+        "commercial quality",
+        "8k resolution"
+    ]
+
+    if additional:
+        components.append(additional)
+
+    return ", ".join(components)
+
+# Example
+prompt = build_product_prompt(
+    product_name="ceramic coffee mug",
+    background="marble surface",
+    lighting="soft natural",
+    angle="45 degree",
+    additional="steam rising from coffee"
+)
+```
+
+## Image Gallery API
+
+```python
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/api/gallery/<campaign_id>")
+def get_gallery(campaign_id):
+    """Get all images for a campaign."""
+
+    conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT prompt, url, seed, aspect_ratio, created_at
+        FROM generated_images
+        WHERE campaign_id = %s
+        ORDER BY created_at DESC
+        """,
+        (campaign_id,)
+    )
+
+    images = [
+        {
+            "prompt": row[0],
+            "url": row[1],
+            "seed": row[2],
+            "aspect_ratio": row[3],
+            "created_at": row[4].isoformat()
+        }
+        for row in cur.fetchall()
+    ]
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"images": images, "count": len(images)})
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Image Generation API" href="/inference-api/images-generations" icon="image">
+    Full API reference
+  </Card>
+  <Card title="Pricing" href="/inference-api/pricing" icon="dollar-sign">
+    Image generation costs
+  </Card>
+</CardGroup>

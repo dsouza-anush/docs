@@ -1,0 +1,392 @@
+---
+title: "Fact-Checked Q&A Bot"
+description: "Build a Q&A system with automated fact verification, confidence scoring, and graceful uncertainty handling"
+---
+
+Build a Q&A bot that doesn't just answer questions - it verifies its answers, provides confidence scores, and gracefully admits when it doesn't know something.
+
+## What You'll Build
+
+- RAG-based Q&A with citations
+- Automated fact-checking using a second model call
+- Confidence scoring for answers
+- Graceful "I don't know" responses
+
+## The Architecture
+
+```
+User Question
+    ↓
+Retrieve Context (RAG)
+    ↓
+Generate Answer with Citations
+    ↓
+Fact-Check Answer Against Context
+    ↓
+Calculate Confidence Score
+    ↓
+Return Answer (or "I don't know")
+```
+
+## Implementation
+
+```python
+import os
+import json
+from openai import OpenAI
+from dataclasses import dataclass
+from typing import Optional
+import psycopg2
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+embedding_client = OpenAI(
+    base_url=os.getenv("EMBEDDING_URL") + "/v1",
+    api_key=os.getenv("EMBEDDING_KEY")
+)
+
+@dataclass
+class QAResponse:
+    answer: str
+    confidence: float
+    citations: list[dict]
+    fact_check_result: dict
+    should_display: bool
+
+def get_db():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
+# ----- Step 1: Retrieve Context -----
+def retrieve_context(question: str, top_k: int = 5) -> list[dict]:
+    """Get relevant documents for the question."""
+
+    response = embedding_client.embeddings.create(
+        model="cohere-embed-multilingual",
+        input=[question],
+        extra_body={"input_type": "search_query"}
+    )
+    query_embedding = response.data[0].embedding
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT id, content, metadata,
+               1 - (embedding <=> %s::vector) AS similarity
+        FROM documents
+        ORDER BY embedding <=> %s::vector
+        LIMIT %s
+        """,
+        (query_embedding, query_embedding, top_k)
+    )
+
+    results = [
+        {
+            "id": row[0],
+            "content": row[1],
+            "metadata": row[2] or {},
+            "similarity": row[3]
+        }
+        for row in cur.fetchall()
+    ]
+
+    cur.close()
+    conn.close()
+
+    return results
+
+# ----- Step 2: Generate Answer with Citations -----
+def generate_answer(question: str, context: list[dict]) -> dict:
+    """Generate an answer with inline citations."""
+
+    # Format context with source IDs
+    formatted_context = "\n\n".join([
+        f"[Source {i+1}] (similarity: {doc['similarity']:.2f})\n{doc['content']}"
+        for i, doc in enumerate(context)
+    ])
+
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a precise Q&A assistant. Answer questions using ONLY the provided context.
+
+Rules:
+1. Cite sources using [Source N] format for every claim
+2. If the context doesn't contain enough information, say "I don't have sufficient information to answer this question"
+3. Never make up information not in the context
+4. Be concise but complete
+
+Respond in JSON format:
+{
+    "answer": "Your answer with [Source N] citations",
+    "claims": [
+        {"claim": "specific claim made", "source": 1},
+        {"claim": "another claim", "source": 2}
+    ],
+    "has_sufficient_info": true/false
+}"""
+            },
+            {
+                "role": "user",
+                "content": f"Context:\n{formatted_context}\n\nQuestion: {question}"
+            }
+        ],
+        temperature=0.1,
+        max_tokens=1000
+    )
+
+    content = response.choices[0].message.content
+
+    # Parse JSON response
+    try:
+        # Handle markdown code blocks
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+
+        return json.loads(content.strip())
+    except json.JSONDecodeError:
+        return {
+            "answer": content,
+            "claims": [],
+            "has_sufficient_info": True
+        }
+
+# ----- Step 3: Fact-Check the Answer -----
+def fact_check(answer_data: dict, context: list[dict]) -> dict:
+    """Verify claims in the answer against the source context."""
+
+    if not answer_data.get("claims"):
+        return {"verified": True, "issues": [], "score": 1.0}
+
+    formatted_context = "\n\n".join([
+        f"[Source {i+1}]\n{doc['content']}"
+        for i, doc in enumerate(context)
+    ])
+
+    claims_text = "\n".join([
+        f"- Claim: \"{c['claim']}\" (cited Source {c['source']})"
+        for c in answer_data["claims"]
+    ])
+
+    response = client.chat.completions.create(
+        model="claude-4-5-haiku",  # Use faster model for fact-checking
+        messages=[
+            {
+                "role": "system",
+                "content": """You are a fact-checker. Verify if each claim is supported by the cited source.
+
+For each claim, determine:
+- SUPPORTED: The source directly supports this claim
+- PARTIALLY_SUPPORTED: The source somewhat supports but with caveats
+- NOT_SUPPORTED: The source doesn't support this claim
+- CONTRADICTED: The source contradicts this claim
+
+Respond in JSON:
+{
+    "verifications": [
+        {"claim": "...", "status": "SUPPORTED/PARTIALLY_SUPPORTED/NOT_SUPPORTED/CONTRADICTED", "explanation": "..."}
+    ],
+    "overall_score": 0.0-1.0
+}"""
+            },
+            {
+                "role": "user",
+                "content": f"Context:\n{formatted_context}\n\nClaims to verify:\n{claims_text}"
+            }
+        ],
+        temperature=0,
+        max_tokens=500
+    )
+
+    content = response.choices[0].message.content
+
+    try:
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        return json.loads(content.strip())
+    except:
+        return {"verified": True, "verifications": [], "overall_score": 0.8}
+
+# ----- Step 4: Calculate Confidence -----
+def calculate_confidence(
+    context: list[dict],
+    answer_data: dict,
+    fact_check_result: dict
+) -> float:
+    """Calculate overall confidence score."""
+
+    # Factor 1: Context relevance (average similarity)
+    if context:
+        relevance_score = sum(d["similarity"] for d in context) / len(context)
+    else:
+        relevance_score = 0
+
+    # Factor 2: Fact-check score
+    fact_score = fact_check_result.get("overall_score", 0.5)
+
+    # Factor 3: Has sufficient info
+    info_score = 1.0 if answer_data.get("has_sufficient_info") else 0.3
+
+    # Weighted combination
+    confidence = (
+        relevance_score * 0.3 +
+        fact_score * 0.5 +
+        info_score * 0.2
+    )
+
+    return round(confidence, 2)
+
+# ----- Main Q&A Function -----
+def answer_question(
+    question: str,
+    confidence_threshold: float = 0.6
+) -> QAResponse:
+    """
+    Answer a question with fact-checking and confidence scoring.
+    """
+
+    # Step 1: Retrieve context
+    context = retrieve_context(question, top_k=5)
+
+    # No context found
+    if not context or context[0]["similarity"] < 0.3:
+        return QAResponse(
+            answer="I don't have any relevant information to answer this question.",
+            confidence=0.0,
+            citations=[],
+            fact_check_result={},
+            should_display=False
+        )
+
+    # Step 2: Generate answer
+    answer_data = generate_answer(question, context)
+
+    # Check if model admits insufficient info
+    if not answer_data.get("has_sufficient_info"):
+        return QAResponse(
+            answer="I found some related information, but I don't have enough details to fully answer your question.",
+            confidence=0.3,
+            citations=[{"source": i+1, "content": c["content"][:200]} for i, c in enumerate(context[:2])],
+            fact_check_result={},
+            should_display=True
+        )
+
+    # Step 3: Fact-check
+    fact_check_result = fact_check(answer_data, context)
+
+    # Step 4: Calculate confidence
+    confidence = calculate_confidence(context, answer_data, fact_check_result)
+
+    # Build citations
+    citations = []
+    for i, doc in enumerate(context):
+        citations.append({
+            "source_id": i + 1,
+            "content_preview": doc["content"][:200],
+            "similarity": doc["similarity"],
+            "metadata": doc["metadata"]
+        })
+
+    # Determine if we should display
+    should_display = confidence >= confidence_threshold
+
+    if not should_display:
+        answer = f"I'm not confident enough to answer this question (confidence: {confidence:.0%}). The information I found may not be reliable."
+    else:
+        answer = answer_data["answer"]
+
+    return QAResponse(
+        answer=answer,
+        confidence=confidence,
+        citations=citations,
+        fact_check_result=fact_check_result,
+        should_display=should_display
+    )
+
+# ----- Usage -----
+if __name__ == "__main__":
+    # Example questions
+    questions = [
+        "How do I deploy a Python app to Heroku?",
+        "What is the meaning of life?",  # Out of scope
+        "What are Heroku's database options?"
+    ]
+
+    for q in questions:
+        print(f"\nQ: {q}")
+        result = answer_question(q)
+        print(f"Confidence: {result.confidence:.0%}")
+        print(f"Answer: {result.answer[:200]}...")
+
+        if result.fact_check_result.get("verifications"):
+            print(f"Fact-check: {len(result.fact_check_result['verifications'])} claims verified")
+```
+
+## API Endpoint
+
+```python
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route("/api/ask", methods=["POST"])
+def ask():
+    data = request.json
+    question = data.get("question", "")
+    threshold = data.get("confidence_threshold", 0.6)
+
+    if not question:
+        return jsonify({"error": "Question required"}), 400
+
+    result = answer_question(question, threshold)
+
+    return jsonify({
+        "answer": result.answer,
+        "confidence": result.confidence,
+        "citations": result.citations,
+        "fact_check": result.fact_check_result,
+        "reliable": result.should_display
+    })
+```
+
+## Monitoring Answer Quality
+
+```python
+import logging
+
+def log_qa_interaction(question: str, result: QAResponse):
+    """Log Q&A for quality monitoring."""
+
+    logging.info(json.dumps({
+        "question": question,
+        "confidence": result.confidence,
+        "should_display": result.should_display,
+        "num_citations": len(result.citations),
+        "fact_check_score": result.fact_check_result.get("overall_score", None)
+    }))
+
+# Track low-confidence answers for review
+def get_low_confidence_questions(threshold: float = 0.5) -> list:
+    """Get questions that had low confidence for human review."""
+    # Query from logs/database
+    pass
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="RAG Tutorial" href="/cookbook/complete-rag-tutorial" icon="book">
+    Build the retrieval foundation
+  </Card>
+  <Card title="Prompt Patterns" href="/cookbook/prompt-patterns" icon="wand-magic-sparkles">
+    Advanced prompting techniques
+  </Card>
+</CardGroup>
