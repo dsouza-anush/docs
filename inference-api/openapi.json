@@ -223,6 +223,81 @@
           }
         }
       }
+    },
+    "/v1/rerank": {
+      "post": {
+        "summary": "Rerank",
+        "description": "Rank documents by semantic relevance to a query for improved RAG and search results",
+        "operationId": "rerankDocuments",
+        "tags": ["Rerank"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerankRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic rerank request",
+                  "value": {
+                    "model": "cohere-rerank-3-5",
+                    "query": "How do I optimize database connection pooling?",
+                    "documents": [
+                      "Connection pooling reduces overhead by reusing existing connections.",
+                      "You can monitor application performance using built-in metrics.",
+                      "Set max pool size based on your dyno count and concurrent queries."
+                    ],
+                    "top_n": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RerankResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -629,6 +704,58 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "RerankRequest": {
+        "type": "object",
+        "required": ["model", "query", "documents"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "ID of the rerank model to use",
+            "example": "cohere-rerank-3-5"
+          },
+          "query": {
+            "type": "string",
+            "description": "The search query or question to rank documents against",
+            "example": "How do I optimize database connection pooling?"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of text documents to rank by relevance to the query",
+            "example": ["Connection pooling reduces overhead by reusing existing connections.", "You can monitor application performance using built-in metrics.", "Set max pool size based on your dyno count and concurrent queries."]
+          },
+          "top_n": {
+            "type": "integer",
+            "description": "Number of most relevant results to return. If not specified, returns all documents.",
+            "example": 3
+          }
+        }
+      },
+      "RerankResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Original index of the document in the input array"
+                },
+                "relevance_score": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Relevance score between 0 and 1, where higher is more relevant"
+                }
+              }
+            },
+            "description": "Documents ranked by relevance, highest score first"
           }
         }
       }
