@@ -1,5 +1,7 @@
 # Heroku AI Documentation
 
+**Live site:** [https://heroku-9aca99a3.mintlify.app/introduction](https://heroku-9aca99a3.mintlify.app/introduction)
+
 This repository hosts the product documentation for the Heroku AI platform. The site covers model provisioning, API usage, CLI workflows, and integrations so teams can build and run AI features on Heroku.
 
 ## Directory guide
