@@ -47,8 +47,20 @@ client = OpenAI(
 )
 
 def query_database(question: str) -> str:
-    """Use an agent to answer questions about your database."""
+    """
+    Use an agent to answer questions about your database.
 
+    How this works:
+    1. User asks a natural language question
+    2. Agent analyzes question and decides what SQL to run
+    3. Heroku executes SQL in a one-off dyno (sandboxed, safe)
+    4. Results return to agent for interpretation
+    5. Agent formats a human-readable response
+
+    Security note: The agent runs queries through Heroku's tool system,
+    which executes in isolated dynos. Still, use read-only database users
+    when possible for an extra layer of safety.
+    """
     response = client.chat.completions.create(
         model="claude-4-5-sonnet",
         messages=[
@@ -62,7 +74,11 @@ Database schema:
 - products (id, name, price, category)
 - order_items (order_id, product_id, quantity)
 
-Always explain what query you're running and summarize results clearly."""
+Rules:
+1. Always explain what query you're running before executing
+2. Use efficient queries (add LIMIT, use indexes)
+3. Summarize results clearly for non-technical users
+4. If a query fails, explain the error and try a different approach"""
             },
             {
                 "role": "user",
@@ -71,15 +87,20 @@ Always explain what query you're running and summarize results clearly."""
         ],
         tools=[
             {
-                "type": "heroku_tool",
-                "name": "pg_psql",
+                "type": "heroku_tool",      # Built-in Heroku tool
+                "name": "pg_psql",          # PostgreSQL query tool
                 "description": "Execute SQL queries on the database",
                 "runtime_params": {
+                    # App where the dyno runs (can be same or different app)
                     "target_app_name": os.getenv("TARGET_APP_NAME"),
+                    # Dyno size affects available memory/CPU
                     "dyno_size": "standard-1x",
+                    # Max seconds before dyno is killed (prevents runaway queries)
                     "ttl_seconds": 30,
+                    # Max times this tool can be called per request
                     "max_calls": 3,
                     "tool_params": {
+                        # Which database attachment to use
                         "db_attachment": "DATABASE_URL"
                     }
                 }

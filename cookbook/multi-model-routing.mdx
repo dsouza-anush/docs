@@ -68,26 +68,41 @@ MODELS = {
 
 # ----- Complexity Analysis -----
 def analyze_complexity(message: str) -> Literal["fast", "balanced", "premium"]:
-    """Determine which model tier to use based on message complexity."""
+    """
+    Determine which model tier to use based on message complexity.
 
+    This is the heart of cost optimization. The goal is to route:
+    - Simple factual questions → Haiku (cheapest, fastest)
+    - Moderate complexity → Sonnet (balanced)
+    - Complex reasoning → Claude 4 with extended thinking (highest quality)
+
+    Customize these patterns for your domain:
+    - Customer support: add urgency keywords, sentiment analysis
+    - Code assistance: detect language complexity, error patterns
+    - Research: route based on query depth, citation needs
+
+    Returns: "fast", "balanced", or "premium"
+    """
     message_lower = message.lower()
     word_count = len(message.split())
 
-    # Premium indicators: complex reasoning, code, analysis
+    # Premium indicators: tasks requiring deep reasoning
+    # These queries benefit most from extended thinking
     premium_patterns = [
-        r'\b(analyze|compare|evaluate|design|architect)\b',
-        r'\b(step[- ]by[- ]step|explain why|reasoning)\b',
-        r'\b(code|debug|refactor|implement)\b',
-        r'\b(trade[- ]?offs?|pros and cons)\b',
-        r'```',  # Code blocks
+        r'\b(analyze|compare|evaluate|design|architect)\b',  # Analysis tasks
+        r'\b(step[- ]by[- ]step|explain why|reasoning)\b',   # Reasoning requests
+        r'\b(code|debug|refactor|implement)\b',              # Code tasks
+        r'\b(trade[- ]?offs?|pros and cons)\b',              # Decision analysis
+        r'```',  # Code blocks indicate technical complexity
     ]
 
     # Balanced indicators: moderate complexity
+    # Good quality needed, but not worth premium cost
     balanced_patterns = [
-        r'\b(how (do|does|can|should))\b',
-        r'\b(what (is|are) the (best|difference))\b',
-        r'\b(summarize|explain|describe)\b',
-        r'\?.*\?',  # Multiple questions
+        r'\b(how (do|does|can|should))\b',                   # How-to questions
+        r'\b(what (is|are) the (best|difference))\b',        # Comparisons
+        r'\b(summarize|explain|describe)\b',                 # Explanations
+        r'\?.*\?',  # Multiple questions in one message
     ]
 
     # Check premium patterns

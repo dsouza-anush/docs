@@ -58,23 +58,42 @@ def get_db():
 
 # ----- Database Setup -----
 def init_db():
+    """
+    Initialize the database schema for chat persistence.
+
+    Schema design considerations:
+    - conversations: Groups messages into chat sessions
+    - messages: Stores individual messages with role (user/assistant)
+    - Index on conversation_id for fast history retrieval
+    - Timestamps enable ordering and audit trails
+
+    For production, consider adding:
+    - Soft deletes (deleted_at column)
+    - Token usage tracking for cost monitoring
+    - User feedback columns (thumbs up/down)
+    - Model used for each response
+    """
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
+        -- Conversations table: one row per chat session
         CREATE TABLE IF NOT EXISTS conversations (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
         );
 
+        -- Messages table: all messages across all conversations
         CREATE TABLE IF NOT EXISTS messages (
             id SERIAL PRIMARY KEY,
             conversation_id TEXT REFERENCES conversations(id),
-            role TEXT NOT NULL,
-            content TEXT NOT NULL,
+            role TEXT NOT NULL,          -- 'user', 'assistant', or 'system'
+            content TEXT NOT NULL,       -- The message text
             created_at TIMESTAMP DEFAULT NOW()
         );
 
+        -- Index for fast conversation history retrieval
+        -- Critical for good performance as message count grows
         CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
     """)
     conn.commit()
@@ -86,11 +105,35 @@ with app.app_context():
     init_db()
 
 # ----- Rate Limiting -----
-rate_limits = {}  # In production, use Redis
+# IMPORTANT: This in-memory dict only works for single-dyno deployments
+# For production with multiple dynos, use Redis:
+#   import redis
+#   redis_client = redis.from_url(os.getenv("REDIS_URL"))
+rate_limits = {}
 
 def check_rate_limit(user_id: str, limit: int = 20) -> bool:
-    """Simple rate limiting: 20 requests per minute per user."""
+    """
+    Simple rate limiting: 20 requests per minute per user.
+
+    Why rate limiting matters:
+    - Prevents abuse and runaway costs
+    - Ensures fair resource sharing
+    - Protects against accidental infinite loops
+
+    For production, replace this with Redis-based rate limiting:
+    - Survives dyno restarts
+    - Works across multiple dynos
+    - Consider using a library like flask-limiter
+
+    Args:
+        user_id: Unique identifier for the user
+        limit: Max requests per minute (default 20)
+
+    Returns:
+        True if request is allowed, False if rate limited
+    """
     now = datetime.now()
+    # Key format: "user123:45" (user_id:minute)
     key = f"{user_id}:{now.minute}"
 
     if key not in rate_limits:

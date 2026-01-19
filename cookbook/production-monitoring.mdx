@@ -33,7 +33,21 @@ logging.basicConfig(
 logger = logging.getLogger("ai_monitor")
 
 class AIMonitor:
-    """Comprehensive monitoring for AI API calls."""
+    """
+    Comprehensive monitoring for AI API calls.
+
+    Why monitoring matters for AI apps:
+    - Costs can spike unexpectedly (long prompts, many requests)
+    - Latency affects user experience significantly
+    - Quality can degrade silently (prompt changes, model updates)
+    - Errors may be intermittent and hard to reproduce
+
+    This class provides:
+    - Structured JSON logging (works with Heroku's log drains)
+    - Database storage for historical analysis
+    - Cost estimation per request
+    - Latency tracking for SLA monitoring
+    """
 
     def __init__(self):
         self.client = OpenAI(
@@ -51,8 +65,16 @@ class AIMonitor:
         latency_ms: float,
         error: str = None
     ):
-        """Log a complete request/response cycle."""
+        """
+        Log a complete request/response cycle.
 
+        Best practices for AI logging:
+        - Always include request_id for tracing
+        - Log token counts for cost tracking
+        - Track latency at P50, P95, P99
+        - Don't log full prompts in production (PII concerns)
+        - Store enough context to debug issues
+        """
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "request_id": request_id,
@@ -69,10 +91,11 @@ class AIMonitor:
             }
         }
 
-        # Log to stdout (for Heroku logs)
+        # Log to stdout - Heroku captures this automatically
+        # Use JSON format for easy parsing by log aggregators
         logger.info(json.dumps(log_entry))
 
-        # Optionally store in database
+        # Store in database for dashboards and historical analysis
         self._store_log(log_entry)
 
         return log_entry

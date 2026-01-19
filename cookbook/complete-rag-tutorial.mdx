@@ -96,31 +96,70 @@ def get_db_connection():
 
 # ----- STEP 1: Chunk Documents -----
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
-    """Split text into overlapping chunks."""
+    """
+    Split text into overlapping chunks for embedding.
+
+    Why chunking matters:
+    - Embedding models have token limits (Cohere: ~512 tokens optimal)
+    - Smaller chunks = more precise retrieval
+    - Overlap ensures we don't cut sentences mid-thought
+
+    Args:
+        text: The full document text
+        chunk_size: Target words per chunk (500 ≈ 375 tokens)
+        overlap: Words shared between consecutive chunks
+
+    Returns:
+        List of text chunks ready for embedding
+    """
     words = text.split()
     chunks = []
 
+    # Slide window across text with overlap
+    # Example: chunk_size=500, overlap=50 means we step 450 words each time
     for i in range(0, len(words), chunk_size - overlap):
         chunk = " ".join(words[i:i + chunk_size])
-        if chunk:
+        if chunk.strip():  # Skip empty chunks
             chunks.append(chunk)
 
     return chunks
 
 # ----- STEP 2: Generate Embeddings -----
 def generate_embeddings(texts: list[str]) -> list[list[float]]:
-    """Generate embeddings for a batch of texts (max 96 per request)."""
+    """
+    Generate embeddings for a batch of texts.
+
+    Important considerations:
+    - Cohere allows max 96 texts per request
+    - Use "search_document" for content being indexed
+    - Use "search_query" when embedding user queries (done in retrieve_context)
+    - This distinction improves retrieval quality significantly
+
+    Args:
+        texts: List of text chunks to embed
+
+    Returns:
+        List of embedding vectors (1024 dimensions for Cohere)
+    """
     embeddings = []
 
-    # Batch into groups of 96
+    # Process in batches of 96 (Cohere's limit)
     for i in range(0, len(texts), 96):
         batch = texts[i:i + 96]
+
         response = embedding_client.embeddings.create(
             model=os.getenv("EMBEDDING_MODEL_ID"),
             input=batch,
+            # IMPORTANT: Use "search_document" for content, "search_query" for queries
             extra_body={"input_type": "search_document"}
         )
+
+        # Extract embedding vectors from response
         embeddings.extend([item.embedding for item in response.data])
+
+        # Log progress for large batches
+        if len(texts) > 96:
+            print(f"  Embedded {min(i + 96, len(texts))}/{len(texts)} chunks")
 
     return embeddings
 
