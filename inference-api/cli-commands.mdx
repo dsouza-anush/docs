@@ -260,6 +260,71 @@ heroku ai:models:call image-default --app sample-app \
   --opts '{"quality":"hd"}' --json
 ```
 
+### Monitoring and usage
+
+#### `heroku ai:models:info`
+
+**Purpose:** Display stats and the current state of your model resources.
+
+```bash
+heroku ai:models:info <resource-alias> --app <app-name> [--json]
+```
+
+**Arguments**
+
+- `<resource-alias>`: Resource ID or alias to inspect (for example `claude-4-sonnet` or `chat-default`).
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App that owns the resource. |
+| `--json` | Emit machine-readable output. |
+
+**Example**
+
+```bash
+heroku ai:models:info chat-default --app my-app
+```
+
+#### `heroku usage:addons`
+
+**Purpose:** View usage data for AI model resources, including token counts for the current billing period.
+
+```bash
+heroku usage:addons --app <app-name> --team <team-name>
+```
+
+**Options**
+
+| Flag | Description |
+| --- | --- |
+| `--app <app-name>` | Required. App to query usage for. |
+| `--team <team-name>` | Required. Team that owns the app. |
+
+**Example**
+
+```bash
+heroku usage:addons -a example-app -t example-team
+```
+
+**Example output**
+
+```
+=== Usage for example-team
+   Add-on                    Meter  Quantity
+   ───────────────────────── ────── ────────
+   inference-amorphous-42410 input  8
+   inference-amorphous-42410 output 12
+```
+
+The metered data shows:
+
+- **input**: Number of tokens processed (sent to the model) in the current billing period
+- **output**: Number of tokens generated (received from the model) in the current billing period
+
+For pricing details based on token usage, see [Pricing](/inference-api/pricing).
+
 ### MCP servers and tools
 
 #### `heroku ai:mcp`
