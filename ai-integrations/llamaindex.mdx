@@ -1,123 +1,517 @@
 ---
-title: "LlamaIndex AI Integration"
-description: "LlamaIndex is a data framework that enables you to build context-augmented large language model (LLM) applications. You can use LlamaIndex for various..."
+title: "LlamaIndex"
+description: "Build RAG pipelines and knowledge-augmented applications with LlamaIndex and Heroku AI."
 ---
 
-## Installation and Setup
+[LlamaIndex](https://www.llamaindex.ai/) is a data framework for building retrieval-augmented generation (RAG) applications. It handles document loading, chunking, indexing, and retrieval—letting you focus on your application logic rather than RAG infrastructure.
 
-To install the integration, run:
+## When to use LlamaIndex
 
-```shell
-pip install llama-index-llms-heroku
-```
+Use LlamaIndex when you need to:
 
-To set up LlamaIndex:
+- **Build RAG pipelines**: Answer questions from your own documents, databases, or APIs
+- **Create knowledge bases**: Index large document collections for semantic search
+- **Connect multiple data sources**: Combine PDFs, websites, databases, and APIs into a unified index
+- **Build chat over documents**: Create conversational interfaces that reference your data
 
-- Create an app in Heroku:
+If you only need simple chat completions without document retrieval, the [OpenAI SDK](/guides/migrate-from-openai) is simpler. Use LlamaIndex when you need to ground responses in your own data.
 
-```bash
-heroku create example-app
-```
+## Installation
 
-- Create and attach a [chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards#available-models) to your app:
-
-```bash
-heroku ai:models:create -a example-app claude-3-5-haiku
-```
-
-- Export configuration variables:
+Install the Heroku LlamaIndex integration:
 
 ```bash
-export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a example-app)
-export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a example-app)
-export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a example-app)
+pip install llama-index-llms-heroku llama-index
 ```
 
-## Using the Integration
+For RAG with pgvector (recommended on Heroku):
 
-### Available Models
+```bash
+pip install llama-index-vector-stores-postgres psycopg2-binary
+```
 
-For a complete list of available models, see [Managed Inference and Agents API Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards).
+## Configuration
 
-### Chat Completion Example
+Set up your Heroku AI credentials:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a your-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a your-app)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a your-app)
+```
+
+For embeddings (if using a separate embedding model):
+
+```bash
+export EMBEDDING_KEY=$(heroku config:get EMBEDDING_KEY -a your-app)
+export EMBEDDING_URL=$(heroku config:get EMBEDDING_URL -a your-app)
+```
+
+## Basic chat completion
+
+Use the Heroku LLM directly for chat:
 
 ```python
+import os
 from llama_index.llms.heroku import Heroku
 from llama_index.core.llms import ChatMessage, MessageRole
 
-# Initialize the Heroku LLM
+# Initialize the LLM (reads from environment variables)
 llm = Heroku()
 
-# Create chat messages
-messages = [
-    ChatMessage(
-        role=MessageRole.SYSTEM, content="You are a helpful assistant."
-    ),
-    ChatMessage(
-        role=MessageRole.USER,
-        content="What are the most popular house pets in North America?",
-    ),
-]
-
-# Get response
-response = llm.chat(messages)
-print(response)
-```
-
-### Using Environment Variables
-
-The integration automatically reads environment variables:
-
-```python
-import os
-
-# Set environment variables
-os.environ["INFERENCE_KEY"] = "your-inference-key"
-os.environ["INFERENCE_URL"] = "https://us.inference.heroku.com"
-os.environ["INFERENCE_MODEL_ID"] = "claude-3-5-haiku"
-
-# Initialize without parameters
-llm = Heroku()
-```
-
-### Parameters
-
-You can pass parameters directly:
-
-```python
-import os
-
+# Or configure explicitly
 llm = Heroku(
-    model=os.getenv("INFERENCE_MODEL_ID", "claude-3-5-haiku"),
-    api_key=os.getenv("INFERENCE_KEY", "your-inference-key"),
-    inference_url=os.getenv(
-        "INFERENCE_URL", "https://us.inference.heroku.com"
-    ),
-    max_tokens=1024,
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-3-5-sonnet"),
+    api_key=os.getenv("INFERENCE_KEY"),
+    inference_url=os.getenv("INFERENCE_URL"),
+)
+
+# Single completion
+response = llm.complete("Explain Heroku dynos in one paragraph.")
+print(response.text)
+
+# Chat with message history
+messages = [
+    ChatMessage(role=MessageRole.SYSTEM, content="You are a Heroku expert."),
+    ChatMessage(role=MessageRole.USER, content="What's the difference between web and worker dynos?"),
+]
+response = llm.chat(messages)
+print(response.message.content)
+```
+
+## Streaming responses
+
+Stream tokens as they're generated:
+
+```python
+from llama_index.llms.heroku import Heroku
+
+llm = Heroku(model="claude-3-5-haiku")  # Haiku is faster for streaming
+
+# Streaming completion
+for chunk in llm.stream_complete("Write a haiku about cloud computing"):
+    print(chunk.delta, end="", flush=True)
+print()
+
+# Streaming chat
+messages = [ChatMessage(role=MessageRole.USER, content="Explain containers")]
+for chunk in llm.stream_chat(messages):
+    print(chunk.delta, end="", flush=True)
+```
+
+## Building a RAG pipeline
+
+This is LlamaIndex's core use case. Here's a complete RAG pipeline that indexes documents and answers questions from them.
+
+### Step 1: Load and index documents
+
+```python
+import os
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
+from llama_index.llms.heroku import Heroku
+from llama_index.embeddings.openai import OpenAIEmbedding
+
+# Configure the LLM
+Settings.llm = Heroku(
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-3-5-sonnet"),
+    api_key=os.getenv("INFERENCE_KEY"),
+    inference_url=os.getenv("INFERENCE_URL"),
+)
+
+# Configure embeddings (using Heroku's Cohere embeddings via OpenAI-compatible API)
+Settings.embed_model = OpenAIEmbedding(
+    model="cohere-embed-multilingual",
+    api_base=os.getenv("EMBEDDING_URL") + "/v1",
+    api_key=os.getenv("EMBEDDING_KEY"),
+)
+
+# Load documents from a directory
+documents = SimpleDirectoryReader("./data").load_data()
+
+# Create an index (this embeds all documents)
+index = VectorStoreIndex.from_documents(documents)
+
+# Save index to disk for later use
+index.storage_context.persist(persist_dir="./storage")
+```
+
+### Step 2: Query the index
+
+```python
+from llama_index.core import StorageContext, load_index_from_storage
+
+# Load existing index
+storage_context = StorageContext.from_defaults(persist_dir="./storage")
+index = load_index_from_storage(storage_context)
+
+# Create a query engine
+query_engine = index.as_query_engine(
+    similarity_top_k=5,  # Retrieve top 5 most similar chunks
+)
+
+# Ask questions
+response = query_engine.query("What are the main features of the product?")
+print(response.response)
+
+# Access source documents
+for node in response.source_nodes:
+    print(f"Source: {node.node.metadata.get('file_name', 'unknown')}")
+    print(f"Score: {node.score:.3f}")
+    print(f"Text: {node.node.text[:200]}...")
+    print()
+```
+
+## RAG with Heroku Postgres and pgvector
+
+For production deployments, store vectors in Heroku Postgres with pgvector instead of in-memory:
+
+### Setup pgvector
+
+First, enable pgvector on your Heroku Postgres database:
+
+```bash
+heroku pg:psql -a your-app -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+### Index documents to pgvector
+
+```python
+import os
+from sqlalchemy import make_url
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings, StorageContext
+from llama_index.vector_stores.postgres import PGVectorStore
+from llama_index.llms.heroku import Heroku
+from llama_index.embeddings.openai import OpenAIEmbedding
+
+# Configure LLM and embeddings
+Settings.llm = Heroku()
+Settings.embed_model = OpenAIEmbedding(
+    model="cohere-embed-multilingual",
+    api_base=os.getenv("EMBEDDING_URL") + "/v1",
+    api_key=os.getenv("EMBEDDING_KEY"),
+)
+
+# Connect to Heroku Postgres
+database_url = os.getenv("DATABASE_URL")
+url = make_url(database_url)
+
+vector_store = PGVectorStore.from_params(
+    database=url.database,
+    host=url.host,
+    password=url.password,
+    port=url.port,
+    user=url.username,
+    table_name="document_embeddings",
+    embed_dim=1024,  # Cohere embed dimensions
+)
+
+# Create storage context with pgvector
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+# Load and index documents
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(
+    documents,
+    storage_context=storage_context,
+    show_progress=True,
 )
 ```
 
-### Text Completion Example
+### Query from pgvector
 
 ```python
-response = llm.complete("Explain the importance of open source LLMs")
-print(response.text)
+import os
+from sqlalchemy import make_url
+from llama_index.core import VectorStoreIndex, Settings
+from llama_index.vector_stores.postgres import PGVectorStore
+from llama_index.llms.heroku import Heroku
+from llama_index.embeddings.openai import OpenAIEmbedding
+
+# Configure LLM and embeddings
+Settings.llm = Heroku()
+Settings.embed_model = OpenAIEmbedding(
+    model="cohere-embed-multilingual",
+    api_base=os.getenv("EMBEDDING_URL") + "/v1",
+    api_key=os.getenv("EMBEDDING_KEY"),
+)
+
+# Connect to existing vector store
+database_url = os.getenv("DATABASE_URL")
+url = make_url(database_url)
+
+vector_store = PGVectorStore.from_params(
+    database=url.database,
+    host=url.host,
+    password=url.password,
+    port=url.port,
+    user=url.username,
+    table_name="document_embeddings",
+    embed_dim=1024,
+)
+
+# Load index from vector store
+index = VectorStoreIndex.from_vector_store(vector_store)
+
+# Query
+query_engine = index.as_query_engine(similarity_top_k=5)
+response = query_engine.query("How do I configure environment variables?")
+print(response.response)
 ```
 
-## Error Handling
+## Chat engine with memory
 
-The integration includes error handling for common issues, including:
+Create a conversational interface that maintains context across turns:
 
-- Missing API key
+```python
+import os
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
+from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.llms.heroku import Heroku
 
-- Invalid inference URL
+Settings.llm = Heroku()
 
-- Missing model configuration
+# Load your index
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(documents)
 
-## Additional Resources
+# Create chat engine with memory
+memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
 
-- [AI Integrations](https://devcenter.heroku.com/categories/ai)
+chat_engine = index.as_chat_engine(
+    chat_mode="condense_plus_context",
+    memory=memory,
+    system_prompt=(
+        "You are a helpful assistant that answers questions based on the provided documents. "
+        "If the answer isn't in the documents, say so."
+    ),
+)
 
-- [Managed Inference and Agents Add-on](https://devcenter.heroku.com/articles/heroku-inference)
+# Conversational interaction
+response = chat_engine.chat("What is the main topic of these documents?")
+print(response.response)
 
-- [Managed Inference and Agents API Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards)
+# Follow-up question (context is preserved)
+response = chat_engine.chat("Can you give me more details about that?")
+print(response.response)
+
+# Reset conversation
+chat_engine.reset()
+```
+
+## Document loaders
+
+LlamaIndex supports many document formats:
+
+```python
+from llama_index.core import SimpleDirectoryReader
+from llama_index.readers.web import SimpleWebPageReader
+from llama_index.readers.database import DatabaseReader
+
+# Load from directory (PDFs, TXT, DOCX, etc.)
+documents = SimpleDirectoryReader(
+    "./data",
+    recursive=True,
+    required_exts=[".pdf", ".txt", ".md"],
+).load_data()
+
+# Load from web pages
+web_reader = SimpleWebPageReader()
+web_docs = web_reader.load_data(["https://example.com/docs/page1"])
+
+# Load from database
+db_reader = DatabaseReader(uri=os.getenv("DATABASE_URL"))
+db_docs = db_reader.load_data(
+    query="SELECT title, content FROM articles WHERE published = true"
+)
+
+# Combine all sources
+all_documents = documents + web_docs + db_docs
+```
+
+## Customizing chunking
+
+Control how documents are split for better retrieval:
+
+```python
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
+from llama_index.core.node_parser import SentenceSplitter
+
+# Configure chunking
+Settings.node_parser = SentenceSplitter(
+    chunk_size=512,      # Target chunk size in tokens
+    chunk_overlap=50,    # Overlap between chunks for context
+)
+
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+```
+
+## Reranking for better results
+
+Use Heroku's Cohere Rerank to improve retrieval quality:
+
+```python
+import os
+import requests
+from llama_index.core import VectorStoreIndex, Settings
+from llama_index.core.postprocessor import BaseNodePostprocessor
+from llama_index.core.schema import NodeWithScore, QueryBundle
+
+class HerokuReranker(BaseNodePostprocessor):
+    """Rerank results using Heroku's Cohere Rerank API."""
+
+    def __init__(self, top_n: int = 5):
+        self.top_n = top_n
+        self.rerank_url = os.getenv("RERANK_URL")
+        self.rerank_key = os.getenv("RERANK_KEY")
+
+    def _postprocess_nodes(
+        self,
+        nodes: list[NodeWithScore],
+        query_bundle: QueryBundle | None = None,
+    ) -> list[NodeWithScore]:
+        if not nodes or not query_bundle:
+            return nodes
+
+        # Call Heroku Rerank API
+        response = requests.post(
+            f"{self.rerank_url}/v1/rerank",
+            headers={
+                "Authorization": f"Bearer {self.rerank_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "cohere-rerank-3-5",
+                "query": query_bundle.query_str,
+                "documents": [node.node.text for node in nodes],
+                "top_n": self.top_n,
+            },
+        )
+
+        results = response.json()["results"]
+
+        # Reorder nodes based on rerank scores
+        reranked = []
+        for result in results:
+            node = nodes[result["index"]]
+            node.score = result["relevance_score"]
+            reranked.append(node)
+
+        return reranked
+
+# Use in query engine
+query_engine = index.as_query_engine(
+    similarity_top_k=20,  # Retrieve more candidates
+    node_postprocessors=[HerokuReranker(top_n=5)],  # Rerank to top 5
+)
+```
+
+## Error handling
+
+Handle common errors gracefully:
+
+```python
+import os
+from llama_index.llms.heroku import Heroku
+from llama_index.core.llms import ChatMessage
+from httpx import HTTPStatusError, TimeoutException
+
+llm = Heroku()
+
+def safe_query(messages: list[ChatMessage]) -> str:
+    """Query with proper error handling."""
+    try:
+        response = llm.chat(messages)
+        return response.message.content
+
+    except HTTPStatusError as e:
+        status = e.response.status_code
+        if status == 401:
+            raise ValueError(
+                "Authentication failed. Verify INFERENCE_KEY is set correctly: "
+                "heroku config:get INFERENCE_KEY -a your-app"
+            )
+        elif status == 403:
+            raise ValueError(
+                "Model access denied. Ensure the model is provisioned: "
+                "heroku ai:models:info -a your-app"
+            )
+        elif status == 429:
+            raise ValueError(
+                "Rate limit exceeded. Implement backoff or reduce request frequency. "
+                "See rate limits: https://heroku-ai-docs.com/inference-api/rate-limits"
+            )
+        elif status >= 500:
+            raise ValueError(
+                f"Heroku AI service error ({status}). Retry with exponential backoff."
+            )
+        raise
+
+    except TimeoutException:
+        raise ValueError(
+            "Request timed out. Try a faster model (claude-3-5-haiku) "
+            "or reduce max_tokens."
+        )
+
+    except Exception as e:
+        raise ValueError(f"Unexpected error: {type(e).__name__}: {e}")
+
+
+def safe_index_query(query_engine, question: str) -> str:
+    """Query an index with error handling."""
+    try:
+        response = query_engine.query(question)
+
+        if not response.source_nodes:
+            return "No relevant documents found. Try rephrasing your question."
+
+        return response.response
+
+    except Exception as e:
+        return f"Query failed: {e}"
+```
+
+## Model selection
+
+| Model | Best for | Notes |
+|-------|----------|-------|
+| `claude-3-5-sonnet` | Complex RAG, analysis, synthesis | Best quality, moderate speed |
+| `claude-3-5-haiku` | Fast queries, simple retrieval | 3x faster than Sonnet |
+| `claude-4-sonnet` | Extended context, complex reasoning | Supports extended thinking |
+
+For RAG pipelines, `claude-3-5-haiku` often provides the best balance of speed and quality since the heavy lifting is done by retrieval.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Empty responses | No relevant documents found | Lower `similarity_top_k`, check document indexing |
+| Slow queries | Too many documents retrieved | Reduce `similarity_top_k`, add reranking |
+| "Hallucinated" answers | Retrieved context not relevant | Add reranking, improve chunking, tune prompt |
+| `401 Unauthorized` | Invalid API key | Verify `INFERENCE_KEY` environment variable |
+| `403 Forbidden` | Model not provisioned | Run `heroku ai:models:create MODEL_ID -a your-app` |
+| pgvector connection fails | SSL or connection string issue | Use `sslmode=require` in connection string |
+| Embedding dimension mismatch | Wrong `embed_dim` in PGVectorStore | Use 1024 for Cohere embeddings |
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="LlamaIndex Documentation" href="https://docs.llamaindex.ai/" icon="arrow-up-right-from-square">
+    Official LlamaIndex docs
+  </Card>
+  <Card title="Embeddings API" href="/inference-api/embeddings" icon="vector-square">
+    Generate embeddings for indexing
+  </Card>
+  <Card title="Rerank API" href="/inference-api/rerank" icon="arrow-up-wide-short">
+    Improve retrieval with reranking
+  </Card>
+  <Card title="pgvector Setup" href="/vector-database/pgvector" icon="database">
+    Vector storage on Heroku Postgres
+  </Card>
+  <Card title="Embeddings & RAG Cookbook" href="/cookbook/embeddings-rag" icon="book">
+    Complete RAG pipeline walkthrough
+  </Card>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Direct API reference
+  </Card>
+</CardGroup>

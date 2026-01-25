@@ -1,59 +1,356 @@
 ---
-title: "Pydantic AI Integration"
-description: "Pydantic AI is a Python agent framework that enables developers to build production-grade applications and agents with generative AI. You can use Hero..."
+title: "Pydantic AI"
+description: "Build type-safe AI agents with structured outputs using Pydantic AI and Heroku's Claude models."
 ---
 
-## Setup and Configuration
+[Pydantic AI](https://ai.pydantic.dev/) is a Python agent framework that combines the type safety of Pydantic with LLM capabilities. Its main strength is **structured outputs**—you define a Pydantic model, and the agent returns validated, typed data instead of raw text.
 
-Set the `INFERENCE_KEY` to the API key and `INFERENCE_URL` to the base URL with [environment variables](https://devcenter.heroku.com/articles/config-vars):
+## When to use Pydantic AI
+
+Use Pydantic AI when you need:
+
+- **Structured extraction**: Parse unstructured text into typed objects (e.g., extracting order details from emails)
+- **Multi-step agents**: Build agents that use tools and maintain conversation state
+- **Type-safe responses**: Get IDE autocomplete and validation on LLM outputs
+- **Production reliability**: Automatic retries, validation errors, and dependency injection
+
+If you just need simple chat completions, the [OpenAI SDK](/guides/migrate-from-openai) is simpler. Use Pydantic AI when structure and type safety matter.
+
+## Installation
 
 ```bash
-export INFERENCE_KEY='your-heroku-api-key'
-export INFERENCE_URL='https://us.inference.heroku.com'
+pip install pydantic-ai
 ```
 
-Then, configure the Pydantic AI agent:
+## Configuration
+
+Pydantic AI works with Heroku AI through its OpenAI-compatible provider. Set your credentials:
 
 ```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a your-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a your-app)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a your-app)
+```
+
+## Basic agent
+
+Create an agent that returns unstructured text:
+
+```python
+import os
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.providers.heroku import HerokuProvider
 
+# Configure the model to use Heroku AI
 model = OpenAIModel(
-    'claude-4-sonnet',
-    provider=HerokuProvider(api_key='your-heroku-inference-key'),
+    os.getenv("INFERENCE_MODEL_ID", "claude-3-5-sonnet"),
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
 )
-agent = Agent(model)
+
+agent = Agent(model, system_prompt="You are a helpful assistant.")
+
+# Synchronous usage
+result = agent.run_sync("What is Heroku?")
+print(result.data)
 ```
 
-## MCP
+## Structured outputs
 
-You can use Heroku Managed Inference and Agents and Pydantic AI to create agentic workflows with [built-in tools](https://devcenter.heroku.com/articles/heroku-inference-tools) and [tool calling with MCP](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp).
+The real power of Pydantic AI is structured extraction. Define a Pydantic model and the agent returns validated data:
 
-- MCP Client: Pydantic AI agents can act as an [MCP Client](https://ai.pydantic.dev/mcp/client/), connecting to MCP servers to use their tools.
-
-- MCP Server: Agents can be exposed as [MCP servers](https://ai.pydantic.dev/mcp/server/), allowing other agents to use them as tools.
-
-## A2A
-
-Pydantic’s [FastA2A](https://ai.pydantic.dev/a2a/#fasta2a) library simplifies implementation of [A2A protocol](https://ai.pydantic.dev/a2a/) in Python. To expose a Pydantic AI agent as an A2A server:
-
-```bash
+```python
+import os
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-agent = Agent('HerokuProvider:claude-4-sonnet', instructions='Be fun!')
+from pydantic_ai.models.openai import OpenAIModel
+
+# Define the structure you want back
+class SupportTicket(BaseModel):
+    category: str = Field(description="Category: billing, technical, or general")
+    priority: str = Field(description="Priority: low, medium, high, or urgent")
+    summary: str = Field(description="One-sentence summary of the issue")
+    suggested_response: str = Field(description="Draft response to the customer")
+
+model = OpenAIModel(
+    os.getenv("INFERENCE_MODEL_ID", "claude-3-5-sonnet"),
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+# Agent with structured output
+agent = Agent(
+    model,
+    result_type=SupportTicket,  # Returns a SupportTicket, not str
+    system_prompt="You are a support ticket classifier. Analyze tickets and categorize them.",
+)
+
+ticket_text = """
+Subject: App keeps crashing
+Body: Every time I try to scale past 5 dynos, my app crashes with an R14 error.
+I've tried restarting but it happens every time. This is blocking our launch!
+"""
+
+result = agent.run_sync(ticket_text)
+
+# result.data is a fully typed SupportTicket object
+print(f"Category: {result.data.category}")      # "technical"
+print(f"Priority: {result.data.priority}")      # "high" or "urgent"
+print(f"Summary: {result.data.summary}")
+print(f"Response: {result.data.suggested_response}")
+```
+
+## Agents with tools
+
+Define tools that the agent can call to gather information or take actions:
+
+```python
+import os
+import httpx
+from pydantic import BaseModel
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIModel
+
+class WeatherResult(BaseModel):
+    location: str
+    temperature: float
+    conditions: str
+    recommendation: str
+
+model = OpenAIModel(
+    "claude-3-5-sonnet",
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+agent = Agent(
+    model,
+    result_type=WeatherResult,
+    system_prompt="You help users plan outdoor activities based on weather.",
+)
+
+@agent.tool
+async def get_weather(ctx: RunContext[None], city: str) -> dict:
+    """Fetch current weather for a city."""
+    # In production, call a real weather API
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.weatherapi.com/v1/current.json",
+            params={"key": os.getenv("WEATHER_API_KEY"), "q": city}
+        )
+        data = response.json()
+        return {
+            "temp_f": data["current"]["temp_f"],
+            "condition": data["current"]["condition"]["text"],
+        }
+
+# The agent will call get_weather automatically when needed
+result = await agent.run("Should I go hiking in Portland today?")
+print(result.data.recommendation)
+```
+
+## Streaming responses
+
+For chat interfaces, stream the response as it's generated:
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+
+model = OpenAIModel(
+    "claude-3-5-haiku",  # Haiku is faster for streaming
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+agent = Agent(model)
+
+async def stream_response(prompt: str):
+    async with agent.run_stream(prompt) as result:
+        async for chunk in result.stream():
+            print(chunk, end="", flush=True)
+    print()  # Newline at end
+
+# Usage
+import asyncio
+asyncio.run(stream_response("Explain Heroku dynos in simple terms"))
+```
+
+## Dependency injection
+
+Pass runtime dependencies (like database connections) to your agent:
+
+```python
+import os
+from dataclasses import dataclass
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIModel
+
+@dataclass
+class Dependencies:
+    user_id: str
+    db_connection: any  # Your database connection
+
+model = OpenAIModel(
+    "claude-3-5-sonnet",
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+agent = Agent(
+    model,
+    deps_type=Dependencies,
+    system_prompt="You help users manage their account.",
+)
+
+@agent.tool
+async def get_user_orders(ctx: RunContext[Dependencies]) -> list[dict]:
+    """Fetch the user's recent orders."""
+    # Access dependencies via ctx.deps
+    cursor = ctx.deps.db_connection.cursor()
+    cursor.execute(
+        "SELECT * FROM orders WHERE user_id = %s ORDER BY created_at DESC LIMIT 5",
+        (ctx.deps.user_id,)
+    )
+    return cursor.fetchall()
+
+# Pass dependencies at runtime
+deps = Dependencies(user_id="user_123", db_connection=get_db())
+result = await agent.run("What are my recent orders?", deps=deps)
+```
+
+## Error handling
+
+Handle common errors gracefully:
+
+```python
+import os
+from pydantic_ai import Agent, ModelRetry, UnexpectedModelBehavior
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.exceptions import UsageLimitExceeded
+from httpx import HTTPStatusError
+
+model = OpenAIModel(
+    "claude-3-5-sonnet",
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+agent = Agent(model)
+
+async def safe_run(prompt: str) -> str:
+    try:
+        result = await agent.run(prompt)
+        return result.data
+    except HTTPStatusError as e:
+        if e.response.status_code == 401:
+            raise ValueError("Invalid INFERENCE_KEY. Check your Heroku config vars.")
+        elif e.response.status_code == 429:
+            raise ValueError("Rate limit exceeded. Try again in a moment.")
+        elif e.response.status_code >= 500:
+            raise ValueError("Heroku AI service error. Retry with backoff.")
+        raise
+    except UnexpectedModelBehavior as e:
+        # Model didn't follow instructions (e.g., returned wrong format)
+        raise ValueError(f"Model returned unexpected response: {e}")
+    except UsageLimitExceeded:
+        raise ValueError("Token limit exceeded. Reduce prompt size.")
+```
+
+## Using with MCP
+
+Pydantic AI agents can connect to MCP servers as a client, allowing them to use tools exposed by Heroku or custom MCP servers:
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.mcp import MCPServerHTTP
+
+model = OpenAIModel(
+    "claude-3-5-sonnet",
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+# Connect to a Heroku MCP server
+mcp_server = MCPServerHTTP(url=os.getenv("MCP_SERVER_URL"))
+
+agent = Agent(model, mcp_servers=[mcp_server])
+
+async def run_with_mcp():
+    async with agent:
+        # Agent can now use tools from the MCP server
+        result = await agent.run("Query the database for recent signups")
+        return result.data
+```
+
+## Exposing agents as A2A servers
+
+Use Pydantic AI's FastA2A to expose your agent as an [Agent-to-Agent (A2A)](https://ai.pydantic.dev/a2a/) server that other agents can call:
+
+```python
+# agent_server.py
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+
+model = OpenAIModel(
+    "claude-3-5-sonnet",
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY"),
+)
+
+agent = Agent(
+    model,
+    system_prompt="You are a code review assistant. Review code for bugs and style issues.",
+)
+
+# Convert to A2A server
 app = agent.to_a2a()
 ```
 
-Then, run the example with [uvicorn](https://www.uvicorn.org/):
+Run with uvicorn:
 
 ```bash
-uvicorn agent_to_a2a:app --host 0.0.0.0 --port 8000
+pip install uvicorn
+uvicorn agent_server:app --host 0.0.0.0 --port 8000
 ```
 
-## Additional Resources
+Other agents can now call your agent at `http://localhost:8000`.
 
-- [Managed Inference and Agents Add-on](https://devcenter.heroku.com/articles/heroku-inference)
+## Model selection
 
-- [Working With MCP on Heroku](https://devcenter.heroku.com/articles/heroku-inference-working-with-mcp)
+| Model | Best for |
+|-------|----------|
+| `claude-3-5-sonnet` | Complex structured extraction, multi-step reasoning |
+| `claude-3-5-haiku` | Fast responses, simple classification, streaming chat |
+| `claude-4-sonnet` | Most capable, extended thinking for complex tasks |
 
-- [AI Integrations](https://devcenter.heroku.com/categories/ai-integrations)
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `401 Unauthorized` | Invalid API key | Verify `INFERENCE_KEY` with `heroku config:get INFERENCE_KEY -a your-app` |
+| Structured output validation fails | Model didn't follow schema | Add more specific field descriptions, use `Field(description="...")` |
+| Agent retries repeatedly | Model keeps returning invalid format | Simplify your Pydantic model or switch to a more capable model |
+| Timeout errors | Response too slow | Use `claude-3-5-haiku` for faster responses, or increase timeout |
+| `UnexpectedModelBehavior` | Model confused by instructions | Simplify system prompt, provide examples in the prompt |
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="Pydantic AI Documentation" href="https://ai.pydantic.dev/" icon="arrow-up-right-from-square">
+    Official Pydantic AI docs
+  </Card>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Direct API reference
+  </Card>
+  <Card title="Structured Outputs" href="/inference-api/structured-output" icon="brackets-curly">
+    JSON schema enforcement
+  </Card>
+  <Card title="Pydantic Logfire" href="/ai-integrations/logfire" icon="chart-line">
+    Observability for Pydantic AI
+  </Card>
+</CardGroup>
