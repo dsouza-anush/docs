@@ -1,0 +1,732 @@
+---
+title: "Troubleshooting"
+description: "Solutions to common issues when working with Heroku AI, organized by symptom for quick problem resolution."
+---
+
+This guide helps you diagnose and resolve common issues when working with Heroku AI. Each section covers a specific symptom, explains the likely causes, and provides step-by-step solutions with code examples you can run to verify the fix.
+
+If you don't find your issue here, check the [Error Handling](/inference-api/errors) guide for detailed error code documentation, or contact [Heroku Support](https://help.heroku.com) with your request ID and error details.
+
+## Authentication Issues
+
+### "Invalid API key" or 401 Errors
+
+**Symptoms:**
+
+You receive one of these error messages:
+- `"Invalid API key provided"`
+- `"Unauthorized"`
+- HTTP status code 401
+
+**Diagnostic steps:**
+
+1. **Verify the environment variable is set:**
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+
+key = os.getenv("INFERENCE_KEY")
+if not key:
+    print("❌ INFERENCE_KEY is not set")
+elif len(key) < 20:
+    print(f"❌ Key seems too short ({len(key)} chars). May be truncated.")
+elif not key.startswith("inf-"):
+    print(f"⚠️  Key doesn't start with 'inf-'. First 4 chars: {key[:4]}")
+else:
+    print(f"✓ Key format looks valid")
+    print(f"  First 8 chars: {key[:8]}...")
+    print(f"  Length: {len(key)} characters")
+```
+  </Tab>
+  <Tab title="Bash">
+```bash
+if [ -z "$INFERENCE_KEY" ]; then
+  echo "❌ INFERENCE_KEY is not set"
+elif [ ${#INFERENCE_KEY} -lt 20 ]; then
+  echo "❌ Key seems too short (${#INFERENCE_KEY} chars)"
+elif [[ ! "$INFERENCE_KEY" == inf-* ]]; then
+  echo "⚠️  Key doesn't start with 'inf-'"
+else
+  echo "✓ Key format looks valid"
+  echo "  First 8 chars: ${INFERENCE_KEY:0:8}..."
+  echo "  Length: ${#INFERENCE_KEY} characters"
+fi
+```
+  </Tab>
+</Tabs>
+
+2. **Test the key with a minimal request:**
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" \
+  https://us.inference.heroku.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -d '{"model":"claude-4-5-sonnet","messages":[{"role":"user","content":"Hi"}],"max_tokens":5}'
+```
+
+Expected output: `200` (success) or `403` (wrong model, but key is valid).
+
+3. **Retrieve a fresh key from Heroku:**
+
+```bash
+# Get the key directly from your app's config
+heroku config:get INFERENCE_KEY -a your-app-name
+
+# If you have multiple inference add-ons, list them:
+heroku config -a your-app-name | grep INFERENCE
+```
+
+**Common causes and solutions:**
+
+| Cause | Solution |
+|-------|----------|
+| Environment variable not exported | Run `export INFERENCE_KEY=your-key` or add to `.env` file |
+| Key has trailing whitespace/newline | Use `tr -d '[:space:]'` when setting: `export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a app \| tr -d '[:space:]')` |
+| Key was regenerated | Get the new key from `heroku config:get INFERENCE_KEY -a your-app` |
+| Using wrong environment's key | Verify you're using keys from the correct app (production vs staging) |
+| Key is URL-encoded | Don't URL-encode the key; use it as-is |
+
+### "You do not have access to that model" (403)
+
+**Symptoms:**
+
+You receive:
+- `"You do not have access to that model"`
+- `"authorization_error"`
+- HTTP status code 403
+
+This means your API key authenticated successfully, but you're requesting a model that isn't provisioned for your app.
+
+**Diagnostic steps:**
+
+1. **List your provisioned models:**
+
+```bash
+# Show all inference add-ons and their model IDs
+heroku addons -a your-app-name | grep inference
+
+# Get the model ID for your primary inference add-on
+heroku config:get INFERENCE_MODEL_ID -a your-app-name
+```
+
+2. **Compare with your request:**
+
+```python
+import os
+
+# What you're requesting
+requested_model = "claude-4-5-sonnet"  # Or whatever you're using
+
+# What's provisioned
+provisioned_model = os.getenv("INFERENCE_MODEL_ID")
+
+if requested_model != provisioned_model:
+    print(f"❌ Mismatch!")
+    print(f"   Requesting: {requested_model}")
+    print(f"   Provisioned: {provisioned_model}")
+else:
+    print(f"✓ Models match: {requested_model}")
+```
+
+**Solutions:**
+
+1. **Use the provisioned model:**
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+# Always use the environment variable, not a hardcoded model name
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),  # ← Use this
+    messages=[{"role": "user", "content": "Hello"}]
+)
+```
+
+2. **Or provision the model you need:**
+
+```bash
+# Provision a new model
+heroku ai:models:create claude-4-5-sonnet -a your-app-name
+
+# After provisioning, get the new environment variables
+heroku config -a your-app-name | grep INFERENCE
+```
+
+3. **For multiple models, use the correct key:**
+
+```bash
+# Each add-on has its own key
+# Example: HEROKU_INFERENCE_JADE for claude-4-5-haiku
+export INFERENCE_KEY=$(heroku config:get HEROKU_INFERENCE_JADE_KEY -a your-app)
+export INFERENCE_MODEL_ID=$(heroku config:get HEROKU_INFERENCE_JADE_MODEL_ID -a your-app)
+```
+
+## Rate Limiting Issues
+
+### Hitting Rate Limits (429 Errors)
+
+**Symptoms:**
+
+- `"Rate limit exceeded"`
+- HTTP status code 429
+- Requests suddenly start failing after working fine
+
+**Diagnostic steps:**
+
+1. **Check your current usage:**
+
+```python
+import time
+from collections import deque
+from datetime import datetime
+
+class UsageTracker:
+    """Track requests and tokens over a sliding 60-second window."""
+
+    def __init__(self):
+        self.requests = deque()
+        self.tokens = deque()
+
+    def log(self, input_tokens: int, output_tokens: int):
+        now = time.time()
+        self.requests.append(now)
+        self.tokens.append((now, input_tokens + output_tokens))
+        self._cleanup(now)
+
+    def _cleanup(self, now):
+        cutoff = now - 60
+        while self.requests and self.requests[0] < cutoff:
+            self.requests.popleft()
+        while self.tokens and self.tokens[0][0] < cutoff:
+            self.tokens.popleft()
+
+    def get_stats(self):
+        self._cleanup(time.time())
+        total_tokens = sum(t[1] for t in self.tokens)
+        return {
+            "requests_per_minute": len(self.requests),
+            "tokens_per_minute": total_tokens
+        }
+
+# Usage
+tracker = UsageTracker()
+# After each API call:
+# tracker.log(response.usage.prompt_tokens, response.usage.completion_tokens)
+# print(tracker.get_stats())
+```
+
+2. **Check the rate limit headers:**
+
+```python
+import httpx
+
+response = httpx.post(
+    "https://us.inference.heroku.com/v1/chat/completions",
+    headers={"Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}"},
+    json={"model": "claude-4-5-sonnet", "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5}
+)
+
+print("Rate limit headers:")
+for header in ["X-RateLimit-Limit-Requests", "X-RateLimit-Remaining-Requests", "X-RateLimit-Reset-Requests"]:
+    if header in response.headers:
+        print(f"  {header}: {response.headers[header]}")
+```
+
+**Rate limits by model:**
+
+| Model | Requests/min | Tokens/min |
+|-------|--------------|------------|
+| Claude 4.5 Sonnet | 150 | 800,000 |
+| Claude 3.5 Haiku | 200 | 800,000 |
+| Nova Pro/Lite | 150 | 800,000 |
+| Stable Image Ultra | 20 | N/A |
+
+**Solutions:**
+
+1. **Implement exponential backoff:** See [Error Handling - Retry Strategies](/inference-api/errors#exponential-backoff)
+
+2. **Reduce request frequency:**
+
+```python
+import time
+
+MIN_REQUEST_INTERVAL = 0.4  # 150 requests/min = 1 every 0.4s
+
+last_request_time = 0
+
+def rate_limited_request(client, **kwargs):
+    global last_request_time
+
+    # Wait if needed
+    elapsed = time.time() - last_request_time
+    if elapsed < MIN_REQUEST_INTERVAL:
+        time.sleep(MIN_REQUEST_INTERVAL - elapsed)
+
+    last_request_time = time.time()
+    return client.chat.completions.create(**kwargs)
+```
+
+3. **Batch embedding requests:**
+
+```python
+# Instead of one input at a time:
+# for text in texts:
+#     client.embeddings.create(model="cohere-embed-multilingual", input=text)
+
+# Batch up to 96 inputs per request:
+BATCH_SIZE = 96
+for i in range(0, len(texts), BATCH_SIZE):
+    batch = texts[i:i + BATCH_SIZE]
+    response = client.embeddings.create(
+        model="cohere-embed-multilingual",
+        input=batch,
+        input_type="search_document"
+    )
+```
+
+4. **Use prompt caching to reduce token usage:**
+
+```python
+# For Claude models, system prompts and tools are cached
+# Keep them consistent across requests to benefit from caching
+SYSTEM_PROMPT = "You are a helpful assistant specializing in Heroku."
+
+# Reuse the same system prompt for all requests
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "system", "content": SYSTEM_PROMPT},  # Cached after first use
+        {"role": "user", "content": user_input}
+    ]
+)
+```
+
+## Model Response Issues
+
+### Slow Responses
+
+**Symptoms:**
+
+- Requests take 10+ seconds to complete
+- Timeouts in production
+- Perceived latency issues in user-facing applications
+
+**Diagnostic steps:**
+
+1. **Measure actual latency:**
+
+```python
+import time
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+def measure_latency(prompt: str, model: str = None):
+    model = model or os.getenv("INFERENCE_MODEL_ID")
+
+    start = time.time()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=100
+    )
+    elapsed = time.time() - start
+
+    tokens = response.usage.completion_tokens
+    tokens_per_second = tokens / elapsed if elapsed > 0 else 0
+
+    print(f"Model: {model}")
+    print(f"Total time: {elapsed:.2f}s")
+    print(f"Output tokens: {tokens}")
+    print(f"Tokens/second: {tokens_per_second:.1f}")
+
+    return elapsed
+
+# Test with a simple prompt
+measure_latency("Count from 1 to 20.")
+```
+
+2. **Compare models:**
+
+| Model | Typical Latency | Use Case |
+|-------|-----------------|----------|
+| Claude 4.5 Haiku | 0.5-2s | High-volume, latency-sensitive |
+| Claude 4.5 Sonnet | 2-8s | Complex reasoning |
+| Claude 4 Sonnet | 2-8s | Complex reasoning |
+| Nova Lite | 1-3s | Cost-effective general use |
+
+**Solutions:**
+
+1. **Use streaming for perceived performance:**
+
+```python
+# Non-streaming: User waits for entire response
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Explain machine learning"}],
+    max_tokens=500
+)
+
+# Streaming: User sees tokens as they're generated
+stream = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Explain machine learning"}],
+    max_tokens=500,
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+```
+
+2. **Use a faster model:**
+
+```python
+# For quick tasks that don't require deep reasoning
+response = client.chat.completions.create(
+    model="claude-4-5-haiku",  # Faster than Sonnet
+    messages=[{"role": "user", "content": "Summarize this briefly: ..."}],
+    max_tokens=200
+)
+```
+
+3. **Reduce prompt size:**
+
+```python
+# Instead of sending entire documents:
+# messages = [{"role": "user", "content": huge_document}]
+
+# Extract relevant sections first:
+relevant_sections = extract_relevant_content(huge_document, user_query)
+messages = [{"role": "user", "content": relevant_sections}]
+```
+
+### Unexpected or Truncated Output
+
+**Symptoms:**
+
+- Response ends mid-sentence
+- `finish_reason` is `"length"` instead of `"stop"`
+- Output seems incomplete
+
+**Diagnostic steps:**
+
+```python
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Write a long story"}],
+    max_tokens=100  # May be too low
+)
+
+print(f"Finish reason: {response.choices[0].finish_reason}")
+print(f"Tokens used: {response.usage.completion_tokens}")
+
+if response.choices[0].finish_reason == "length":
+    print("⚠️  Output was truncated due to max_tokens limit")
+```
+
+**Solutions:**
+
+1. **Increase `max_tokens`:**
+
+```python
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Write a long story"}],
+    max_tokens=4096  # Increase limit
+)
+```
+
+2. **Handle long responses with continuation:**
+
+```python
+def get_complete_response(client, messages, max_tokens_per_call=4096):
+    """Continue generating until the model stops naturally."""
+    full_response = ""
+    current_messages = messages.copy()
+
+    while True:
+        response = client.chat.completions.create(
+            model="claude-4-5-sonnet",
+            messages=current_messages,
+            max_tokens=max_tokens_per_call
+        )
+
+        content = response.choices[0].message.content
+        full_response += content
+
+        if response.choices[0].finish_reason == "stop":
+            break
+
+        # Add assistant response and ask to continue
+        current_messages.append({"role": "assistant", "content": content})
+        current_messages.append({"role": "user", "content": "Please continue."})
+
+    return full_response
+```
+
+### Structured Output Not Matching Schema
+
+**Symptoms:**
+
+- JSON parsing errors
+- Response doesn't follow the requested format
+- Missing fields in structured responses
+
+**Diagnostic steps:**
+
+```python
+import json
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "system", "content": "Respond only with valid JSON."},
+        {"role": "user", "content": "Return a JSON object with name and age fields."}
+    ]
+)
+
+content = response.choices[0].message.content
+
+try:
+    parsed = json.loads(content)
+    print("✓ Valid JSON")
+    print(parsed)
+except json.JSONDecodeError as e:
+    print(f"❌ Invalid JSON: {e}")
+    print(f"Raw response: {content}")
+```
+
+**Solutions:**
+
+1. **Use response_format for JSON mode:**
+
+```python
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {"role": "user", "content": "Return user data with name and email fields."}
+    ],
+    response_format={"type": "json_object"}
+)
+
+# Response is guaranteed to be valid JSON
+data = json.loads(response.choices[0].message.content)
+```
+
+2. **Provide explicit JSON schema in the prompt:**
+
+```python
+schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer"},
+        "email": {"type": "string", "format": "email"}
+    },
+    "required": ["name", "age", "email"]
+}
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[
+        {
+            "role": "system",
+            "content": f"Respond with JSON matching this schema:\n{json.dumps(schema, indent=2)}"
+        },
+        {"role": "user", "content": "Create a user profile for John who is 30."}
+    ],
+    response_format={"type": "json_object"}
+)
+```
+
+3. **Use function calling for guaranteed structure:**
+
+```python
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "create_user",
+        "description": "Create a user profile",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "User's full name"},
+                "age": {"type": "integer", "description": "User's age"},
+                "email": {"type": "string", "description": "User's email address"}
+            },
+            "required": ["name", "age", "email"]
+        }
+    }
+}]
+
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Create a profile for John, age 30, john@example.com"}],
+    tools=tools,
+    tool_choice={"type": "function", "function": {"name": "create_user"}}
+)
+
+# Parse the guaranteed-structured tool call
+args = json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+```
+
+## Agent and Tool Issues
+
+### MCP Server Connection Failures
+
+**Symptoms:**
+
+- Tools not appearing in agent responses
+- `"server_status": "disconnected"` in MCP server list
+- Agent doesn't use expected tools
+
+**Diagnostic steps:**
+
+1. **List registered MCP servers:**
+
+```bash
+curl https://us.inference.heroku.com/v1/mcp/servers \
+  -H "Authorization: Bearer $INFERENCE_KEY"
+```
+
+2. **Check server status:**
+
+```python
+import httpx
+import os
+
+response = httpx.get(
+    "https://us.inference.heroku.com/v1/mcp/servers",
+    headers={"Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}"}
+)
+
+servers = response.json()
+for server in servers:
+    status = "✓" if server.get("server_status") == "registered" else "❌"
+    print(f"{status} {server.get('namespace')}: {server.get('server_status')}")
+    print(f"   Tools: {len(server.get('tools', []))}")
+```
+
+**Solutions:**
+
+1. **Verify the MCP server is running:**
+
+```bash
+# Check if your MCP server process is running
+heroku ps -a your-mcp-app
+
+# View recent logs
+heroku logs --tail -a your-mcp-app
+```
+
+2. **Re-register the MCP server:**
+
+```bash
+# Using the Heroku CLI
+heroku ai:mcp:register -a your-app-name your-mcp-server-app
+```
+
+3. **Check network connectivity:**
+
+```bash
+# From your MCP server, test connectivity to the inference endpoint
+curl -I https://us.inference.heroku.com/v1/mcp/servers
+```
+
+### Tool Execution Errors
+
+**Symptoms:**
+
+- Agent calls tool but receives an error
+- Tool returns unexpected results
+- `"primitives_status": "error"` in MCP server
+
+**Diagnostic steps:**
+
+```python
+# When using the agents endpoint, check tool call responses
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=[{"role": "user", "content": "Use the database tool to count users"}],
+    tools=[...],  # Your tools
+    tool_choice="auto"
+)
+
+# Check if a tool was called
+message = response.choices[0].message
+if message.tool_calls:
+    for tool_call in message.tool_calls:
+        print(f"Tool: {tool_call.function.name}")
+        print(f"Args: {tool_call.function.arguments}")
+```
+
+**Solutions:**
+
+1. **Verify tool definitions match implementation:**
+
+```python
+# Ensure your tool definition matches what the server expects
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "search_database",  # Must match exactly
+        "description": "Search the database for records",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"}
+            },
+            "required": ["query"]  # Ensure required fields are correct
+        }
+    }
+}]
+```
+
+2. **Check MCP server logs for errors:**
+
+```bash
+heroku logs --tail -a your-mcp-server-app | grep -i error
+```
+
+3. **Test tools directly:**
+
+```bash
+# Test the tool endpoint directly if exposed
+curl -X POST your-mcp-server-url/tools/search_database \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test"}'
+```
+
+## Getting Help
+
+If you can't resolve your issue using this guide:
+
+1. **Gather diagnostic information:**
+   - Request ID from error response
+   - Timestamp (with timezone)
+   - Error message and status code
+   - Minimal code to reproduce
+
+2. **Check resources:**
+   - [Error Handling](/inference-api/errors) - Detailed error codes
+   - [Heroku Status](https://status.heroku.com) - Service incidents
+   - [Rate Limits](/inference-api/rate-limits) - Current limits
+
+3. **Contact support:**
+   - [Heroku Support](https://help.heroku.com) - For production issues
+   - Include all diagnostic information gathered above

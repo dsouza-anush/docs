@@ -50,17 +50,27 @@
             ]
           },
           {
-            "group": "API guides",
+            "group": "Guides",
+            "pages": [
+              "guides/migrate-from-openai",
+              "inference-api/openai-compatibility",
+              "inference-api/chat-vs-agents",
+              "inference-api/structured-output",
+              "cookbook/prompt-patterns",
+              "cookbook/embeddings-rag",
+              "inference-api/troubleshooting"
+            ]
+          },
+          {
+            "group": "API Reference",
             "pages": [
               "inference-api/chat-completions",
               "inference-api/agents-heroku",
-              "inference-api/chat-vs-agents",
-              "inference-api/openai-compatibility",
-              "inference-api/structured-output",
               "inference-api/embeddings",
               "inference-api/rerank",
               "inference-api/images-generations",
-              "inference-api/mcp-servers"
+              "inference-api/mcp-servers",
+              "inference-api/errors"
             ]
           },
           {
@@ -78,8 +88,6 @@
             "pages": [
               "cookbook/index",
               "cookbook/openai-sdk-reference-apps",
-              "cookbook/prompt-patterns",
-              "cookbook/embeddings-rag",
               "cookbook/images"
             ]
           },
@@ -90,6 +98,14 @@
               "ai-integrations/llamaindex",
               "ai-integrations/pydantic",
               "ai-integrations/rubyllm"
+            ]
+          },
+          {
+            "group": "Observability",
+            "pages": [
+              "ai-integrations/arize-phoenix",
+              "ai-integrations/wandb-weave",
+              "ai-integrations/logfire"
             ]
           }
         ]
@@ -184,7 +200,8 @@
               "inference-api/embeddings",
               "inference-api/rerank",
               "inference-api/images-generations",
-              "inference-api/mcp-servers"
+              "inference-api/mcp-servers",
+              "inference-api/errors"
             ]
           }
         ]
@@ -209,6 +226,14 @@
               "ai-integrations/llamaindex",
               "ai-integrations/pydantic",
               "ai-integrations/rubyllm"
+            ]
+          },
+          {
+            "group": "Observability",
+            "pages": [
+              "ai-integrations/arize-phoenix",
+              "ai-integrations/wandb-weave",
+              "ai-integrations/logfire"
             ]
           }
         ]

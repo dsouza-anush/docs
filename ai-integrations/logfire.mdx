@@ -1,0 +1,250 @@
+---
+title: "Pydantic Logfire"
+description: "Add structured observability to your Heroku AI applications with Pydantic Logfire for detailed tracing of LLM calls, streaming support, and exception tracking."
+---
+
+Pydantic Logfire is a modern observability platform built on OpenTelemetry with native OpenAI instrumentation. It provides explicit client instrumentation via `logfire.instrument_openai()`, giving you fine-grained control over what gets traced. Logfire supports both sync and async clients, as well as streaming responses.
+
+## Installation and Setup
+
+Install the required packages:
+
+```bash
+pip install logfire openai
+```
+
+To set up your Heroku AI environment:
+
+- Create an app in Heroku:
+
+```bash
+heroku create example-app
+```
+
+- Create and attach a [chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards#available-models) to your app:
+
+```bash
+heroku ai:models:create -a example-app claude-3-5-haiku
+```
+
+- Export configuration variables:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a example-app)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a example-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a example-app)
+```
+
+## Configure Pydantic Logfire
+
+Set up your Logfire credentials:
+
+```bash
+export LOGFIRE_TOKEN='your-logfire-token'
+```
+
+You can get your token from [logfire.pydantic.dev](https://logfire.pydantic.dev) after creating a project.
+
+## Instrumenting Heroku AI Calls
+
+### Basic Setup
+
+Configure Logfire and instrument your OpenAI client:
+
+```python
+import os
+import logfire
+from openai import OpenAI
+
+# Configure Logfire (reads LOGFIRE_TOKEN from environment)
+logfire.configure()
+
+# Create Heroku AI client
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+# Instrument the client explicitly
+logfire.instrument_openai(client)
+
+# All calls through this client are now traced
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-4-5-sonnet"),
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Async Client Support
+
+Logfire works with async OpenAI clients:
+
+```python
+import os
+import asyncio
+import logfire
+from openai import AsyncOpenAI
+
+logfire.configure()
+
+# Create async Heroku AI client
+async_client = AsyncOpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+# Instrument the async client
+logfire.instrument_openai(async_client)
+
+async def get_response():
+    response = await async_client.chat.completions.create(
+        model=os.getenv("INFERENCE_MODEL_ID"),
+        messages=[{"role": "user", "content": "What is Heroku?"}]
+    )
+    return response.choices[0].message.content
+
+result = asyncio.run(get_response())
+print(result)
+```
+
+### Streaming Responses
+
+Logfire captures streaming responses with separate spans for the stream request and chunks:
+
+```python
+import os
+import logfire
+from openai import OpenAI
+
+logfire.configure()
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+logfire.instrument_openai(client)
+
+# Streaming is automatically traced
+stream = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "Write a haiku about cloud computing"}],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+
+### Custom Spans
+
+Add custom spans to group related operations:
+
+```python
+import os
+import logfire
+from openai import OpenAI
+
+logfire.configure()
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+logfire.instrument_openai(client)
+
+def analyze_text(text: str) -> dict:
+    with logfire.span("text_analysis"):
+        # First call: summarize
+        with logfire.span("summarization"):
+            summary_response = client.chat.completions.create(
+                model=os.getenv("INFERENCE_MODEL_ID"),
+                messages=[
+                    {"role": "system", "content": "Summarize the following text in one sentence."},
+                    {"role": "user", "content": text}
+                ]
+            )
+            summary = summary_response.choices[0].message.content
+
+        # Second call: extract keywords
+        with logfire.span("keyword_extraction"):
+            keywords_response = client.chat.completions.create(
+                model=os.getenv("INFERENCE_MODEL_ID"),
+                messages=[
+                    {"role": "system", "content": "Extract 3-5 keywords from the text. Return only the keywords, comma-separated."},
+                    {"role": "user", "content": text}
+                ]
+            )
+            keywords = keywords_response.choices[0].message.content
+
+        return {"summary": summary, "keywords": keywords}
+
+result = analyze_text("Heroku is a cloud platform that lets companies build, deliver, monitor and scale apps.")
+print(result)
+```
+
+### Multiple Clients
+
+You can instrument multiple clients with different configurations:
+
+```python
+import os
+import logfire
+from openai import OpenAI
+
+logfire.configure()
+
+# Fast model for simple tasks
+fast_client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+logfire.instrument_openai(fast_client)
+
+# You can use different model IDs for different use cases
+# Both clients will be traced separately in Logfire
+```
+
+## What Gets Captured
+
+Logfire captures detailed telemetry for each instrumented call:
+
+- Request duration and timestamps
+- Token counts (prompt, completion, total)
+- Exceptions and error details with stack traces
+- Streaming chunk timing and content
+- Full request and response payloads
+- Model configuration and parameters
+- Custom span hierarchy and relationships
+
+## Viewing Your Traces
+
+After running your instrumented code:
+
+1. Navigate to [logfire.pydantic.dev](https://logfire.pydantic.dev)
+2. Select your project
+3. View traces in the dashboard
+
+The Logfire dashboard provides:
+
+- Timeline view with span hierarchy
+- Human-readable conversation display
+- Token usage and latency metrics
+- Error tracking with full stack traces
+- Filtering by time, status, and custom attributes
+- SQL-based querying for advanced analysis
+
+## Additional Resources
+
+- [Pydantic Logfire Documentation](https://logfire.pydantic.dev/docs/)
+- [Logfire OpenAI Instrumentation](https://logfire.pydantic.dev/docs/integrations/llms/openai/)
+- [Heroku AI Chat Completions](/inference-api/chat-completions)
+- [OpenAI SDK Compatibility](/inference-api/openai-compatibility)
+- [Pydantic AI Integration](/ai-integrations/pydantic)

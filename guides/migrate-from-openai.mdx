@@ -1,0 +1,613 @@
+---
+title: "Migrate from OpenAI"
+description: "How to migrate your application from OpenAI to Heroku AI with minimal code changes, including endpoint mapping, model equivalents, and feature parity."
+---
+
+Migrating from OpenAI to Heroku AI is straightforward because Heroku AI provides full OpenAI SDK compatibility. In most cases, you only need to change your base URL and API key—your existing code, prompts, and integrations continue to work.
+
+This guide covers everything you need to know to migrate: configuration changes, model selection, feature differences, and testing strategies.
+
+## Why Migrate to Heroku AI
+
+Teams migrate to Heroku AI for several reasons:
+
+- **Unified platform**: Manage your AI models alongside your Heroku applications, databases, and add-ons
+- **Model variety**: Access Claude (Anthropic), Nova (Amazon), and other models through a single API
+- **Simplified billing**: One invoice for compute, add-ons, and AI usage
+- **Enterprise features**: Heroku's security, compliance, and support infrastructure
+
+## Quick Migration (5 Minutes)
+
+For applications using the OpenAI Python or Node.js SDK, migration requires only two configuration changes:
+
+1. Change the base URL from `api.openai.com` to `us.inference.heroku.com`
+2. Replace your OpenAI API key with your Heroku `INFERENCE_KEY`
+
+### Python
+
+<Tabs>
+  <Tab title="Before (OpenAI)">
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="sk-..."  # OpenAI API key
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="After (Heroku AI)">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",  # Changed
+    api_key=os.getenv("INFERENCE_KEY")             # Changed
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-4-5-sonnet"),  # Changed
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+</Tabs>
+
+### TypeScript / Node.js
+
+<Tabs>
+  <Tab title="Before (OpenAI)">
+```typescript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: 'sk-...',  // OpenAI API key
+});
+
+const response = await client.chat.completions.create({
+  model: 'gpt-4',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'What is Heroku?' }
+  ],
+});
+
+console.log(response.choices[0].message.content);
+```
+  </Tab>
+  <Tab title="After (Heroku AI)">
+```typescript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  baseURL: process.env.INFERENCE_URL + '/v1',  // Changed
+  apiKey: process.env.INFERENCE_KEY,            // Changed
+});
+
+const response = await client.chat.completions.create({
+  model: process.env.INFERENCE_MODEL_ID ?? 'claude-4-5-sonnet',  // Changed
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'What is Heroku?' }
+  ],
+});
+
+console.log(response.choices[0].message.content);
+```
+  </Tab>
+</Tabs>
+
+### Environment Setup
+
+Set up your environment variables for local development:
+
+```bash
+# .env file for local development
+INFERENCE_URL=https://us.inference.heroku.com
+INFERENCE_KEY=inf-your-api-key-here
+INFERENCE_MODEL_ID=claude-4-5-sonnet
+```
+
+For Heroku deployment, these variables are set automatically when you provision a model:
+
+```bash
+# Provision a model (sets environment variables automatically)
+heroku ai:models:create claude-4-5-sonnet -a your-app-name
+
+# Verify the variables are set
+heroku config -a your-app-name | grep INFERENCE
+```
+
+## Endpoint Mapping
+
+Heroku AI implements the same endpoints as OpenAI:
+
+| OpenAI Endpoint | Heroku AI Endpoint | Status |
+|-----------------|-------------------|--------|
+| `POST /v1/chat/completions` | `POST /v1/chat/completions` | Fully compatible |
+| `POST /v1/embeddings` | `POST /v1/embeddings` | Fully compatible |
+| `POST /v1/images/generations` | `POST /v1/images/generations` | Fully compatible |
+| `POST /v1/moderations` | — | Not available |
+| `POST /v1/audio/transcriptions` | — | Not available |
+| `POST /v1/audio/speech` | — | Not available |
+| `GET /v1/models` | — | Not available |
+| `POST /v1/files` | — | Not available |
+| `POST /v1/fine-tuning/jobs` | — | Not available |
+
+**Note**: Heroku AI also offers unique endpoints not available on OpenAI:
+
+| Heroku AI Endpoint | Description |
+|-------------------|-------------|
+| `POST /v1/agents/heroku` | Agentic loop with autonomous tool execution |
+| `POST /v1/rerank` | Document reranking for improved RAG |
+| `GET /v1/mcp/servers` | MCP server management |
+
+## Model Selection
+
+### Recommended Model Mappings
+
+Choose a Heroku AI model based on your current OpenAI model and use case:
+
+| OpenAI Model | Recommended Heroku AI Model | Notes |
+|--------------|----------------------------|-------|
+| `gpt-4o` | `claude-4-5-sonnet` | Best general-purpose replacement |
+| `gpt-4-turbo` | `claude-4-5-sonnet` | Comparable capabilities |
+| `gpt-4` | `claude-4-sonnet` | Strong reasoning |
+| `gpt-3.5-turbo` | `claude-4-5-haiku` | Fast, cost-effective |
+| `text-embedding-3-small` | `cohere-embed-multilingual` | 1024 dimensions |
+| `text-embedding-3-large` | `cohere-embed-multilingual` | Use for multilingual |
+| `dall-e-3` | `stable-image-ultra` | High-quality images |
+
+### Model-Specific Considerations
+
+**Claude models (Anthropic)**
+
+Claude models handle prompts slightly differently than GPT models:
+
+```python
+# GPT-4 style prompt
+messages = [
+    {"role": "system", "content": "You are a helpful coding assistant."},
+    {"role": "user", "content": "Write a Python function to sort a list."}
+]
+
+# Works identically with Claude - no changes needed
+response = client.chat.completions.create(
+    model="claude-4-5-sonnet",
+    messages=messages
+)
+```
+
+Claude tends to be more verbose by default. To get concise responses, explicitly request them:
+
+```python
+messages = [
+    {
+        "role": "system",
+        "content": "You are a helpful assistant. Keep responses brief and direct."
+    },
+    {"role": "user", "content": "What is Heroku?"}
+]
+```
+
+**Nova models (Amazon)**
+
+Nova models follow the same API but may interpret instructions differently. Test your prompts after migration:
+
+```python
+# Works with both GPT and Nova
+response = client.chat.completions.create(
+    model="nova-pro",  # or nova-lite for faster responses
+    messages=[{"role": "user", "content": "Summarize this article..."}]
+)
+```
+
+### Choosing the Right Model
+
+| Priority | Recommended Model | Reason |
+|----------|------------------|--------|
+| Lowest latency | `claude-4-5-haiku` | Fastest response times |
+| Complex reasoning | `claude-4-5-sonnet` | Best for analysis, coding |
+| Cost optimization | `nova-lite` | Good quality, lower cost |
+| Extended context | `claude-4-5-sonnet` | 200K token context |
+| Image generation | `stable-image-ultra` | High-quality outputs |
+
+## Feature Parity
+
+### Fully Supported Features
+
+These OpenAI features work identically on Heroku AI:
+
+| Feature | Support Level | Notes |
+|---------|--------------|-------|
+| Chat completions | Full | Identical API |
+| Streaming | Full | SSE format identical |
+| Function calling / Tools | Full | Same schema format |
+| JSON mode | Full | `response_format: {"type": "json_object"}` |
+| System messages | Full | Identical behavior |
+| Multi-turn conversations | Full | Same message format |
+| Token usage reporting | Full | Same `usage` object |
+| Temperature / top_p | Full | Same parameters |
+| Stop sequences | Full | Same behavior |
+| Embeddings | Full | Different model names |
+
+### Features with Differences
+
+Some features work differently or have limitations:
+
+| Feature | Difference | Workaround |
+|---------|------------|------------|
+| `seed` parameter | Ignored | Deterministic outputs not guaranteed |
+| `n` parameter | Ignored | Generate multiple completions with separate calls |
+| `logprobs` | Not available | — |
+| `presence_penalty` | Ignored | Use prompt instructions for variety |
+| `frequency_penalty` | Ignored | Use prompt instructions for variety |
+| Vision / image input | Model-dependent | Use Claude 4.5 Sonnet for vision |
+
+Example handling the `n` parameter:
+
+```python
+# OpenAI: Generate 3 completions at once
+# response = client.chat.completions.create(model="gpt-4", n=3, ...)
+
+# Heroku AI: Generate 3 completions with separate calls
+completions = []
+for _ in range(3):
+    response = client.chat.completions.create(
+        model="claude-4-5-sonnet",
+        messages=[{"role": "user", "content": "Write a haiku"}],
+        temperature=0.9  # Higher temperature for variety
+    )
+    completions.append(response.choices[0].message.content)
+```
+
+### Features Not Available
+
+These OpenAI features are not currently available on Heroku AI:
+
+| Feature | Alternative |
+|---------|-------------|
+| Fine-tuning | Use detailed system prompts and few-shot examples |
+| Assistants API | Use the Agents endpoint with MCP tools |
+| Audio transcription | Use a dedicated transcription service |
+| Text-to-speech | Use a dedicated TTS service |
+| Moderation | Implement custom content filtering |
+| Batch API | Process requests sequentially with rate limiting |
+
+## Code Migration Examples
+
+### Basic Chat Completion
+
+The simplest migration—just change configuration:
+
+<Tabs>
+  <Tab title="OpenAI">
+```python
+from openai import OpenAI
+
+client = OpenAI()  # Uses OPENAI_API_KEY env var
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="Heroku AI">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+print(response.choices[0].message.content)
+```
+  </Tab>
+</Tabs>
+
+### Streaming Responses
+
+Streaming works identically:
+
+<Tabs>
+  <Tab title="OpenAI">
+```python
+stream = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Tell me a story"}],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+  </Tab>
+  <Tab title="Heroku AI">
+```python
+stream = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "Tell me a story"}],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+  </Tab>
+</Tabs>
+
+### Function Calling / Tools
+
+Tool definitions work identically:
+
+<Tabs>
+  <Tab title="OpenAI">
+```python
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "Get current weather",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "location": {"type": "string"}
+            },
+            "required": ["location"]
+        }
+    }
+}]
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "What's the weather in SF?"}],
+    tools=tools
+)
+```
+  </Tab>
+  <Tab title="Heroku AI">
+```python
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "Get current weather",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "location": {"type": "string"}
+            },
+            "required": ["location"]
+        }
+    }
+}]
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "What's the weather in SF?"}],
+    tools=tools
+)
+```
+  </Tab>
+</Tabs>
+
+### Embeddings
+
+Embeddings use a different model name but the same API:
+
+<Tabs>
+  <Tab title="OpenAI">
+```python
+response = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=["Hello world", "Goodbye world"]
+)
+
+for i, embedding in enumerate(response.data):
+    print(f"Text {i}: {len(embedding.embedding)} dimensions")
+```
+  </Tab>
+  <Tab title="Heroku AI">
+```python
+response = client.embeddings.create(
+    model="cohere-embed-multilingual",
+    input=["Hello world", "Goodbye world"],
+    input_type="search_document"  # Required for Cohere
+)
+
+for i, embedding in enumerate(response.data):
+    print(f"Text {i}: {len(embedding.embedding)} dimensions")
+```
+  </Tab>
+</Tabs>
+
+**Note**: Cohere embeddings require an `input_type` parameter. Use `"search_document"` for content you're indexing and `"search_query"` for search queries.
+
+## Environment Configuration
+
+### Local Development
+
+Create a `.env` file for local development:
+
+```bash
+# .env
+INFERENCE_URL=https://us.inference.heroku.com
+INFERENCE_KEY=inf-your-key-here
+INFERENCE_MODEL_ID=claude-4-5-sonnet
+```
+
+Load it in your application:
+
+<Tabs>
+  <Tab title="Python">
+```python
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+```
+  </Tab>
+  <Tab title="Node.js">
+```typescript
+import 'dotenv/config';
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  baseURL: process.env.INFERENCE_URL + '/v1',
+  apiKey: process.env.INFERENCE_KEY,
+});
+```
+  </Tab>
+</Tabs>
+
+### Heroku Deployment
+
+Environment variables are set automatically when you provision a model:
+
+```bash
+# Provision the model
+heroku ai:models:create claude-4-5-sonnet -a your-app-name
+
+# Variables are now set:
+# INFERENCE_KEY=inf-...
+# INFERENCE_URL=https://us.inference.heroku.com
+# INFERENCE_MODEL_ID=claude-4-5-sonnet
+```
+
+For multiple models, each add-on gets a unique prefix:
+
+```bash
+# List all inference-related config vars
+heroku config -a your-app-name | grep -E "INFERENCE|HEROKU_INFERENCE"
+```
+
+### Multiple Environments
+
+For staging/production parity:
+
+```bash
+# Production
+heroku config:set NODE_ENV=production -a your-app-production
+
+# Staging (uses same model)
+heroku addons:attach your-app-production::inference -a your-app-staging
+```
+
+## Testing Your Migration
+
+### Verification Checklist
+
+After migrating, verify each functionality:
+
+- [ ] Basic chat completions work
+- [ ] Streaming responses render correctly
+- [ ] Function/tool calls execute properly
+- [ ] Error handling catches API errors
+- [ ] Rate limiting is handled gracefully
+- [ ] Token usage is tracked correctly
+
+### Test Script
+
+Run this script to verify your migration:
+
+```python
+import os
+from openai import OpenAI
+
+def test_migration():
+    client = OpenAI(
+        base_url=os.getenv("INFERENCE_URL") + "/v1",
+        api_key=os.getenv("INFERENCE_KEY")
+    )
+    model = os.getenv("INFERENCE_MODEL_ID")
+
+    print(f"Testing with model: {model}")
+    print("-" * 40)
+
+    # Test 1: Basic completion
+    print("Test 1: Basic completion...")
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": "Say 'Migration successful!' and nothing else."}],
+        max_tokens=20
+    )
+    assert "successful" in response.choices[0].message.content.lower()
+    print(f"  ✓ Response: {response.choices[0].message.content}")
+
+    # Test 2: Streaming
+    print("Test 2: Streaming...")
+    stream = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": "Count from 1 to 3."}],
+        stream=True,
+        max_tokens=20
+    )
+    chunks = list(stream)
+    assert len(chunks) > 1
+    print(f"  ✓ Received {len(chunks)} chunks")
+
+    # Test 3: Token usage
+    print("Test 3: Token usage tracking...")
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": "Hello"}],
+        max_tokens=10
+    )
+    assert response.usage.prompt_tokens > 0
+    assert response.usage.completion_tokens > 0
+    print(f"  ✓ Tokens: {response.usage.prompt_tokens} in, {response.usage.completion_tokens} out")
+
+    print("-" * 40)
+    print("All tests passed! Migration successful.")
+
+if __name__ == "__main__":
+    test_migration()
+```
+
+### Common Migration Issues
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| 401 Unauthorized | Wrong API key | Use `INFERENCE_KEY`, not OpenAI key |
+| 403 Forbidden | Wrong model | Use provisioned model from `INFERENCE_MODEL_ID` |
+| Different output style | Model behavior | Adjust prompts for Claude/Nova specifics |
+| Missing `n` parameter | Not supported | Make multiple calls for multiple completions |
+
+## Additional Resources
+
+- [OpenAI SDK Compatibility](/inference-api/openai-compatibility) - Detailed parameter support
+- [Models Overview](/inference-api/models) - All available models
+- [Choosing a Model](/inference-api/choosing-a-model) - Model selection guidance
+- [Error Handling](/inference-api/errors) - Handling API errors
+- [Rate Limits](/inference-api/rate-limits) - Request and token limits

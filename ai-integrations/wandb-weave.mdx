@@ -1,0 +1,206 @@
+---
+title: "Weights & Biases Weave"
+description: "Track and debug your Heroku AI applications with Weights & Biases Weave for automatic tracing of LLM calls, cost tracking, and performance monitoring."
+---
+
+Weights & Biases Weave automatically patches the OpenAI SDK after initialization, requiring no code changes to your existing Heroku AI calls. After calling `weave.init()`, all LLM interactions are automatically traced and logged to your W&B dashboard.
+
+## Installation and Setup
+
+Install the required packages:
+
+```bash
+pip install weave wandb openai
+```
+
+To set up your Heroku AI environment:
+
+- Create an app in Heroku:
+
+```bash
+heroku create example-app
+```
+
+- Create and attach a [chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards#available-models) to your app:
+
+```bash
+heroku ai:models:create -a example-app claude-3-5-haiku
+```
+
+- Export configuration variables:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a example-app)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a example-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a example-app)
+```
+
+## Configure Weights & Biases
+
+Set up your W&B credentials:
+
+```bash
+export WANDB_API_KEY='your-wandb-api-key'
+```
+
+You can get your API key from [wandb.ai/authorize](https://wandb.ai/authorize).
+
+## Instrumenting Heroku AI Calls
+
+### Basic Setup
+
+Initialize Weave at the start of your application. This automatically patches the OpenAI SDK:
+
+```python
+import os
+import weave
+from openai import OpenAI
+
+# Initialize Weave - automatically patches OpenAI SDK
+weave.init("heroku-ai-project")
+
+# Create Heroku AI client (standard setup)
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+# All OpenAI calls are automatically traced
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-4-5-sonnet"),
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Custom Function Tracing
+
+Use the `@weave.op()` decorator to trace your own functions alongside LLM calls:
+
+```python
+import os
+import weave
+from openai import OpenAI
+
+weave.init("heroku-ai-project")
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+@weave.op()
+def generate_response(prompt: str, system_prompt: str = "You are a helpful assistant.") -> str:
+    """Generate a response using Heroku AI."""
+    response = client.chat.completions.create(
+        model=os.getenv("INFERENCE_MODEL_ID"),
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
+
+@weave.op()
+def summarize_text(text: str) -> str:
+    """Summarize the given text."""
+    return generate_response(f"Summarize this text in 2-3 sentences:\n\n{text}")
+
+# Both function calls and LLM calls are traced
+result = summarize_text("Heroku is a cloud platform that lets companies build, deliver, monitor and scale apps.")
+print(result)
+```
+
+### Streaming Responses
+
+Weave automatically captures streaming responses:
+
+```python
+import os
+import weave
+from openai import OpenAI
+
+weave.init("heroku-ai-project")
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+stream = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "Write a haiku about cloud computing"}],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+
+### Async Support
+
+Weave works with async OpenAI clients:
+
+```python
+import os
+import asyncio
+import weave
+from openai import AsyncOpenAI
+
+weave.init("heroku-ai-project")
+
+async_client = AsyncOpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+async def get_response():
+    response = await async_client.chat.completions.create(
+        model=os.getenv("INFERENCE_MODEL_ID"),
+        messages=[{"role": "user", "content": "What is Heroku?"}]
+    )
+    return response.choices[0].message.content
+
+result = asyncio.run(get_response())
+print(result)
+```
+
+## What Gets Captured
+
+Weave automatically captures:
+
+- Token usage (input and output tokens)
+- Estimated cost based on token usage
+- Request and response latency
+- Full message history and conversation flow
+- Model configuration and parameters
+- Custom function inputs and outputs (with `@weave.op()`)
+- Error traces and exceptions
+
+## Viewing Your Traces
+
+After running your instrumented code:
+
+1. Navigate to [wandb.ai](https://wandb.ai)
+2. Select your project (e.g., "heroku-ai-project")
+3. Click on the "Weave" tab to view traces
+
+The Weave dashboard provides:
+
+- Timeline view of all LLM and function calls
+- Cost tracking and token usage analytics
+- Input/output inspection for each call
+- Performance metrics and latency analysis
+- Filtering and search capabilities
+
+## Additional Resources
+
+- [Weights & Biases Weave Documentation](https://weave-docs.wandb.ai/)
+- [W&B OpenAI Integration Guide](https://docs.wandb.ai/guides/integrations/openai)
+- [Heroku AI Chat Completions](/inference-api/chat-completions)
+- [OpenAI SDK Compatibility](/inference-api/openai-compatibility)

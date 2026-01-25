@@ -1,0 +1,174 @@
+---
+title: "Arize Phoenix"
+description: "Add OpenTelemetry-based tracing and observability to your Heroku AI applications with Arize Phoenix for debugging, evaluation, and monitoring LLM performance."
+---
+
+Arize Phoenix is an open-source AI observability platform that uses OpenTelemetry to capture LLM traces. It automatically instruments OpenAI SDK calls, making it easy to add observability to your Heroku AI applications with minimal code changes.
+
+## Installation and Setup
+
+Install the required packages:
+
+```bash
+pip install arize-phoenix-otel openinference-instrumentation-openai openai
+```
+
+To set up your Heroku AI environment:
+
+- Create an app in Heroku:
+
+```bash
+heroku create example-app
+```
+
+- Create and attach a [chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards#available-models) to your app:
+
+```bash
+heroku ai:models:create -a example-app claude-3-5-haiku
+```
+
+- Export configuration variables:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a example-app)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a example-app)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a example-app)
+```
+
+## Configure Arize Phoenix
+
+Set up your Phoenix credentials. You can use [Phoenix Cloud](https://app.phoenix.arize.com) or self-host Phoenix locally:
+
+```bash
+# For Phoenix Cloud
+export PHOENIX_API_KEY='your-phoenix-api-key'
+export PHOENIX_COLLECTOR_ENDPOINT='https://app.phoenix.arize.com'
+
+# For self-hosted Phoenix
+export PHOENIX_COLLECTOR_ENDPOINT='http://localhost:6006'
+```
+
+## Instrumenting Heroku AI Calls
+
+### Auto-Instrumentation
+
+The simplest approach uses auto-instrumentation, which automatically traces all OpenAI SDK calls:
+
+```python
+import os
+from phoenix.otel import register
+from openai import OpenAI
+
+# Initialize Phoenix with auto-instrumentation
+tracer_provider = register(
+    project_name="heroku-ai-app",
+    auto_instrument=True
+)
+
+# Create Heroku AI client
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+# All calls are now automatically traced
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-4-5-sonnet"),
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Manual Instrumentation
+
+For more control, you can manually instrument the OpenAI SDK:
+
+```python
+import os
+from phoenix.otel import register
+from openinference.instrumentation.openai import OpenAIInstrumentor
+from openai import OpenAI
+
+# Initialize Phoenix tracing
+tracer_provider = register(project_name="heroku-ai-app")
+
+# Manually instrument OpenAI
+OpenAIInstrumentor().instrument(tracer_provider=tracer_provider)
+
+# Create Heroku AI client
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "Explain Heroku dynos"}]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Streaming Responses
+
+Phoenix automatically captures streaming responses:
+
+```python
+import os
+from phoenix.otel import register
+from openai import OpenAI
+
+register(project_name="heroku-ai-app", auto_instrument=True)
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+stream = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[{"role": "user", "content": "Write a haiku about cloud computing"}],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+
+## What Gets Captured
+
+Phoenix captures comprehensive telemetry for each LLM call:
+
+- Request and response payloads
+- Token usage (input, output, total)
+- Latency and duration metrics
+- Model parameters (temperature, max_tokens, etc.)
+- Error traces and exceptions
+- Conversation history and message roles
+
+## Viewing Your Traces
+
+After running your instrumented code, view traces in the Phoenix UI:
+
+- **Phoenix Cloud**: Navigate to [app.phoenix.arize.com](https://app.phoenix.arize.com) and select your project
+- **Self-hosted**: Open `http://localhost:6006` in your browser
+
+The Phoenix UI provides:
+
+- Timeline view of all LLM calls
+- Token usage and cost analysis
+- Latency distribution charts
+- Error tracking and debugging
+- Conversation flow visualization
+
+## Additional Resources
+
+- [Arize Phoenix Documentation](https://docs.arize.com/phoenix)
+- [OpenInference OpenAI Instrumentation](https://github.com/Arize-ai/openinference)
+- [Heroku AI Chat Completions](/inference-api/chat-completions)
+- [OpenAI SDK Compatibility](/inference-api/openai-compatibility)
