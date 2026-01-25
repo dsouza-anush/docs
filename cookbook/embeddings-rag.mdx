@@ -286,9 +286,16 @@ When basic retrieval returns poor results, try these techniques:
 **2. Reranking:** Use the Cohere Rerank API to re-score your top-k results before sending to the LLM. This catches cases where embedding similarity doesn't match true relevance.
 
 ```python
-# After retrieving top 20 candidates, rerank to find the best 5
-rerank_response = client.post(
-    "/v1/rerank",
+import requests
+
+# Rerank uses separate credentials from chat/embeddings
+# Provision with: heroku ai:models:create cohere-rerank-3-5 --as RERANK -a your-app
+rerank_response = requests.post(
+    f"{os.environ['RERANK_URL']}/v1/rerank",
+    headers={
+        "Authorization": f"Bearer {os.environ['RERANK_KEY']}",
+        "Content-Type": "application/json"
+    },
     json={
         "model": "cohere-rerank-3-5",
         "query": user_question,
@@ -296,6 +303,7 @@ rerank_response = client.post(
         "top_n": 5
     }
 )
+top_docs = [candidates[r["index"]] for r in rerank_response.json()["results"]]
 ```
 
 **3. Query expansion:** Rephrase the user's question to improve matches. Ask the LLM to generate search queries before retrieval.
