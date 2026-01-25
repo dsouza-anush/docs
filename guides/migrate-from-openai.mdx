@@ -7,6 +7,10 @@ Migrating from OpenAI to Heroku AI is straightforward because Heroku AI provides
 
 This guide covers everything you need to know to migrate: configuration changes, model selection, feature differences, and testing strategies.
 
+<Note>
+**Already using Anthropic?** If you're migrating from Anthropic's API (not OpenAI), you can use the [Messages API](/inference-api/messages) instead. It provides native Anthropic SDK compatibility—just change your base URL and API key.
+</Note>
+
 ## Why Migrate to Heroku AI
 
 Teams migrate to Heroku AI for several reasons:
@@ -153,6 +157,7 @@ Heroku AI implements the same endpoints as OpenAI:
 
 | Heroku AI Endpoint | Description |
 |-------------------|-------------|
+| `POST /v1/messages` | Native Anthropic Messages API for Claude (use Anthropic SDK) |
 | `POST /v1/agents/heroku` | Agentic loop with autonomous tool execution |
 | `POST /v1/rerank` | Document reranking for improved RAG |
 | `GET /v1/mcp/servers` | MCP server management |
@@ -606,6 +611,7 @@ if __name__ == "__main__":
 
 ## Additional Resources
 
+- [Messages API](/inference-api/messages) - Native Anthropic SDK for Claude models
 - [OpenAI SDK Compatibility](/inference-api/openai-compatibility) - Detailed parameter support
 - [Models Overview](/inference-api/models) - All available models
 - [Choosing a Model](/inference-api/choosing-a-model) - Model selection guidance

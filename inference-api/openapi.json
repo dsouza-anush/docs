@@ -87,6 +87,90 @@
         }
       }
     },
+    "/v1/messages": {
+      "post": {
+        "summary": "Messages (Anthropic)",
+        "description": "Native Anthropic Messages API endpoint for Claude models. Use the Anthropic SDK with Heroku AI credentials.",
+        "operationId": "createMessage",
+        "tags": ["Messages"],
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessagesRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic message",
+                  "value": {
+                    "model": "claude-4-sonnet",
+                    "max_tokens": 1024,
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "Hello, what should I build today?"
+                      }
+                    ]
+                  }
+                },
+                "with_system": {
+                  "summary": "With system prompt",
+                  "value": {
+                    "model": "claude-4-sonnet",
+                    "max_tokens": 1024,
+                    "system": "You are a helpful Heroku expert.",
+                    "messages": [
+                      {
+                        "role": "user",
+                        "content": "How do I deploy a Python app?"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/agents/heroku": {
       "post": {
         "summary": "Agents (Heroku)",
@@ -306,6 +390,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Bearer token using your INFERENCE_KEY"
+      },
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key using your INFERENCE_KEY (Anthropic-style authentication)"
       }
     },
     "schemas": {
@@ -481,6 +571,244 @@
           },
           "total_tokens": {
             "type": "integer"
+          }
+        }
+      },
+      "MessagesRequest": {
+        "type": "object",
+        "required": ["model", "max_tokens", "messages"],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Claude model ID to use",
+            "example": "claude-4-sonnet"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "Maximum tokens to generate (required)",
+            "example": 1024
+          },
+          "messages": {
+            "type": "array",
+            "description": "Array of message objects with user/assistant roles",
+            "items": {
+              "$ref": "#/components/schemas/AnthropicMessage"
+            }
+          },
+          "system": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            ],
+            "description": "System prompt (string or array of content blocks for caching)"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1.0,
+            "description": "Sampling temperature"
+          },
+          "top_p": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Nucleus sampling threshold"
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Only sample from top K options"
+          },
+          "stop_sequences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Custom stop sequences"
+          },
+          "stream": {
+            "type": "boolean",
+            "default": false,
+            "description": "Stream responses via SSE"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "user_id": {
+                "type": "string"
+              }
+            },
+            "description": "Request metadata for tracking"
+          },
+          "thinking": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["enabled"]
+              },
+              "budget_tokens": {
+                "type": "integer",
+                "minimum": 1024
+              }
+            },
+            "description": "Extended thinking configuration (Claude 3.7/4 Sonnet only)"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnthropicTool"
+            },
+            "description": "Tools the model may use"
+          },
+          "tool_choice": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["auto", "any", "tool"]
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "description": "Controls how model uses tools"
+          }
+        }
+      },
+      "AnthropicMessage": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant"],
+            "description": "Role of the message (user or assistant)"
+          },
+          "content": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            ],
+            "description": "Message content (string or content blocks)"
+          }
+        }
+      },
+      "AnthropicTool": {
+        "type": "object",
+        "required": ["name", "input_schema"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the tool"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of what the tool does"
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "JSON Schema for tool input parameters"
+          },
+          "cache_control": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["ephemeral"]
+              }
+            },
+            "description": "Cache control for prompt caching"
+          }
+        }
+      },
+      "MessagesResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique message identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["message"],
+            "description": "Object type"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["assistant"],
+            "description": "Always assistant"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["text", "tool_use", "thinking"]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "thinking": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "input": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Array of content blocks"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model that generated the response"
+          },
+          "stop_reason": {
+            "type": "string",
+            "enum": ["end_turn", "max_tokens", "stop_sequence", "tool_use"],
+            "description": "Why generation stopped"
+          },
+          "stop_sequence": {
+            "type": "string",
+            "nullable": true,
+            "description": "Stop sequence that was matched, if any"
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "input_tokens": {
+                "type": "integer",
+                "description": "Tokens in the input"
+              },
+              "output_tokens": {
+                "type": "integer",
+                "description": "Tokens in the output"
+              }
+            }
           }
         }
       },

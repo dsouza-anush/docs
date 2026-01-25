@@ -65,6 +65,7 @@
             "group": "API Reference",
             "pages": [
               "inference-api/chat-completions",
+              "inference-api/messages",
               "inference-api/agents-heroku",
               "inference-api/embeddings",
               "inference-api/rerank",
@@ -199,6 +200,7 @@
             "group": "Endpoints",
             "pages": [
               "inference-api/chat-completions",
+              "inference-api/messages",
               "inference-api/agents-heroku",
               "inference-api/embeddings",
               "inference-api/rerank",
