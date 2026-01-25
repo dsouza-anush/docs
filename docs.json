@@ -12,31 +12,23 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Welcome",
+        "tab": "Docs",
         "groups": [
           {
-            "group": "Start here",
+            "group": "Get started",
             "pages": [
-              "introduction"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Heroku AI",
-        "groups": [
-          {
-            "group": "Getting started",
-            "pages": [
+              "introduction",
               "quickstart",
               "inference-api/cli-commands"
             ]
           },
           {
-            "group": "Overview",
+            "group": "Core concepts",
             "pages": [
               "inference-api/overview",
-              "heroku-inference/ai-studio"
+              "heroku-inference/ai-studio",
+              "inference-api/openai-compatibility",
+              "inference-api/chat-vs-agents"
             ]
           },
           {
@@ -53,46 +45,30 @@
             "group": "Guides",
             "pages": [
               "guides/migrate-from-openai",
-              "inference-api/openai-compatibility",
-              "inference-api/chat-vs-agents",
               "inference-api/structured-output",
               "cookbook/prompt-patterns",
               "cookbook/embeddings-rag",
+              "cookbook/images",
               "inference-api/troubleshooting"
             ]
           },
           {
-            "group": "API Reference",
-            "pages": [
-              "inference-api/chat-completions",
-              "inference-api/messages",
-              "inference-api/agents-heroku",
-              "inference-api/embeddings",
-              "inference-api/rerank",
-              "inference-api/images-generations",
-              "inference-api/mcp-servers",
-              "inference-api/errors"
-            ]
-          },
-          {
-            "group": "MCP & tools",
+            "group": "Tools & agents",
             "pages": [
               "tool-use/heroku-tools",
               "tool-use/heroku-tools/code-execution",
               "tool-use/heroku-tools/run-sql",
               "tool-use/heroku-tools/doc-reader",
+              "tool-use/working-with-mcp",
               "tool-use/brightdata-search",
               "tool-use/playwright-browser",
-              "tool-use/exa-search",
-              "tool-use/working-with-mcp"
+              "tool-use/exa-search"
             ]
           },
           {
-            "group": "Cookbooks",
+            "group": "Vector database",
             "pages": [
-              "cookbook/index",
-              "cookbook/openai-sdk-reference-apps",
-              "cookbook/images"
+              "vector-database/pgvector"
             ]
           },
           {
@@ -110,6 +86,65 @@
               "ai-integrations/arize-phoenix",
               "ai-integrations/wandb-weave",
               "ai-integrations/logfire"
+            ]
+          },
+          {
+            "group": "Cookbooks",
+            "pages": [
+              "cookbook/index",
+              "cookbook/openai-sdk-reference-apps",
+              "cookbook/chatgpt-apps",
+              "cookbook/mcp-integrations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Endpoints",
+            "pages": [
+              "inference-api/chat-completions",
+              "inference-api/messages",
+              "inference-api/agents-heroku",
+              "inference-api/embeddings",
+              "inference-api/rerank",
+              "inference-api/images-generations",
+              "inference-api/mcp-servers"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "inference-api/errors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "MCP",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "model-context/overview"
+            ]
+          },
+          {
+            "group": "Server deployment",
+            "pages": [
+              "heroku-inference/mcp-server-stdio",
+              "heroku-inference/mcp-server-remote"
+            ]
+          },
+          {
+            "group": "Clients",
+            "pages": [
+              "mcp-clients/chatgpt",
+              "mcp-clients/claude",
+              "mcp-clients/cursor",
+              "mcp-clients/agentforce"
             ]
           }
         ]
@@ -126,9 +161,10 @@
             ]
           },
           {
-            "group": "Build experiences",
+            "group": "Building",
             "pages": [
-              "heroku-vibes/addons"
+              "heroku-vibes/addons",
+              "heroku-vibes/widgets"
             ]
           },
           {
@@ -136,109 +172,6 @@
             "pages": [
               "heroku-vibes/quotas",
               "heroku-vibes/reference-app"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Model Context Protocol",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "model-context/overview"
-            ]
-          },
-          {
-            "group": "Server modes",
-            "pages": [
-              "heroku-inference/mcp-server-stdio",
-              "heroku-inference/mcp-server-remote"
-            ]
-          },
-          {
-            "group": "Tools",
-            "pages": [
-              "tool-use/heroku-tools",
-              "tool-use/working-with-mcp"
-            ]
-          },
-          {
-            "group": "Cookbooks",
-            "pages": [
-              "cookbook/mcp-integrations",
-              "cookbook/chatgpt-apps",
-              "heroku-vibes/widgets"
-            ]
-          },
-          {
-            "group": "Clients",
-            "pages": [
-              "mcp-clients/chatgpt",
-              "mcp-clients/claude",
-              "mcp-clients/cursor",
-              "mcp-clients/agentforce"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Vector database",
-        "groups": [
-          {
-            "group": "pgvector",
-            "pages": [
-              "vector-database/pgvector"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API References",
-        "groups": [
-          {
-            "group": "Endpoints",
-            "pages": [
-              "inference-api/chat-completions",
-              "inference-api/messages",
-              "inference-api/agents-heroku",
-              "inference-api/embeddings",
-              "inference-api/rerank",
-              "inference-api/images-generations",
-              "inference-api/mcp-servers",
-              "inference-api/errors"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Resources",
-        "groups": [
-          {
-            "group": "Cookbooks",
-            "pages": [
-              "cookbook/index",
-              "cookbook/openai-sdk-reference-apps",
-              "cookbook/prompt-patterns",
-              "cookbook/embeddings-rag",
-              "cookbook/images"
-            ]
-          },
-          {
-            "group": "Integrations",
-            "pages": [
-              "ai-integrations/ai-sdk",
-              "ai-integrations/llamaindex",
-              "ai-integrations/pydantic",
-              "ai-integrations/rubyllm"
-            ]
-          },
-          {
-            "group": "Observability",
-            "pages": [
-              "ai-integrations/arize-phoenix",
-              "ai-integrations/wandb-weave",
-              "ai-integrations/logfire"
             ]
           }
         ]
