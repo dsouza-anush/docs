@@ -19,8 +19,87 @@ Use the table below to plan throughput for each Heroku AI model. Limits apply to
 | Cohere Embed Multilingual | 500 | 800,000 | Applies to embedding tokens; batch up to 96 inputs per request. |
 | Stable Image Ultra | 20 | N/A | Limit measured per image generation request. |
 
+## Rate Limit Headers
+
+Token and request rate limits are per minute and calculated with a sliding window. Review these headers in API responses for information on the current state of your inference add-on's rate limits:
+
+| Header | Description | Example |
+| --- | --- | --- |
+| `x-ratelimit-limit-requests` | Limit on requests per minute | `200` |
+| `x-ratelimit-limit-tokens` | Limit on tokens per minute | `800000` |
+| `x-ratelimit-remaining-requests` | Remaining requests permitted before reaching rate limit | `198` |
+| `x-ratelimit-remaining-tokens` | Remaining tokens permitted before reaching rate limit | `799892` |
+| `x-ratelimit-reset-requests` | Time until more request capacity becomes available | `51s` |
+| `x-ratelimit-reset-tokens` | Time until more token capacity becomes available | `51s` |
+
+<Note>
+The `reset` headers are calculated with a one-minute sliding window. As entries expire, additional capacity releases gradually rather than all at once. The returned time value indicates when the oldest entry expires in the sliding window.
+</Note>
+
+### Reading Rate Limit Headers
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+import requests
+
+response = requests.post(
+    f"{os.getenv('INFERENCE_URL')}/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": os.getenv("INFERENCE_MODEL_ID"),
+        "messages": [{"role": "user", "content": "Hello!"}]
+    }
+)
+
+# Check rate limit status
+print(f"Requests remaining: {response.headers.get('x-ratelimit-remaining-requests')}")
+print(f"Tokens remaining: {response.headers.get('x-ratelimit-remaining-tokens')}")
+print(f"Request limit resets in: {response.headers.get('x-ratelimit-reset-requests')}")
+```
+  </Tab>
+  <Tab title="JavaScript">
+```javascript
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/chat/completions`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: process.env.INFERENCE_MODEL_ID,
+      messages: [{ role: 'user', content: 'Hello!' }]
+    })
+  }
+);
+
+// Check rate limit status
+console.log('Requests remaining:', response.headers.get('x-ratelimit-remaining-requests'));
+console.log('Tokens remaining:', response.headers.get('x-ratelimit-remaining-tokens'));
+console.log('Request limit resets in:', response.headers.get('x-ratelimit-reset-requests'));
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl -i https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }' 2>&1 | grep -i "x-ratelimit"
+```
+  </Tab>
+</Tabs>
+
 ### Tips
 
-- **Prompt caching**: When available, cache your system and tool definitions to reduce billed token usage and improve performance. See the [Anthropic documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) for prompt caching strategies.
+- **Prompt caching**: When available, cache your system and tool definitions to reduce billed token usage and improve performance. See [Prompt Caching](/inference-api/chat-completions#prompt-caching) for details.
 - **Scaling beyond limits**: Contact Heroku Support if your production workload consistently approaches these thresholds.
 - **Regional routing**: Deploy workloads in the region closest to your users. The limits above apply per region, so running in both US and EU doubles the overall headroom.

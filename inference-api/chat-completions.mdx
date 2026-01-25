@@ -472,6 +472,100 @@ data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456
 data: [DONE]
 ```
 
+## Prompt Caching
+
+Prompt caching optimizes the Heroku Managed Inference and Agents add-on to deliver faster responses for common workflows, document processing, and code-generation tools. Heroku automatically enables prompt caching for system prompts and tool definitions.
+
+### How It Works
+
+When agentic apps make calls to models, a portion of the request content remains static. Prompt caching enables Heroku to skip reprocessing this static content for every call and instead use its already processed result from a secure cache.
+
+1. **First request**: A request with a new, substantial prompt is processed and Heroku securely caches the results.
+2. **Similar requests**: For subsequent requests with the same initial prompt or tools, Heroku reuses the cached components to provide a faster response.
+
+Caching only occurs when content meets the minimum token threshold, improving performance where it adds the most value.
+
+### What Gets Cached
+
+Heroku only uses prompt caching for:
+
+- **System prompts**: Instructions that define the model's behavior
+- **Tool definitions**: Function schemas and descriptions
+
+User messages and conversation history are never cached.
+
+### Cache Behavior
+
+- **Automatic expiration**: The secure cache automatically expires after five minutes of inactivity
+- **Security**: Each cache is built on Heroku's secure infrastructure and protects your data with cryptographic hashing
+- **No extra cost**: Heroku doesn't charge for cache writes or pass on the difference for cache hits
+
+### Disable Prompt Caching
+
+You can disable prompt caching for any request by adding an HTTP header:
+
+<Tabs>
+  <Tab title="cURL">
+```bash
+curl https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Heroku-Prompt-Caching: false" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'
+```
+  </Tab>
+  <Tab title="Python">
+```python
+import os
+import requests
+
+response = requests.post(
+    f"{os.getenv('INFERENCE_URL')}/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {os.getenv('INFERENCE_KEY')}",
+        "Content-Type": "application/json",
+        "X-Heroku-Prompt-Caching": "false"
+    },
+    json={
+        "model": os.getenv("INFERENCE_MODEL_ID"),
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello!"}
+        ]
+    }
+)
+```
+  </Tab>
+  <Tab title="JavaScript">
+```javascript
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/chat/completions`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.INFERENCE_KEY}`,
+      'Content-Type': 'application/json',
+      'X-Heroku-Prompt-Caching': 'false'
+    },
+    body: JSON.stringify({
+      model: process.env.INFERENCE_MODEL_ID,
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: 'Hello!' }
+      ]
+    })
+  }
+);
+```
+  </Tab>
+</Tabs>
+
 ## Related Endpoints
 
 <CardGroup cols={2}>
