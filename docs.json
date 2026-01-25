@@ -66,12 +66,6 @@
             ]
           },
           {
-            "group": "Vector database",
-            "pages": [
-              "vector-database/pgvector"
-            ]
-          },
-          {
             "group": "Integrations",
             "pages": [
               "ai-integrations/ai-sdk",
@@ -145,6 +139,17 @@
               "mcp-clients/claude",
               "mcp-clients/cursor",
               "mcp-clients/agentforce"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Vector Database",
+        "groups": [
+          {
+            "group": "pgvector",
+            "pages": [
+              "vector-database/pgvector"
             ]
           }
         ]
