@@ -1,11 +1,11 @@
 ---
 title: "API Overview"
-description: "The Heroku Managed Inference and Agents API offers easy access to various large foundational AI models including language (chat), embedding, and diffusion (image) models."
+description: "OpenAI-compatible API endpoints for chat, embeddings, image generation, and tool-calling agents on Heroku's managed infrastructure."
 ---
 
-## Available Endpoints
+The Heroku Managed Inference API provides OpenAI-compatible endpoints, meaning existing code using the OpenAI SDK works with minimal changes—just swap the base URL and API key. All models run on Heroku's infrastructure with built-in rate limiting, usage tracking, and security.
 
-The Heroku Managed Inference and Agents API exposes endpoints for chat, agents, embeddings, images, and tooling:
+## Available Endpoints
 
 <div
   style={{
@@ -139,27 +139,35 @@ The Heroku Managed Inference and Agents API exposes endpoints for chat, agents, 
 
 ### Chat Models
 
-The following chat models support the Chat Completions and Agents endpoints:
+Chat models power conversations, code generation, analysis, and tool-calling agents. Choose based on your latency, cost, and capability requirements:
 
-- **Claude 4 Sonnet** - Latest flagship model with extended thinking
-- **Claude 3.7 Sonnet** - High intelligence with extended thinking
-- **Claude 3.5 Sonnet** - Balance of intelligence and speed
-- **Claude 3.5 Haiku** - Fast and cost-effective
-- **Claude 3.0 Haiku** - Ultra-fast responses
-- **Amazon Nova Pro** - Amazon's advanced model
-- **Amazon Nova Lite** - Amazon's efficient model
-- **OpenAI GPT OSS 120B** - Open-source compatible model
+| Model | Latency | Best for |
+|-------|---------|----------|
+| **Claude 4.5 Sonnet** | Medium | Complex reasoning, coding, analysis requiring depth |
+| **Claude 4 Sonnet** | Medium | Deep reasoning with extended thinking capability |
+| **Claude 3.7 Sonnet** | Medium | Extended thinking at a lower price point |
+| **Claude 3.5 Sonnet** | Fast | General-purpose tasks balancing speed and quality |
+| **Claude 4.5 Haiku** | Very fast | High-volume applications, quick responses |
+| **Claude 3.5 Haiku** | Very fast | Lowest latency, content moderation, simple Q&A |
+| **Amazon Nova Pro** | Medium | AWS-native workloads with governance requirements |
+| **Amazon Nova Lite** | Fast | Cost-effective conversational apps |
 
 ### Embedding Models
 
-- **Cohere Embed Multilingual** - Multilingual text embeddings
+Embeddings convert text into numerical vectors for semantic search, clustering, and RAG pipelines:
+
+| Model | Dimensions | Strengths |
+|-------|------------|-----------|
+| **Cohere Embed Multilingual** | 1024 | 100+ languages, optimized for search and classification |
 
 ### Image Models
 
-- **Stable Image Ultra** - High-quality image generation
+| Model | Output |
+|-------|--------|
+| **Stable Image Ultra** | High-fidelity images up to 1536×640, multiple aspect ratios, seed control |
 
 <Note>
-  View our [Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) for detailed information about each model's capabilities, pricing, and features.
+  See the [Models Overview](/inference-api/models) for detailed capability comparisons, or [Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) for pricing and context window specifications.
 </Note>
 
 ## Quick Start

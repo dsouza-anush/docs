@@ -3,26 +3,52 @@ title: "Heroku Tools"
 description: "Built-in tools that enable AI agents to execute code and query databases on Heroku"
 ---
 
-The Heroku Managed Inference and Agents add-on provides a curated set of built-in tools that agents can use to execute code, run commands, and query databases. These tools run in secure, isolated one-off dynos and automatically return results to the agent.
+Heroku tools let agents execute code, query databases, and run commands in secure, isolated environments. Unlike custom tools that require you to build and host MCP servers, these built-in tools work immediately with the Agents API.
 
-## Available Tools
+## How tools work
 
-Heroku provides the following built-in tools for agents:
+When you include a Heroku tool in an agent request, the agent can decide to call it based on the conversation. Each tool invocation:
 
-- **dyno_run_command** - Execute custom commands on your Heroku app
-- **code_exec_ruby** - Execute Ruby code with gem dependencies ([learn more](/tool-use/heroku-tools/code-execution))
-- **code_exec_python** - Execute Python code with package dependencies ([learn more](/tool-use/heroku-tools/code-execution))
-- **code_exec_go** - Execute Go code with module dependencies ([learn more](/tool-use/heroku-tools/code-execution))
-- **code_exec_node** - Execute Node.js code with npm dependencies ([learn more](/tool-use/heroku-tools/code-execution))
-- **pg_psql** - Run SQL queries on Heroku Postgres databases ([learn more](/tool-use/heroku-tools/run-sql))
-- **doc_reader** - Summarize documentation and surface relevant snippets ([learn more](/tool-use/heroku-tools/doc-reader))
-- **pg_vector_query** - Perform vector similarity searches with pgvector
+1. Spins up an isolated one-off dyno on your target app
+2. Executes the operation (code, query, or command)
+3. Returns the output to the agent, which incorporates it into its response
+4. Shuts down the dyno automatically
 
-## Security
+This isolation means tool executions can't affect your running web dynos and each invocation starts clean.
+
+## Choosing the right tool
+
+| Task | Tool | When to use |
+|------|------|-------------|
+| Run SQL queries | `pg_psql` | Analyzing data, generating reports, checking database state |
+| Execute Python | `code_exec_python` | Data transformations, calculations, API calls |
+| Execute Node.js | `code_exec_node` | JSON processing, async operations |
+| Execute Ruby | `code_exec_ruby` | Rails-specific logic, Ruby calculations |
+| Execute Go | `code_exec_go` | High-performance computations |
+| Run custom scripts | `dyno_run_command` | Existing app commands, rake tasks, migrations |
+| Semantic search | `pg_vector_query` | RAG retrieval, finding similar documents |
+| Parse documents | `doc_reader` | Summarizing PDFs, extracting text |
+
+## Security model
 
 <Warning>
-  **Database Safety**: All database tools currently only work with [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases), which are read-only by default. This ensures agents cannot modify your production data. Learn how to [create a follower database](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases#create-a-follower).
+  **Database tools are read-only by design.** All database tools (`pg_psql`, `pg_vector_query`) only work with [follower databases](https://devcenter.heroku.com/articles/heroku-postgres-follower-databases). Followers replicate your primary database but reject all write operations, preventing agents from modifying production data.
 </Warning>
+
+Before using database tools, create a follower:
+
+```bash
+# Create a read-only follower of your primary database
+heroku addons:create heroku-postgresql:standard-0 --follow DATABASE_URL -a your-app
+
+# Wait for the follower to be ready (replication lag should reach 0)
+heroku pg:wait -a your-app
+
+# The follower gets a config var like HEROKU_POSTGRESQL_PURPLE_URL
+heroku config -a your-app | grep POSTGRESQL
+```
+
+Pass the follower's config var name to the tool via `db_attachment` to ensure queries run against the read-only replica.
 
 ## Tool Definitions
 
@@ -328,22 +354,77 @@ Maximum number of times this tool can be called during the agent loop.
 
 Tool-specific configuration parameters. See individual tool documentation for available options.
 
-## Best Practices
+## Production considerations
 
-### Security
-- Always use follower databases for read-only operations
-- Set appropriate `max_calls` limits to prevent excessive tool usage
-- Use `ttl_seconds` to prevent long-running operations
+### Cost control
 
-### Performance
-- Choose appropriate `dyno_size` based on workload
-- Keep code execution lightweight and focused
-- Use database indexes for vector queries
+Each tool invocation spins up a one-off dyno, which consumes dyno hours. Control costs by:
 
-### Error Handling
-- Provide clear descriptions to help agents understand tool purpose
-- Test tools independently before using in agent workflows
-- Monitor tool execution logs for errors
+- **Setting `max_calls` conservatively.** Start with 2-3 and increase only if your use case requires more iterations. An agent that calls `pg_psql` 10 times in one conversation costs more than one that retrieves the right data in 2 calls.
+- **Using `ttl_seconds` to cap execution time.** Long-running queries or code that hangs will be terminated after this limit, preventing runaway costs.
+- **Choosing the smallest viable `dyno_size`.** Most queries and calculations run fine on `standard-1x`. Reserve `performance-m` or larger for memory-intensive operations like processing large datasets.
+
+```json
+{
+  "type": "heroku_tool",
+  "name": "pg_psql",
+  "runtime_params": {
+    "target_app_name": "my-app",
+    "dyno_size": "standard-1x",
+    "ttl_seconds": 30,
+    "max_calls": 3
+  }
+}
+```
+
+### Writing effective tool descriptions
+
+The `description` field shapes how the agent uses the tool. Be specific about what it does and when to use it:
+
+```json
+// Vague - agent may misuse this tool
+{
+  "description": "Runs database queries"
+}
+
+// Specific - agent understands constraints and purpose
+{
+  "description": "Query the read-only analytics database to retrieve sales data. Use for reporting questions. Cannot modify data. Results are limited to 1000 rows."
+}
+```
+
+### Debugging tool failures
+
+When tools fail, check these common causes:
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| "App not found" error | Wrong `target_app_name` | Verify the app name with `heroku apps` |
+| Tool times out | Query or code too slow | Add indexes, optimize the query, or increase `ttl_seconds` |
+| "No such database" | Wrong `db_attachment` | List attachments with `heroku addons -a your-app` |
+| Empty results | Query returned no rows | Not an error—the agent should handle this case |
+| Permission denied | Trying to write to follower | Database tools are read-only by design |
+
+View tool execution logs:
+
+```bash
+# Watch for one-off dyno activity
+heroku logs --tail -a your-app --dyno run
+```
+
+### Testing tools before deployment
+
+Test each tool independently before using it in production agent workflows:
+
+```bash
+# Test that a SQL query works
+heroku pg:psql HEROKU_POSTGRESQL_PURPLE_URL -a your-app -c "SELECT COUNT(*) FROM users;"
+
+# Test that a Python script runs
+heroku run python -c "print('Hello from Python')" -a your-app
+```
+
+Once you've verified the underlying operations work, test the full tool configuration with a minimal agent request before deploying to users.
 
 ## Related Resources
 

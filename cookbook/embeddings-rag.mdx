@@ -1,12 +1,12 @@
 ---
 title: "Embeddings & RAG playbooks"
-description: "Build search and retrieval workflows on Heroku AI with OpenAI-compatible embeddings and chat completions."
+description: "Build production retrieval-augmented generation pipelines on Heroku with embeddings, pgvector, and Claude."
 fullWidth: true
 ---
 
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
   <p>
-    Heroku AI exposes OpenAI-compatible embedding models, including <code>cohere-embed-multilingual</code>. These notes adapt the OpenAI Cookbook's retrieval patterns to Heroku's stack so you can stand up semantic search, question answering, and summarization pipelines quickly. Primary references: <a href="https://cookbook.openai.com/examples/vector_databases/search_summarize" target="_blank" rel="noopener noreferrer">Search + Summarize</a> and <a href="https://cookbook.openai.com/examples/vector_databases/faq_bot" target="_blank" rel="noopener noreferrer">FAQ bot with embeddings</a>.
+    Retrieval-augmented generation (RAG) grounds model responses in your own data. Instead of relying solely on the model's training data, you retrieve relevant documents at query time and include them in the prompt. This guide covers the practical steps to build a production RAG system on Heroku using Cohere embeddings, pgvector for storage, and Claude for generation.
   </p>
 </section>
 
@@ -54,8 +54,104 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 ```
 
 <Note>
-Batch up to 96 strings per request for cost efficiency, mirroring the cookbook guidance. Store the resulting vectors with their source metadata.
+Batch up to 96 strings per request. Batching reduces API calls and improves throughput—embedding 1000 documents in batches of 96 requires 11 requests instead of 1000.
 </Note>
+
+**Important:** Always specify `input_type` for Cohere embeddings. Use `search_document` when embedding content you'll store, and `search_query` when embedding user queries. This asymmetry improves retrieval quality.
+
+```python
+# When indexing documents
+doc_embeddings = client.embeddings.create(
+    model="cohere-embed-multilingual",
+    input=document_chunks,
+    input_type="search_document",  # For stored content
+)
+
+# When processing a user query
+query_embedding = client.embeddings.create(
+    model="cohere-embed-multilingual",
+    input=[user_question],
+    input_type="search_query",  # For queries
+)
+```
+
+</section>
+
+## Store embeddings in pgvector
+
+Heroku Postgres supports the pgvector extension for efficient vector storage and similarity search.
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
+
+```sql
+-- Enable the extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create a table for your documents
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    embedding vector(1024),  -- Cohere embeddings are 1024 dimensions
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create an index for fast similarity search
+-- Use ivfflat for datasets under 1M rows; hnsw for larger datasets
+CREATE INDEX ON documents USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 100);
+```
+
+Insert documents with their embeddings:
+
+```python
+import psycopg2
+import json
+
+conn = psycopg2.connect(os.environ["DATABASE_URL"])
+
+def store_document(content: str, embedding: list[float], metadata: dict = None):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO documents (content, embedding, metadata)
+            VALUES (%s, %s, %s)
+            """,
+            (content, embedding, json.dumps(metadata or {}))
+        )
+    conn.commit()
+```
+
+</section>
+
+## Retrieve relevant documents
+
+Query for the most similar documents using cosine distance:
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
+
+```python
+def retrieve_similar(query_embedding: list[float], limit: int = 5) -> list[dict]:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, content, metadata,
+                   1 - (embedding <=> %s::vector) AS similarity
+            FROM documents
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+            """,
+            (query_embedding, query_embedding, limit)
+        )
+        rows = cur.fetchall()
+
+    return [
+        {"id": r[0], "content": r[1], "metadata": r[2], "similarity": r[3]}
+        for r in rows
+    ]
+```
+
+The `<=>` operator computes cosine distance. Lower distance means higher similarity. The query returns results ordered from most to least similar.
 
 </section>
 
@@ -140,11 +236,97 @@ Use Haiku when you prioritize throughput; upgrade to Sonnet for harder questions
 
 <section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
 
-### Deployment on Heroku
+### Deployment architecture
 
-- Run the embedding pipeline as a worker dyno; trigger rebuilds via Scheduler or webhooks.
-- Store secrets (API keys, database URLs) in Config Vars, never in source.
-- Use the `pgvector` extension on Heroku Postgres for similarity search.
-- Stream chat responses to the client for faster perceived latency.
+A typical Heroku RAG deployment separates indexing from serving:
 
+**Indexing pipeline (worker dyno):**
+- Runs on a schedule (Heroku Scheduler) or triggered by webhooks
+- Chunks new/updated documents and generates embeddings
+- Stores vectors in Postgres with source metadata
+- Can run on a larger dyno size for batch processing
+
+**Serving API (web dyno):**
+- Receives user queries
+- Embeds the query, retrieves relevant chunks, generates responses
+- Streams responses for perceived speed
+- Runs on standard dynos since individual queries are lightweight
+
+```bash
+# Example Procfile
+web: gunicorn app:app
+worker: python indexer.py
+```
+
+</section>
+
+## Common pitfalls
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
+
+| Problem | Symptom | Solution |
+|---------|---------|----------|
+| Wrong input_type | Poor retrieval quality despite good embeddings | Use `search_document` for indexing, `search_query` for queries |
+| Chunks too large | Context window overflow, irrelevant content retrieved | Target 300-500 words per chunk with 50-100 word overlap |
+| Chunks too small | Missing context, fragmented answers | Increase chunk size or retrieve more chunks (top-k) |
+| No metadata | Can't cite sources or filter results | Store document ID, section, URL alongside embeddings |
+| Stale embeddings | Answers based on outdated content | Track document versions; re-embed when source changes |
+| Missing indexes | Slow queries as dataset grows | Create ivfflat or hnsw indexes before you have 10K+ rows |
+
+</section>
+
+## Improving retrieval quality
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
+
+When basic retrieval returns poor results, try these techniques:
+
+**1. Hybrid search:** Combine semantic search with keyword matching. pgvector supports this with `ts_rank` for full-text search alongside vector similarity.
+
+**2. Reranking:** Use the Cohere Rerank API to re-score your top-k results before sending to the LLM. This catches cases where embedding similarity doesn't match true relevance.
+
+```python
+# After retrieving top 20 candidates, rerank to find the best 5
+rerank_response = client.post(
+    "/v1/rerank",
+    json={
+        "model": "cohere-rerank-3-5",
+        "query": user_question,
+        "documents": [doc["content"] for doc in candidates],
+        "top_n": 5
+    }
+)
+```
+
+**3. Query expansion:** Rephrase the user's question to improve matches. Ask the LLM to generate search queries before retrieval.
+
+**4. Metadata filtering:** Add filters to narrow search scope before vector similarity:
+
+```sql
+SELECT content, 1 - (embedding <=> %s::vector) AS similarity
+FROM documents
+WHERE metadata->>'category' = 'technical'  -- Filter first
+ORDER BY embedding <=> %s::vector
+LIMIT 5;
+```
+
+</section>
+
+## Related resources
+
+<section style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
+<CardGroup cols={2}>
+  <Card title="Embeddings API" href="/inference-api/embeddings" icon="vector-square">
+    API reference for generating embeddings
+  </Card>
+  <Card title="Rerank API" href="/inference-api/rerank" icon="arrow-up-wide-short">
+    Improve retrieval with semantic reranking
+  </Card>
+  <Card title="pgvector setup" href="/vector-database/pgvector" icon="database">
+    Configure Postgres for vector similarity search
+  </Card>
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
+    Generate answers from retrieved context
+  </Card>
+</CardGroup>
 </section>

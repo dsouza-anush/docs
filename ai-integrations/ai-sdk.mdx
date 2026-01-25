@@ -1,34 +1,57 @@
 ---
 title: "AI SDK provider"
-description: "Use the Heroku AI provider for the Vercel AI SDK to call Heroku AI models."
+description: "Integrate Heroku AI with the Vercel AI SDK for streaming chat, tool calling, and structured outputs in Next.js and React applications."
 ---
 
-The [Heroku AI provider](https://github.com/julianduque/heroku-ai-provider) adds first-class Heroku support to the [Vercel AI SDK](https://sdk.vercel.ai/docs). It wraps Heroku’s OpenAI-compatible endpoints so you can call chat completions, streaming responses, and tools using the same client code you’d write for OpenAI.
+The [Heroku AI provider](https://github.com/julianduque/heroku-ai-provider) integrates Heroku's inference API with the [Vercel AI SDK](https://sdk.vercel.ai/docs), giving you access to Claude and other models through familiar React hooks and streaming primitives.
 
-## Install
+## When to use this integration
 
-Clone the example project and install dependencies:
+Use the Vercel AI SDK provider when you're building:
+
+- **Next.js applications** that need streaming chat interfaces with React Server Components
+- **Real-time UIs** where you want tokens to appear as they're generated, not after the full response completes
+- **Multi-provider setups** where you want to swap between Heroku AI, OpenAI, or Anthropic with minimal code changes
+
+If you're building a backend service or CLI tool, the [OpenAI SDK directly](/guides/migrate-from-openai) may be simpler since you won't use the React-specific features.
+
+## Installation
+
+Install the provider package:
 
 ```bash
-git clone https://github.com/julianduque/heroku-ai-provider.git
-cd heroku-ai-provider
-npm install
+npm install heroku-ai-provider ai
 ```
 
-Add your Heroku inference key to `.env.local`:
+The `ai` package is the core Vercel AI SDK. The provider wraps Heroku's endpoints to work with SDK primitives like `streamText`, `generateText`, and `useChat`.
 
-```bash
-INFERENCE_KEY="your-heroku-inference-key"
-INFERENCE_URL="https://us.inference.heroku.com/v1"
-```
+## Configuration
 
-## Use the provider
+Create a provider instance with your Heroku credentials:
 
 ```ts
 import { Heroku } from "heroku-ai-provider";
+
+const heroku = new Heroku({
+  apiKey: process.env.INFERENCE_KEY!,
+  baseURL: process.env.INFERENCE_URL ?? "https://us.inference.heroku.com/v1",
+});
+```
+
+<Note>
+On Heroku, `INFERENCE_KEY` and `INFERENCE_URL` are set automatically when you provision a model. For local development, copy these values from `heroku config -a your-app`.
+</Note>
+
+## Streaming chat completions
+
+The most common use case is streaming responses in a Next.js API route:
+
+```ts
+// app/api/chat/route.ts
+import { Heroku } from "heroku-ai-provider";
 import { streamText } from "ai";
 
-const client = new Heroku({
+const heroku = new Heroku({
   apiKey: process.env.INFERENCE_KEY!,
   baseURL: process.env.INFERENCE_URL,
 });
@@ -36,37 +59,206 @@ const client = new Heroku({
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const response = await streamText({
-    model: client.chat("claude-3-5-sonnet"),
+  const result = await streamText({
+    model: heroku.chat("claude-4-5-sonnet"),
     messages,
+    // Optional: set limits to control costs
+    maxTokens: 1024,
   });
 
-  return response.toAIStreamResponse();
+  return result.toDataStreamResponse();
 }
 ```
 
-The provider maps model names to Heroku’s OpenAI-compatible identifiers (e.g., `claude-3-5-sonnet`, `claude-3-5-haiku`). You get streaming responses, tool calling, and error handling that match the Vercel AI SDK.
+On the client, use the `useChat` hook to connect to this endpoint:
 
-## Deploy
+```tsx
+// components/Chat.tsx
+"use client";
 
-Deploy the example to Heroku or any Node host:
+import { useChat } from "ai/react";
+
+export function Chat() {
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+
+  return (
+    <div>
+      {messages.map((m) => (
+        <div key={m.id}>
+          <strong>{m.role}:</strong> {m.content}
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}>
+        <input
+          value={input}
+          onChange={handleInputChange}
+          placeholder="Ask something..."
+          disabled={isLoading}
+        />
+        <button type="submit" disabled={isLoading}>
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+## Model selection
+
+Pass the model ID to `heroku.chat()`:
+
+| Model ID | Use case |
+|----------|----------|
+| `claude-4-5-sonnet` | Complex reasoning, coding, analysis |
+| `claude-4-5-haiku` | Fast responses, high-volume chat |
+| `claude-3-5-sonnet` | Balanced performance and cost |
+| `amazon-nova-lite` | Cost-effective general chat |
+
+```ts
+// For quick responses in a support bot
+const result = await streamText({
+  model: heroku.chat("claude-4-5-haiku"),
+  messages,
+});
+
+// For complex analysis tasks
+const result = await streamText({
+  model: heroku.chat("claude-4-5-sonnet"),
+  messages,
+});
+```
+
+## Tool calling
+
+Define tools that the model can invoke during a conversation:
+
+```ts
+import { streamText, tool } from "ai";
+import { z } from "zod";
+
+const result = await streamText({
+  model: heroku.chat("claude-4-5-sonnet"),
+  messages,
+  tools: {
+    getWeather: tool({
+      description: "Get current weather for a city",
+      parameters: z.object({
+        city: z.string().describe("City name"),
+      }),
+      execute: async ({ city }) => {
+        // Call your weather API
+        const weather = await fetchWeather(city);
+        return weather;
+      },
+    }),
+  },
+  // Let the model decide when to use tools
+  toolChoice: "auto",
+});
+```
+
+The SDK handles the tool call loop automatically—when the model requests a tool, it executes, and the result is fed back for the final response.
+
+## Structured outputs
+
+Use `generateObject` to get typed JSON responses:
+
+```ts
+import { generateObject } from "ai";
+import { z } from "zod";
+
+const { object } = await generateObject({
+  model: heroku.chat("claude-4-5-sonnet"),
+  schema: z.object({
+    sentiment: z.enum(["positive", "negative", "neutral"]),
+    confidence: z.number().min(0).max(1),
+    summary: z.string(),
+  }),
+  prompt: "Analyze the sentiment of: 'This product exceeded my expectations!'",
+});
+
+// object is fully typed: { sentiment: "positive", confidence: 0.95, summary: "..." }
+```
+
+## Error handling
+
+Wrap API calls to handle common error scenarios:
+
+```ts
+import { APICallError } from "ai";
+
+try {
+  const result = await streamText({
+    model: heroku.chat("claude-4-5-sonnet"),
+    messages,
+  });
+  return result.toDataStreamResponse();
+} catch (error) {
+  if (error instanceof APICallError) {
+    if (error.statusCode === 429) {
+      // Rate limited - implement backoff or return user-friendly message
+      return new Response("Too many requests. Please try again shortly.", {
+        status: 429,
+      });
+    }
+    if (error.statusCode === 401) {
+      console.error("Invalid INFERENCE_KEY - check your Heroku config vars");
+      return new Response("Authentication error", { status: 500 });
+    }
+  }
+  throw error;
+}
+```
+
+## Deploy to Heroku
+
+1. **Provision a model** to get your API credentials:
 
 ```bash
-heroku create my-ai-sample
-heroku buildpacks:add heroku/nodejs
+heroku ai:models:create claude-4-5-sonnet -a your-app
+```
+
+2. **Verify the config vars** are set:
+
+```bash
+heroku config -a your-app | grep INFERENCE
+# INFERENCE_KEY: inf-...
+# INFERENCE_URL: https://us.inference.heroku.com
+# INFERENCE_MODEL_ID: claude-4-5-sonnet
+```
+
+3. **Deploy your Next.js app**:
+
+```bash
 git push heroku main
 ```
 
-Set config vars for production:
+The provider reads credentials from environment variables, so no code changes are needed between local development and production.
 
-```bash
-heroku config:set INFERENCE_KEY=... INFERENCE_URL=https://us.inference.heroku.com/v1
-```
+## Troubleshooting
 
-Now your frontend can call `/api/chat` and the provider forwards requests to Heroku AI behind the scenes.
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `401 Unauthorized` | Missing or invalid `INFERENCE_KEY` | Run `heroku config:get INFERENCE_KEY -a your-app` and verify the value |
+| `403 Forbidden` | Model not provisioned | Provision the model with `heroku ai:models:create MODEL_ID -a your-app` |
+| Streaming stops mid-response | Network timeout | Increase your platform's function timeout or reduce `maxTokens` |
+| `TypeError: heroku.chat is not a function` | Wrong import | Ensure you're importing from `heroku-ai-provider`, not a different package |
 
-## Extend
+## Related resources
 
-- Swap the model name to use image generation (`stable-image-ultra`) or embeddings (`cohere-embed-multilingual`).
-- Add tool definitions to the `streamText` call to let your app invoke MCP servers hosted on Heroku.
-- Combine with [Heroku Vibes](/heroku-vibes/overview) to bootstrap full-stack apps that call Heroku AI via the SDK.
+<CardGroup cols={2}>
+  <Card title="Migrate from OpenAI" href="/guides/migrate-from-openai" icon="arrow-right-arrow-left">
+    Full migration guide for existing OpenAI SDK code
+  </Card>
+  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+    Direct API reference for chat endpoints
+  </Card>
+  <Card title="Heroku Tools" href="/tool-use/heroku-tools" icon="wrench">
+    Built-in tools for code execution and database queries
+  </Card>
+  <Card title="Vercel AI SDK Docs" href="https://sdk.vercel.ai/docs" icon="arrow-up-right-from-square">
+    Official SDK documentation
+  </Card>
+</CardGroup>
