@@ -1,22 +1,21 @@
 ---
 title: "Messages API"
-description: "Native Anthropic Messages API endpoint for Claude models with full SDK compatibility, extended thinking, and prompt caching."
+openapi: "openapi.json POST /v1/messages"
 ---
 
 The `/v1/messages` endpoint provides native Anthropic API compatibility for Claude models. If you're already using the Anthropic SDK, you can switch to Heroku AI by changing the base URL and API key—no other code changes required.
 
 <Note>
+  **Anthropic SDK Compatible**: This endpoint is fully compatible with the Anthropic Messages API. Use the Anthropic Python or JavaScript SDK by pointing it to our base URL.
+</Note>
+
+<Note>
   **Anthropic Models Only**: The Messages API is exclusively available for Claude models. For other models (Amazon Nova, Cohere, etc.), use the [Chat Completions API](/inference-api/chat-completions).
 </Note>
 
-## When to use Messages vs Chat Completions
-
-| Use Messages API when... | Use Chat Completions when... |
-|--------------------------|------------------------------|
-| You have existing Anthropic SDK code | You need OpenAI SDK compatibility |
-| You want native `cache_control` for prompt caching | You prefer header-based caching control |
-| You're using Anthropic-specific features like `thinking` | You're using non-Anthropic models |
-| You want to use the Anthropic Agent SDK (coming soon) | You need multi-provider support |
+<Note>
+  View our [available Claude models](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards) to see which models support which features.
+</Note>
 
 ## Base URL
 
@@ -32,65 +31,7 @@ Unlike the Chat Completions endpoint which uses `Authorization: Bearer`, the Mes
 x-api-key: YOUR_INFERENCE_KEY
 ```
 
-This matches the Anthropic SDK's expected authentication header.
-
-## Quick Start
-
-<CodeGroup>
-
-```python Python (Anthropic SDK)
-import os
-from anthropic import Anthropic
-
-client = Anthropic(
-    api_key=os.getenv("INFERENCE_KEY"),
-    base_url=os.getenv("INFERENCE_URL")
-)
-
-message = client.messages.create(
-    model=os.getenv("INFERENCE_MODEL_ID"),
-    max_tokens=1024,
-    messages=[
-        {"role": "user", "content": "Hello, what should I build today?"}
-    ]
-)
-
-print(message.content[0].text)
-```
-
-```javascript JavaScript (Anthropic SDK)
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({
-  apiKey: process.env.INFERENCE_KEY,
-  baseURL: process.env.INFERENCE_URL,
-});
-
-const message = await client.messages.create({
-  model: process.env.INFERENCE_MODEL_ID,
-  max_tokens: 1024,
-  messages: [
-    { role: "user", content: "Hello, what should I build today?" }
-  ],
-});
-
-console.log(message.content[0].text);
-```
-
-```bash cURL
-curl https://us.inference.heroku.com/v1/messages \
-  -H "x-api-key: $INFERENCE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-4-sonnet",
-    "max_tokens": 1024,
-    "messages": [
-      {"role": "user", "content": "Hello, what should I build today?"}
-    ]
-  }'
-```
-
-</CodeGroup>
+You can get your API key from your Heroku app's `INFERENCE_KEY` config variable.
 
 ## Request Parameters
 
@@ -99,7 +40,7 @@ curl https://us.inference.heroku.com/v1/messages \
 
 The Claude model to use. Use your `INFERENCE_MODEL_ID` config var value.
 
-Supported models: `claude-4-sonnet`, `claude-3-7-sonnet`, `claude-3-5-sonnet`, `claude-3-5-haiku`, `claude-3-haiku`
+Example: `"claude-4-sonnet"`, `"claude-3-5-sonnet"`, `"claude-3-5-haiku"`
 
 ### max_tokens
 **integer** · required
@@ -111,13 +52,15 @@ The maximum number of tokens to generate. Unlike Chat Completions where this is 
 
 Array of message objects. Each message has a `role` (`user` or `assistant`) and `content`.
 
-```json
+<CodeGroup>
+```json Example
 [
   {"role": "user", "content": "What is Heroku?"},
   {"role": "assistant", "content": "Heroku is a cloud platform..."},
   {"role": "user", "content": "How do I deploy to it?"}
 ]
 ```
+</CodeGroup>
 
 <Note>
   The Messages API uses `user` and `assistant` roles only. System prompts are passed separately via the `system` parameter.
@@ -127,13 +70,6 @@ Array of message objects. Each message has a `role` (`user` or `assistant`) and 
 **string or array** · optional
 
 System prompt that sets the assistant's behavior. Can be a string or an array of content blocks (for prompt caching).
-
-```json
-{
-  "system": "You are a helpful Heroku expert.",
-  "messages": [...]
-}
-```
 
 ### temperature
 **float** · optional · default: `1.0`
@@ -165,19 +101,12 @@ Enable streaming responses via server-sent events.
 
 Metadata about the request. Includes `user_id` for tracking.
 
-```json
-{
-  "metadata": {
-    "user_id": "user_123"
-  }
-}
-```
-
 ### thinking
 **object** · optional
 
 Enable extended thinking for Claude 3.7 Sonnet and Claude 4 Sonnet. The model uses additional internal reasoning steps before responding.
 
+<Accordion title="Thinking Object Structure">
 ```json
 {
   "thinking": {
@@ -188,11 +117,12 @@ Enable extended thinking for Claude 3.7 Sonnet and Claude 4 Sonnet. The model us
 ```
 
 **Fields:**
-- `type`: `"enabled"` to activate extended thinking
-- `budget_tokens`: Token budget for reasoning (minimum 1024)
+- `type` (string): Set to `"enabled"` to activate extended thinking
+- `budget_tokens` (integer): Token budget for reasoning (minimum 1024)
+</Accordion>
 
 <Warning>
-Extended thinking is only available for Claude 3.7 Sonnet and Claude 4 Sonnet.
+Extended thinking is only available for Claude 3.7 Sonnet and Claude 4 Sonnet. Requests with `thinking` for other models will fail.
 </Warning>
 
 ### tools
@@ -200,26 +130,24 @@ Extended thinking is only available for Claude 3.7 Sonnet and Claude 4 Sonnet.
 
 Tools the model can use. Follows Anthropic's tool format.
 
+<Accordion title="Tool Object Structure">
 ```json
 {
-  "tools": [
-    {
-      "name": "get_weather",
-      "description": "Get current weather for a location",
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string",
-            "description": "City name"
-          }
-        },
-        "required": ["location"]
+  "name": "get_weather",
+  "description": "Get current weather for a location",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string",
+        "description": "City name"
       }
-    }
-  ]
+    },
+    "required": ["location"]
+  }
 }
 ```
+</Accordion>
 
 ### tool_choice
 **object** · optional
@@ -232,6 +160,194 @@ Controls how the model uses tools.
 
 ## Response
 
+### id
+**string**
+
+Unique identifier for the message.
+
+### type
+**string**
+
+Always returns `"message"`.
+
+### role
+**string**
+
+Always returns `"assistant"`.
+
+### content
+**array**
+
+Array of content blocks generated by the model.
+
+<Accordion title="Content Block Types">
+**text** - Text response content
+- `type` (string): `"text"`
+- `text` (string): The generated text
+
+**tool_use** - Tool invocation request
+- `type` (string): `"tool_use"`
+- `id` (string): Unique tool use ID
+- `name` (string): Name of the tool to call
+- `input` (object): Arguments for the tool
+
+**thinking** - Extended thinking content (when enabled)
+- `type` (string): `"thinking"`
+- `thinking` (string): The model's reasoning process
+</Accordion>
+
+### model
+**string**
+
+Model ID used to generate the response.
+
+### stop_reason
+**string**
+
+Reason the model stopped generating.
+
+- `"end_turn"` - Natural stopping point
+- `"max_tokens"` - Reached max tokens
+- `"stop_sequence"` - Hit a stop sequence
+- `"tool_use"` - Made a tool call
+
+### usage
+**object**
+
+Token usage statistics.
+
+- `input_tokens` (integer): Tokens in the input
+- `output_tokens` (integer): Tokens in the output
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl https://us.inference.heroku.com/v1/messages \
+  -H "x-api-key: $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4-sonnet",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "What is Heroku?"}
+    ]
+  }'
+```
+
+```python Python (Anthropic SDK)
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.getenv("INFERENCE_KEY"),
+    base_url=os.getenv("INFERENCE_URL")
+)
+
+message = client.messages.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    max_tokens=1024,
+    messages=[
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+)
+
+print(message.content[0].text)
+```
+
+```python Python (requests)
+import os
+import requests
+
+url = f"{os.getenv('INFERENCE_URL')}/v1/messages"
+headers = {
+    "x-api-key": os.getenv("INFERENCE_KEY"),
+    "Content-Type": "application/json"
+}
+
+data = {
+    "model": os.getenv("INFERENCE_MODEL_ID"),
+    "max_tokens": 1024,
+    "messages": [
+        {"role": "user", "content": "What is Heroku?"}
+    ]
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
+
+```javascript JavaScript (Anthropic SDK)
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.INFERENCE_KEY,
+  baseURL: process.env.INFERENCE_URL,
+});
+
+const message = await client.messages.create({
+  model: process.env.INFERENCE_MODEL_ID,
+  max_tokens: 1024,
+  messages: [
+    { role: "user", content: "What is Heroku?" }
+  ],
+});
+
+console.log(message.content[0].text);
+```
+
+```javascript JavaScript (fetch)
+const response = await fetch(
+  `${process.env.INFERENCE_URL}/v1/messages`,
+  {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.INFERENCE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: process.env.INFERENCE_MODEL_ID,
+      max_tokens: 1024,
+      messages: [
+        { role: 'user', content: 'What is Heroku?' }
+      ]
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+
+uri = URI("#{ENV['INFERENCE_URL']}/v1/messages")
+request = Net::HTTP::Post.new(uri)
+request['x-api-key'] = ENV['INFERENCE_KEY']
+request['Content-Type'] = 'application/json'
+
+request.body = {
+  model: ENV['INFERENCE_MODEL_ID'],
+  max_tokens: 1024,
+  messages: [
+    { role: 'user', content: 'What is Heroku?' }
+  ]
+}.to_json
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+puts JSON.parse(response.body)
+```
+
+</CodeGroup>
+
+### Response Example
+
 ```json
 {
   "id": "msg_01XYZ...",
@@ -240,40 +356,24 @@ Controls how the model uses tools.
   "content": [
     {
       "type": "text",
-      "text": "Hello! Here are some ideas for what you could build today..."
+      "text": "Heroku is a cloud platform as a service (PaaS) that enables developers to build, run, and operate applications entirely in the cloud. It supports multiple programming languages and provides tools for deployment, scaling, and management of applications."
     }
   ],
   "model": "claude-4-sonnet",
   "stop_reason": "end_turn",
   "stop_sequence": null,
   "usage": {
-    "input_tokens": 25,
-    "output_tokens": 150
+    "input_tokens": 12,
+    "output_tokens": 48
   }
 }
 ```
 
-### Response Fields
+## Tool Calling Example
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique message identifier |
-| `type` | string | Always `"message"` |
-| `role` | string | Always `"assistant"` |
-| `content` | array | Array of content blocks (text, tool_use) |
-| `model` | string | Model that generated the response |
-| `stop_reason` | string | Why generation stopped: `end_turn`, `max_tokens`, `stop_sequence`, `tool_use` |
-| `usage` | object | Token usage statistics |
+<CodeGroup>
 
-## Prompt Caching
-
-The Messages API supports Anthropic-style prompt caching via `cache_control` blocks. This differs from Chat Completions, which uses a header to enable/disable automatic caching.
-
-### How It Works
-
-Add `cache_control` to cacheable content blocks:
-
-```python
+```python Request with Tools
 from anthropic import Anthropic
 
 client = Anthropic(
@@ -281,55 +381,60 @@ client = Anthropic(
     base_url=os.getenv("INFERENCE_URL")
 )
 
-# Cache a large system prompt
+tools = [
+    {
+        "name": "get_weather",
+        "description": "Get current weather for a location",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "City and state, e.g. Portland, OR"
+                }
+            },
+            "required": ["location"]
+        }
+    }
+]
+
 message = client.messages.create(
     model="claude-4-sonnet",
     max_tokens=1024,
-    system=[
-        {
-            "type": "text",
-            "text": "You are an expert on the Heroku platform...",  # Long system prompt
-            "cache_control": {"type": "ephemeral"}
-        }
-    ],
+    tools=tools,
     messages=[
-        {"role": "user", "content": "How do I scale dynos?"}
+        {"role": "user", "content": "What's the weather in Portland?"}
     ]
 )
 ```
 
-### What Can Be Cached
-
-- **System prompts**: Add `cache_control` to system content blocks
-- **Messages**: Add `cache_control` to message content blocks
-- **Tools**: Add `cache_control` to tool definitions
-
-```python
-# Cache tool definitions
-message = client.messages.create(
-    model="claude-4-sonnet",
-    max_tokens=1024,
-    tools=[
-        {
-            "name": "search_docs",
-            "description": "Search the documentation...",
-            "input_schema": {...},
-            "cache_control": {"type": "ephemeral"}
-        }
-    ],
-    messages=[...]
-)
+```json Tool Call Response
+{
+  "id": "msg_01abc...",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "toolu_01xyz...",
+      "name": "get_weather",
+      "input": {"location": "Portland, OR"}
+    }
+  ],
+  "model": "claude-4-sonnet",
+  "stop_reason": "tool_use",
+  "usage": {
+    "input_tokens": 85,
+    "output_tokens": 32
+  }
+}
 ```
 
-### Cache Behavior
-
-- Cache entries expire after 5 minutes of inactivity
-- Minimum content length required for caching (varies by model)
-- Cache hits return faster and may have different pricing
+</CodeGroup>
 
 ## Streaming
 
-Enable streaming for real-time responses:
+Enable streaming to receive incremental responses as server-sent events (SSE):
 
 <CodeGroup>
 
@@ -385,7 +490,13 @@ curl https://us.inference.heroku.com/v1/messages \
 
 </CodeGroup>
 
-## Tool Use Example
+## Prompt Caching
+
+The Messages API supports Anthropic-style prompt caching via `cache_control` blocks. This differs from Chat Completions, which uses a header to enable/disable automatic caching.
+
+### How It Works
+
+Add `cache_control` to cacheable content blocks:
 
 ```python
 from anthropic import Anthropic
@@ -395,94 +506,43 @@ client = Anthropic(
     base_url=os.getenv("INFERENCE_URL")
 )
 
-# Define a tool
-tools = [
-    {
-        "name": "get_weather",
-        "description": "Get the current weather for a location",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "City and state, e.g. Portland, OR"
-                }
-            },
-            "required": ["location"]
-        }
-    }
-]
-
-# First request - model may call the tool
+# Cache a large system prompt
 message = client.messages.create(
     model="claude-4-sonnet",
     max_tokens=1024,
-    tools=tools,
+    system=[
+        {
+            "type": "text",
+            "text": "You are an expert on the Heroku platform...",  # Long system prompt
+            "cache_control": {"type": "ephemeral"}
+        }
+    ],
     messages=[
-        {"role": "user", "content": "What's the weather in Portland?"}
+        {"role": "user", "content": "How do I scale dynos?"}
     ]
 )
-
-# Check if model wants to use a tool
-if message.stop_reason == "tool_use":
-    tool_use = next(block for block in message.content if block.type == "tool_use")
-
-    # Execute the tool (your implementation)
-    weather_result = get_weather(tool_use.input["location"])
-
-    # Send tool result back
-    final_message = client.messages.create(
-        model="claude-4-sonnet",
-        max_tokens=1024,
-        tools=tools,
-        messages=[
-            {"role": "user", "content": "What's the weather in Portland?"},
-            {"role": "assistant", "content": message.content},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": tool_use.id,
-                        "content": weather_result
-                    }
-                ]
-            }
-        ]
-    )
-
-    print(final_message.content[0].text)
 ```
 
-## Extended Thinking Example
+### What Can Be Cached
 
-```python
-from anthropic import Anthropic
+- **System prompts**: Add `cache_control` to system content blocks
+- **Messages**: Add `cache_control` to message content blocks
+- **Tools**: Add `cache_control` to tool definitions
 
-client = Anthropic(
-    api_key=os.getenv("INFERENCE_KEY"),
-    base_url=os.getenv("INFERENCE_URL")
-)
+### Cache Behavior
 
-message = client.messages.create(
-    model="claude-4-sonnet",  # or claude-3-7-sonnet
-    max_tokens=8000,
-    thinking={
-        "type": "enabled",
-        "budget_tokens": 5000
-    },
-    messages=[
-        {"role": "user", "content": "Solve this step by step: If a train leaves..."}
-    ]
-)
+- Cache entries expire after 5 minutes of inactivity
+- Minimum content length required for caching (varies by model)
+- Cache hits return faster and may have different pricing
 
-# Response includes thinking blocks
-for block in message.content:
-    if block.type == "thinking":
-        print("Reasoning:", block.thinking)
-    elif block.type == "text":
-        print("Answer:", block.text)
-```
+## When to Use Messages vs Chat Completions
+
+| Use Messages API when... | Use Chat Completions when... |
+|--------------------------|------------------------------|
+| You have existing Anthropic SDK code | You need OpenAI SDK compatibility |
+| You want native `cache_control` for prompt caching | You prefer header-based caching control |
+| You're using Anthropic-specific features like `thinking` | You're using non-Anthropic models |
+| You want to use the Anthropic Agent SDK (coming soon) | You need multi-provider support |
 
 ## Limitations
 
@@ -492,57 +552,19 @@ for block in message.content:
 - **Agent SDK support coming soon**: Full Anthropic Agent SDK support will be available with a future Managed Inference plan update
 </Warning>
 
-## Migrating from Anthropic
-
-If you're moving from Anthropic's API to Heroku AI:
-
-```python
-# Before (direct Anthropic)
-from anthropic import Anthropic
-client = Anthropic()  # Uses ANTHROPIC_API_KEY
-
-# After (Heroku AI)
-from anthropic import Anthropic
-client = Anthropic(
-    api_key=os.getenv("INFERENCE_KEY"),
-    base_url=os.getenv("INFERENCE_URL")
-)
-```
-
-All other code remains the same. Your messages, tools, and streaming logic work without modification.
-
-## Request Parameter Reference
-
-| Field | Supported | Notes |
-|-------|-----------|-------|
-| `max_tokens` | Yes | Required |
-| `messages` | Yes | |
-| `model` | Yes | Use Heroku model ID |
-| `metadata` | Yes | |
-| `service_tier` | Yes | Ignored (for compatibility) |
-| `stop_sequences` | Yes | |
-| `stream` | Yes | |
-| `system` | Yes | |
-| `temperature` | Yes | |
-| `thinking` | Yes | Claude 3.7/4 Sonnet only |
-| `tool_choice` | Yes | |
-| `tools` | Yes | |
-| `top_k` | Yes | |
-| `top_p` | Yes | |
-
-## Related Resources
+## Related Endpoints
 
 <CardGroup cols={2}>
-  <Card title="Chat Completions API" href="/inference-api/chat-completions" icon="comments">
+  <Card title="Chat Completions" href="/inference-api/chat-completions" icon="comments">
     OpenAI-compatible endpoint for all models
   </Card>
   <Card title="Agents Endpoint" href="/inference-api/agents-heroku" icon="robot">
     Automatically execute Heroku tools
   </Card>
+  <Card title="Embeddings" href="/inference-api/embeddings" icon="vector-square">
+    Generate text embeddings
+  </Card>
   <Card title="Model Selection" href="/inference-api/choosing-a-model" icon="scale-balanced">
     Choose the right Claude model
-  </Card>
-  <Card title="Anthropic Documentation" href="https://docs.anthropic.com/en/api/messages" icon="arrow-up-right-from-square">
-    Official Anthropic Messages API docs
   </Card>
 </CardGroup>
