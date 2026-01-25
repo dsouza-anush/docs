@@ -80,6 +80,9 @@
               "tool-use/heroku-tools/code-execution",
               "tool-use/heroku-tools/run-sql",
               "tool-use/heroku-tools/doc-reader",
+              "tool-use/brightdata-search",
+              "tool-use/playwright-browser",
+              "tool-use/exa-search",
               "tool-use/working-with-mcp"
             ]
           },

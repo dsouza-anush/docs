@@ -1,0 +1,245 @@
+---
+title: "Playwright Browser"
+description: "Enable AI agents to automate web browsers using Playwright's MCP server for navigation, clicking, typing, and page interaction"
+---
+
+The Playwright MCP server provides browser automation capabilities for AI agents. It uses Playwright's accessibility tree instead of screenshots, making it fast, lightweight, and compatible with any LLM without requiring vision capabilities.
+
+## Overview
+
+Key features of the Playwright MCP server:
+
+- **Accessibility-based**: Uses structured accessibility snapshots, not pixel-based input
+- **LLM-friendly**: Works with any model, no vision capabilities required
+- **Deterministic actions**: Precise element targeting avoids screenshot ambiguity
+- **Full browser control**: Navigate, click, type, drag, upload files, and more
+
+## Deploy to Heroku
+
+Deploy the Playwright MCP server to Heroku with one click:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dsouza-anush/playwright-mcp-heroku)
+
+After deployment, your server will be available at:
+- Streamable HTTP: `https://your-app-name.herokuapp.com/mcp`
+- SSE endpoint: `https://your-app-name.herokuapp.com/sse`
+
+## Register with Heroku AI
+
+Register the MCP server with your Heroku AI model:
+
+```bash
+heroku ai:mcp:servers:add playwright-browser \
+  --app your-inference-app \
+  --server-app your-playwright-mcp-app
+```
+
+## Available Tools
+
+### Core Navigation
+
+| Tool | Description |
+|------|-------------|
+| `browser_navigate` | Navigate to a URL |
+| `browser_navigate_back` | Go back to previous page |
+| `browser_navigate_forward` | Go forward to next page |
+| `browser_close` | Close the browser |
+
+### Page Interaction
+
+| Tool | Description |
+|------|-------------|
+| `browser_click` | Click on an element |
+| `browser_type` | Type text into an input field |
+| `browser_hover` | Hover over an element |
+| `browser_drag` | Drag and drop between elements |
+| `browser_select_option` | Select dropdown option |
+| `browser_press_key` | Press a keyboard key |
+
+### Page Information
+
+| Tool | Description |
+|------|-------------|
+| `browser_snapshot` | Get accessibility snapshot of the page |
+| `browser_take_screenshot` | Capture a screenshot |
+| `browser_console_messages` | Get browser console messages |
+| `browser_network_requests` | List network requests |
+
+### File Operations
+
+| Tool | Description |
+|------|-------------|
+| `browser_file_upload` | Upload files to the page |
+| `browser_pdf_save` | Save page as PDF (requires `--caps=pdf`) |
+
+### Tab Management
+
+| Tool | Description |
+|------|-------------|
+| `browser_tab_list` | List all open tabs |
+| `browser_tab_new` | Open a new tab |
+| `browser_tab_select` | Switch to a specific tab |
+| `browser_tab_close` | Close a tab |
+
+### Advanced
+
+| Tool | Description |
+|------|-------------|
+| `browser_evaluate` | Execute JavaScript on the page |
+| `browser_handle_dialog` | Handle alert/confirm/prompt dialogs |
+| `browser_wait_for` | Wait for text or time |
+| `browser_resize` | Resize browser window |
+
+## Using with Heroku AI Agents
+
+Automate web interactions through the Heroku Agents API:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Go to github.com and search for 'heroku mcp'"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["playwright-browser"]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Go to github.com and search for heroku mcp"}
+    ],
+    "mcp_servers": ["playwright-browser"]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## How Element Targeting Works
+
+The Playwright MCP server uses accessibility snapshots instead of screenshots. When you call `browser_snapshot`, you get a structured representation of the page:
+
+```
+[1] button "Sign In"
+[2] input "Search..."
+[3] link "Documentation"
+[4] heading "Welcome to Our Site"
+```
+
+To interact with elements, reference them by their `ref` number:
+
+```json
+{
+  "tool": "browser_click",
+  "parameters": {
+    "element": "Sign In button",
+    "ref": "1"
+  }
+}
+```
+
+This approach is more reliable than coordinate-based clicking and works consistently across different screen sizes.
+
+## Configuration Options
+
+Configure the server with command-line arguments or a config file:
+
+### Common Options
+
+| Option | Description |
+|--------|-------------|
+| `--headless` | Run browser in headless mode |
+| `--browser <type>` | Browser to use: `chrome`, `firefox`, `webkit`, `msedge` |
+| `--viewport-size <size>` | Browser viewport size (e.g., `1280,720`) |
+| `--user-data-dir <path>` | Path to persistent browser profile |
+| `--isolated` | Use isolated profile (no persistence) |
+
+### Network Options
+
+| Option | Description |
+|--------|-------------|
+| `--allowed-origins <list>` | Semicolon-separated origins to allow |
+| `--blocked-origins <list>` | Semicolon-separated origins to block |
+| `--proxy-server <proxy>` | Proxy server URL |
+| `--ignore-https-errors` | Ignore HTTPS certificate errors |
+
+### Capability Options
+
+| Option | Description |
+|--------|-------------|
+| `--caps=pdf` | Enable PDF generation |
+| `--caps=vision` | Enable coordinate-based interactions |
+
+Set options via Heroku config vars by modifying the Procfile or using a config file.
+
+## Example Use Cases
+
+### Form Automation
+
+```
+"Go to the contact form at example.com/contact, fill in my name as 'John Doe' and email as 'john@example.com', then submit the form"
+```
+
+### Web Scraping
+
+```
+"Navigate to news.ycombinator.com and get the titles of the top 5 stories"
+```
+
+### Testing Workflows
+
+```
+"Go to our staging site, log in with test credentials, and verify the dashboard loads correctly"
+```
+
+### Research Tasks
+
+```
+"Search for 'machine learning tutorials' on Google, click the first result, and summarize the page content"
+```
+
+## Session Management
+
+### Persistent Profile
+
+By default, the browser maintains a persistent profile. Login sessions and cookies are preserved between interactions. The profile is stored at:
+
+- **macOS**: `~/Library/Caches/ms-playwright/mcp-{channel}-profile`
+- **Linux**: `~/.cache/ms-playwright/mcp-{channel}-profile`
+- **Windows**: `%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-profile`
+
+### Isolated Sessions
+
+For testing or privacy, use isolated mode where each session starts fresh:
+
+```bash
+heroku config:set PLAYWRIGHT_ARGS="--isolated" -a your-playwright-mcp-app
+```
+
+## Additional Resources
+
+- [Playwright MCP Documentation](https://github.com/microsoft/playwright-mcp)
+- [Playwright Documentation](https://playwright.dev)
+- [Heroku MCP Integration Guide](/tool-use/working-with-mcp)
+- [Heroku Agents API](/inference-api/agents-heroku)

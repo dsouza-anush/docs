@@ -1,0 +1,180 @@
+---
+title: "Bright Data Web Search"
+description: "Enable AI agents to search, scrape, and navigate the web without getting blocked using Bright Data's MCP server"
+---
+
+Bright Data's Web MCP server provides real-time web access for AI agents, enabling them to search the web, extract data, and navigate websites without getting blocked. The server includes web unlocking capabilities, browser automation, and structured data extraction.
+
+## Overview
+
+The Bright Data MCP server solves common web access challenges for AI applications:
+
+- **Anti-blocking technology**: Navigate websites with bot detection protection
+- **Geo-restriction bypass**: Access content regardless of location constraints
+- **Browser automation**: Remote browser control for complex interactions
+- **Structured extraction**: Get clean, structured data from web pages
+
+The free tier includes 5,000 requests per month for the first 3 months.
+
+## Deploy to Heroku
+
+Deploy the Bright Data MCP server to Heroku with one click:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dsouza-anush/brightdata-mcp-heroku)
+
+After deployment, set the required environment variable in your Heroku app settings:
+
+```bash
+heroku config:set API_TOKEN=your-brightdata-api-token -a your-app-name
+```
+
+Get your API token from the [Bright Data user settings page](https://brightdata.com/cp/setting/users).
+
+## Register with Heroku AI
+
+After deploying the MCP server, register it with your Heroku AI model:
+
+```bash
+heroku ai:mcp:servers:add brightdata-search \
+  --app your-inference-app \
+  --server-app your-brightdata-mcp-app
+```
+
+The MCP server's tools become available through the `/v1/agents/heroku` endpoint.
+
+## Available Tools
+
+The Bright Data MCP server provides comprehensive web access tools:
+
+### Web Search and Scraping
+
+| Tool | Description |
+|------|-------------|
+| `search_engine` | Search Google, Bing, or other search engines |
+| `scrape_as_markdown` | Extract page content as clean markdown |
+| `scrape_as_html` | Get raw HTML from any URL |
+| `web_data_amazon_product` | Extract structured Amazon product data |
+| `web_data_linkedin_person` | Get LinkedIn profile information |
+| `web_data_linkedin_company` | Extract company data from LinkedIn |
+
+### Browser Automation
+
+| Tool | Description |
+|------|-------------|
+| `mcp_browser_navigate` | Navigate browser to a URL |
+| `mcp_browser_click` | Click elements on the page |
+| `mcp_browser_type` | Type text into input fields |
+| `mcp_browser_screenshot` | Capture page screenshots |
+| `mcp_browser_get_content` | Extract page content |
+
+### Web Unlocker
+
+| Tool | Description |
+|------|-------------|
+| `web_unlocker_fetch` | Fetch URLs with anti-blocking protection |
+
+## Using with Heroku AI Agents
+
+Make requests to the Heroku Agents API with Bright Data tools:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Search for the latest news about AI regulations"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["brightdata-search"]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Search for the latest news about AI regulations"}
+    ],
+    "mcp_servers": ["brightdata-search"]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## Configuration Options
+
+Configure the MCP server with environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `API_TOKEN` | Your Bright Data API token | Required |
+| `RATE_LIMIT` | Rate limit format: `limit/time+unit` (e.g., `100/1h`) | None |
+| `WEB_UNLOCKER_ZONE` | Custom Web Unlocker zone name | `mcp_unlocker` |
+| `BROWSER_ZONE` | Custom Browser API zone name | `mcp_browser` |
+
+Set configuration in Heroku:
+
+```bash
+heroku config:set RATE_LIMIT=100/1h -a your-brightdata-mcp-app
+heroku config:set WEB_UNLOCKER_ZONE=my_custom_zone -a your-brightdata-mcp-app
+```
+
+## Example Use Cases
+
+### Web Research
+
+```
+"Search Google for recent articles about renewable energy trends and summarize the top 3 results"
+```
+
+### Product Research
+
+```
+"Find the current price and reviews for the iPhone 15 Pro on Amazon"
+```
+
+### Company Research
+
+```
+"Get information about Tesla's current market cap and recent news"
+```
+
+### Content Extraction
+
+```
+"Extract the main content from this article URL as markdown"
+```
+
+## Security Considerations
+
+When using web scraping tools:
+
+- **Treat scraped content as untrusted**: Never use raw scraped content directly in prompts without validation
+- **Use structured extraction**: Prefer `web_data_*` tools that return structured data over raw HTML
+- **Rate limiting**: Configure appropriate rate limits to avoid overwhelming target sites
+- **Respect robots.txt**: The Web Unlocker respects site policies by default
+
+## Additional Resources
+
+- [Bright Data MCP Documentation](https://github.com/brightdata-com/brightdata-mcp)
+- [Bright Data API Reference](https://docs.brightdata.com/)
+- [Heroku MCP Integration Guide](/tool-use/working-with-mcp)
+- [Heroku Agents API](/inference-api/agents-heroku)
