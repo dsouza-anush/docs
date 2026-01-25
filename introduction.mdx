@@ -1,303 +1,166 @@
 ---
-title: "Introduction"
-description: "Explore the Heroku AI platform, its guides, and the fastest paths to production."
-fullWidth: true
+title: "Heroku AI"
+description: "Build and run AI experiences on Heroku with OpenAI-compatible endpoints."
 ---
 
-<section
-  style={{
-    margin: '0 calc(-1 * min(8vw, 96px)) 3.5rem',
-    padding: '4.5rem min(8vw, 96px) 3.5rem',
-    background: 'linear-gradient(180deg, rgba(45,40,76,0.65) 0%, rgba(18,16,30,0) 100%)',
-    borderRadius: '2.5rem',
-    border: '1px solid rgba(255,255,255,0.07)',
-    position: 'relative',
-    overflow: 'hidden'
-  }}
->
-  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 20% 20%, rgba(139,127,212,0.35), transparent 55%)' }} />
-  <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 70% 30%, rgba(111,199,255,0.25), transparent 60%)' }} />
-  <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
-    <div>
-      <p style={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontSize: '0.85rem', color: 'rgba(255,255,255,0.58)' }}>Heroku AI platform</p>
-      <h1 style={{ fontSize: '2.8rem', lineHeight: 1.1, margin: '0.75rem 0' }}>Build and run AI experiences on Heroku</h1>
-      <p style={{ fontSize: '1.1rem', lineHeight: 1.6, color: 'rgba(235,235,255,0.82)', maxWidth: '32rem' }}>
-        Provision managed inference, evaluate prompts in AI Studio, and ship production workloads with OpenAI-compatible endpoints.
-      </p>
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-        <a href="/quickstart" style={{
-          padding: '0.85rem 1.6rem',
-          borderRadius: '999px',
-          background: 'rgba(108,98,235,0.85)',
-          color: '#F9FAFF',
-          textDecoration: 'none',
-          fontWeight: 600,
-          boxShadow: '0 18px 40px rgba(83,74,199,0.45)'
-        }}>
-          Start building
-        </a>
-        <a href="/inference-api/models" style={{
-          padding: '0.85rem 1.6rem',
-          borderRadius: '999px',
-          border: '1px solid rgba(255,255,255,0.18)',
-          color: '#F9FAFF',
-          textDecoration: 'none',
-          fontWeight: 500,
-          background: 'rgba(16,14,30,0.6)',
-          backdropFilter: 'blur(6px)'
-        }}>
-          Review models
-        </a>
-      </div>
-    </div>
+Make your first API request in minutes. Heroku AI provides managed inference with Claude, Nova, and other models through familiar OpenAI-compatible endpoints.
 
-    <div style={{
-      padding: '2rem',
-      borderRadius: '1.75rem',
-      background: 'rgba(12,10,24,0.65)',
-      border: '1px solid rgba(255,255,255,0.06)',
-      boxShadow: '0 26px 60px rgba(20,18,40,0.4)',
-      backdropFilter: 'blur(18px)'
-    }}>
-      <p style={{ fontSize: '0.9rem', color: 'rgba(235,235,255,0.7)', marginBottom: '1rem' }}>OpenAI-compatible quickstart</p>
-      ```bash
-      curl https://us.inference.heroku.com/v1/chat/completions \
-        -H "Authorization: Bearer $INFERENCE_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{
-          "model": "claude-3-5-sonnet",
-          "messages": [
-            {"role": "system", "content": "You are a Heroku AI assistant."},
-            {"role": "user", "content": "Generate onboarding steps for a new developer."}
-          ]
-        }'
-      ```
-      <p style={{ fontSize: '0.8rem', color: 'rgba(235,235,255,0.55)', marginTop: '1.25rem' }}>
-        Works with the official OpenAI SDKs—swap the base URL to route traffic through Heroku’s managed inference.
-      </p>
-    </div>
-  </div>
-</section>
+<CodeGroup>
 
-## Get started fast
+```python Python
+from openai import OpenAI
 
-<div style={{ margin: '1.5rem calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
-  <div
-    style={{
-      display: 'grid',
-      gap: '1.6rem',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))'
-    }}
-  >
-    <a
-      href="/inference-api/overview"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(42,176,206,0.55) 0%, rgba(32,112,180,0.5) 45%, rgba(16,62,120,0.7) 100%)',
-        boxShadow: '0 26px 60px rgba(36,140,200,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>API overview</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>See every endpoint at a glance.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Browse endpoints →</span>
-    </a>
+client = OpenAI(
+    base_url="https://us.inference.heroku.com/v1",
+    api_key="your-inference-key"
+)
 
-    <a
-      href="/heroku-inference/ai-studio"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(96,76,220,0.55) 0%, rgba(54,40,154,0.6) 45%, rgba(28,18,92,0.68) 100%)',
-        boxShadow: '0 26px 60px rgba(90,70,215,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>AI Studio</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Prototype prompts in the playground.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Open studio →</span>
-    </a>
+response = client.chat.completions.create(
+    model="claude-3-5-sonnet",
+    messages=[
+        {"role": "user", "content": "Hello, Heroku AI!"}
+    ]
+)
 
-    <a
-      href="/heroku-vibes/overview"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(255,136,76,0.55) 0%, rgba(186,70,36,0.55) 45%, rgba(110,66,18,0.68) 100%)',
-        boxShadow: '0 26px 60px rgba(220,160,60,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Heroku Vibes</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Turn prompts into working apps.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>See Vibes →</span>
-    </a>
-  </div>
+print(response.choices[0].message.content)
+```
+
+```javascript JavaScript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  baseURL: 'https://us.inference.heroku.com/v1',
+  apiKey: 'your-inference-key'
+});
+
+const response = await client.chat.completions.create({
+  model: 'claude-3-5-sonnet',
+  messages: [
+    { role: 'user', content: 'Hello, Heroku AI!' }
+  ]
+});
+
+console.log(response.choices[0].message.content);
+```
+
+```bash cURL
+curl https://us.inference.heroku.com/v1/chat/completions \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-3-5-sonnet",
+    "messages": [
+      {"role": "user", "content": "Hello, Heroku AI!"}
+    ]
+  }'
+```
+
+</CodeGroup>
+
+<div style={{ marginTop: '1.5rem' }}>
+  <a href="/quickstart" style={{
+    display: 'inline-block',
+    padding: '0.75rem 1.5rem',
+    background: '#6B5FC7',
+    color: 'white',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    fontWeight: 500
+  }}>
+    Get started
+  </a>
 </div>
 
-## Explore the platform
+---
 
-<div style={{ margin: '0 calc(-1 * min(8vw, 96px)) 2rem', padding: '0 min(8vw, 96px)' }}>
-  <div
-    style={{
-      display: 'grid',
-      gap: '1.6rem',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))'
-    }}
-  >
-    <a
-      href="/inference-api/models"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(31,138,112,0.55) 0%, rgba(63,181,173,0.48) 45%, rgba(24,105,96,0.68) 100%)',
-        boxShadow: '0 26px 60px rgba(28,140,128,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Model catalog</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Compare chat, embedding, and image models.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Review models →</span>
-    </a>
+## Models
 
-    <a
-      href="/inference-api/rate-limits"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(255,148,92,0.58) 0%, rgba(223,104,60,0.5) 45%, rgba(150,54,28,0.7) 100%)',
-        boxShadow: '0 26px 60px rgba(240,130,72,0.24)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Rate limits</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Plan throughput by region and model.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Check limits →</span>
-    </a>
+Choose from chat, embedding, reranking, and image generation models.
 
-    <a
-      href="/tool-use/working-with-mcp"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(96,76,220,0.55) 0%, rgba(54,40,154,0.6) 45%, rgba(28,18,92,0.68) 100%)',
-        boxShadow: '0 26px 60px rgba(90,70,215,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>MCP tools</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Connect external tools to your agents.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>See guides →</span>
-    </a>
-  </div>
+<CardGroup cols={3}>
+  <Card title="Claude 3.5 Sonnet" href="/inference-api/models">
+    Anthropic's balanced model for complex reasoning and coding tasks.
+  </Card>
+  <Card title="Claude 3.5 Haiku" href="/inference-api/models">
+    Fast, cost-effective model for high-volume applications.
+  </Card>
+  <Card title="Amazon Nova" href="/inference-api/models">
+    AWS models optimized for enterprise workloads.
+  </Card>
+</CardGroup>
+
+<div style={{ marginTop: '0.5rem' }}>
+  <a href="/inference-api/models" style={{ fontSize: '0.9rem' }}>View all models →</a>
 </div>
 
-## Build beyond the API
+---
 
-<div style={{ margin: '0 calc(-1 * min(8vw, 96px)) 3rem', padding: '0 min(8vw, 96px)' }}>
-  <div
-    style={{
-      display: 'grid',
-      gap: '1.6rem',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))'
-    }}
-  >
-    <a
-      href="/cookbook/chatgpt-apps"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(42,176,206,0.55) 0%, rgba(26,106,168,0.5) 50%, rgba(16,62,120,0.7) 100%)',
-        boxShadow: '0 26px 60px rgba(36,140,200,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>ChatGPT apps</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Launch MCP-powered ChatGPT apps on Heroku.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Open cookbook →</span>
-    </a>
+## Start building
 
-    <a
-      href="/ai-integrations/ai-sdk"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(31,138,112,0.55) 0%, rgba(63,181,173,0.48) 45%, rgba(24,105,96,0.68) 100%)',
-        boxShadow: '0 26px 60px rgba(28,140,128,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>AI SDK</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Use the Heroku provider with Vercel’s AI SDK.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Read example →</span>
-    </a>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Make your first API call and provision a model in minutes.
+  </Card>
+  <Card title="API Overview" icon="code" href="/inference-api/overview">
+    Explore all available endpoints: chat, embeddings, images, and agents.
+  </Card>
+  <Card title="AI Studio" icon="flask" href="/heroku-inference/ai-studio">
+    Test prompts interactively before integrating into your app.
+  </Card>
+  <Card title="Migrate from OpenAI" icon="arrow-right-arrow-left" href="/guides/migrate-from-openai">
+    Switch from OpenAI with minimal code changes.
+  </Card>
+</CardGroup>
 
-    <a
-      href="/vector-database/pgvector"
-      style={{
-        textDecoration: 'none',
-        padding: '2.2rem',
-        borderRadius: '1.5rem',
-        color: '#F9FAFF',
-        background: 'linear-gradient(160deg, rgba(31,138,112,0.55) 0%, rgba(63,181,173,0.48) 45%, rgba(24,105,96,0.68) 100%)',
-        boxShadow: '0 26px 60px rgba(28,140,128,0.22)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.85rem'
-      }}
-    >
-      <span style={{ fontSize: '0.82rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>Vector database</span>
-      <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Store embeddings with pgvector.</span>
-      <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Learn more →</span>
-    </a>
-  </div>
-</div>
+---
 
-## Watch the Heroku AI overview
+## Explore capabilities
 
-<Frame caption="See how teams prototype and deploy with Heroku AI">
+<CardGroup cols={3}>
+  <Card title="Tool calling" icon="wrench" href="/tool-use/heroku-tools">
+    Connect external tools and databases to your AI agents.
+  </Card>
+  <Card title="MCP servers" icon="server" href="/model-context/overview">
+    Deploy Model Context Protocol servers on Heroku.
+  </Card>
+  <Card title="Vector database" icon="database" href="/vector-database/pgvector">
+    Store and query embeddings with pgvector on Heroku Postgres.
+  </Card>
+  <Card title="Structured output" icon="brackets-curly" href="/inference-api/structured-output">
+    Get reliable JSON responses with schema validation.
+  </Card>
+  <Card title="Streaming" icon="wave-pulse" href="/inference-api/chat-completions#streaming">
+    Stream responses for real-time chat interfaces.
+  </Card>
+  <Card title="Embeddings & RAG" icon="magnifying-glass" href="/cookbook/embeddings-rag">
+    Build retrieval-augmented generation pipelines.
+  </Card>
+</CardGroup>
+
+---
+
+## Integrations
+
+<CardGroup cols={4}>
+  <Card title="Vercel AI SDK" icon="triangle" href="/ai-integrations/ai-sdk">
+    React hooks for streaming chat UIs.
+  </Card>
+  <Card title="LlamaIndex" icon="llama" href="/ai-integrations/llamaindex">
+    RAG pipelines and document loaders.
+  </Card>
+  <Card title="Pydantic AI" icon="snake" href="/ai-integrations/pydantic">
+    Type-safe agents with structured outputs.
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/ai-integrations/arize-phoenix">
+    Monitor with Phoenix, Weave, or Logfire.
+  </Card>
+</CardGroup>
+
+---
+
+## Watch the overview
+
+<Frame>
   <iframe
     className="w-full aspect-video rounded-xl"
     src="https://www.youtube.com/embed/kCjNMj8Z8ag"
