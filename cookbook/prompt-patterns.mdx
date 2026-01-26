@@ -90,7 +90,7 @@ Store prompts alongside unit tests so changes must pass automated checks before 
 ```python
 def audit_prompt(candidate: str) -> str:
     critic = client.chat.completions.create(
-        model="claude-3-5-haiku",
+        model="claude-4-5-haiku",
         messages=[
             {
                 "role": "system",
@@ -144,7 +144,7 @@ Haiku keeps costs low for CI pipelines; switch to Sonnet for more nuanced critiq
 ```python
 def run_eval(example: dict) -> bool:
     response = client.chat.completions.create(
-        model="claude-3-5-sonnet",
+        model="claude-4-5-sonnet",
         messages=[
             {"role": "system", "content": "Judge if the assistant followed policy. Reply PASS or FAIL."},
             {"role": "user", "content": example["transcript"]},

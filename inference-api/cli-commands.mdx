@@ -86,7 +86,7 @@ heroku ai:models:create <model-name> --app <app-name> [--as <alias>] [--confirm 
 
 **Arguments**
 
-- `<model-name>`: ID of the model you want to provision (for example `claude-3-5-sonnet`).
+- `<model-name>`: ID of the model you want to provision (for example `claude-4-5-sonnet`).
 
 **Options**
 
@@ -100,7 +100,7 @@ heroku ai:models:create <model-name> --app <app-name> [--as <alias>] [--confirm 
 **Example**
 
 ```bash
-heroku ai:models:create claude-3-5-sonnet --app sample-app --as chat-default
+heroku ai:models:create claude-4-5-sonnet --app sample-app --as chat-default
 ```
 
 #### `heroku ai:models:destroy`
@@ -113,7 +113,7 @@ heroku ai:models:destroy <resource-alias> --app <app-name> [--confirm <app-name>
 
 **Arguments**
 
-- `<resource-alias>`: Alias or resource ID to remove (for example `chat-default` or `claude-3-5-sonnet-basic-43973`).
+- `<resource-alias>`: Alias or resource ID to remove (for example `chat-default` or `claude-4-5-sonnet-basic-43973`).
 
 **Options**
 
@@ -172,7 +172,7 @@ heroku ai:models:attach <resource-id> --source-app <source-app> --target-app <ta
 
 **Arguments**
 
-- `<resource-id>`: Resource ID or alias from the source app (for example `claude-3-5-sonnet-basic-43973`).
+- `<resource-id>`: Resource ID or alias from the source app (for example `claude-4-5-sonnet-basic-43973`).
 
 **Options**
 
@@ -187,7 +187,7 @@ heroku ai:models:attach <resource-id> --source-app <source-app> --target-app <ta
 **Example**
 
 ```bash
-heroku ai:models:attach claude-3-5-sonnet-basic-43973 \
+heroku ai:models:attach claude-4-5-sonnet-basic-43973 \
   --source-app shared-services \
   --target-app reporting-app \
   --as chat-reporting

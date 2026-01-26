@@ -22,7 +22,7 @@ heroku create example-app
 - Create and attach a [chat model](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards#available-models) to your app:
 
 ```bash
-heroku ai:models:create -a example-app claude-3-5-haiku
+heroku ai:models:create -a example-app claude-4-5-haiku
 ```
 
 - Export configuration variables:
@@ -74,7 +74,7 @@ import os
 # Set environment variables
 os.environ["INFERENCE_KEY"] = "your-inference-key"
 os.environ["INFERENCE_URL"] = "https://us.inference.heroku.com"
-os.environ["INFERENCE_MODEL_ID"] = "claude-3-5-haiku"
+os.environ["INFERENCE_MODEL_ID"] = "claude-4-5-haiku"
 
 # Initialize without parameters
 llm = Heroku()
@@ -88,7 +88,7 @@ You can pass parameters directly:
 import os
 
 llm = Heroku(
-    model=os.getenv("INFERENCE_MODEL_ID", "claude-3-5-haiku"),
+    model=os.getenv("INFERENCE_MODEL_ID", "claude-4-5-haiku"),
     api_key=os.getenv("INFERENCE_KEY", "your-inference-key"),
     inference_url=os.getenv(
         "INFERENCE_URL", "https://us.inference.heroku.com"

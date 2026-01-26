@@ -52,7 +52,7 @@ const tools = await mcpClient.tools();
 
 // Use with Heroku AI
 const response = await generateText({
-  model: heroku.chat("claude-3-5-sonnet"),
+  model: heroku.chat("claude-4-5-sonnet"),
   tools,
   prompt: "List all apps in my Heroku account",
 });
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
   const tools = await mcpClient.tools();
 
   const result = streamText({
-    model: heroku.chat("claude-3-5-sonnet"),
+    model: heroku.chat("claude-4-5-sonnet"),
     tools,
     messages,
     system: "You are a helpful Heroku assistant. Use the available tools to help users manage their apps.",
@@ -146,7 +146,7 @@ const heroku = new Heroku({
 });
 
 const response = await generateText({
-  model: heroku.chat("claude-3-5-sonnet"),
+  model: heroku.chat("claude-4-5-sonnet"),
   tools,
   prompt: "Scale my-app to 2 dynos",
   maxSteps: 5,

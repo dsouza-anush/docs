@@ -47,7 +47,7 @@ Use RubyLLM's chat interface with Heroku AI models:
 ```ruby
 chat = RubyLLM.chat(
   provider: :openai,
-  model: ENV['INFERENCE_MODEL_ID'] || 'claude-3-5-sonnet'
+  model: ENV['INFERENCE_MODEL_ID'] || 'claude-4-5-sonnet'
 )
 
 response = chat.ask "What are the benefits of deploying AI apps on Heroku?"
@@ -61,7 +61,7 @@ Stream responses for faster perceived latency:
 ```ruby
 chat = RubyLLM.chat(
   provider: :openai,
-  model: 'claude-3-5-haiku'
+  model: 'claude-4-5-haiku'
 )
 
 chat.ask "Explain Heroku's dyno architecture" do |chunk|
@@ -76,7 +76,7 @@ RubyLLM maintains conversation context automatically:
 ```ruby
 chat = RubyLLM.chat(
   provider: :openai,
-  model: 'claude-3-5-sonnet'
+  model: 'claude-4-5-sonnet'
 )
 
 # First turn
@@ -140,7 +140,7 @@ Use RubyLLM's structured output feature for predictable responses:
 ```ruby
 chat = RubyLLM.chat(
   provider: :openai,
-  model: 'claude-3-5-sonnet',
+  model: 'claude-4-5-sonnet',
   response_format: { type: 'json_object' }
 )
 
@@ -162,7 +162,7 @@ puts "Priority: #{data['priority']}"
 ```ruby
 chat = RubyLLM.chat(
   provider: :openai,
-  model: 'claude-3-5-haiku',
+  model: 'claude-4-5-haiku',
   temperature: 0.7,
   max_tokens: 1000
 )
@@ -175,7 +175,7 @@ Set a system message to guide model behavior:
 ```ruby
 chat = RubyLLM.chat(
   provider: :openai,
-  model: 'claude-3-5-sonnet',
+  model: 'claude-4-5-sonnet',
   system: "You are a Heroku expert. Answer questions concisely and cite docs when helpful."
 )
 ```
@@ -184,8 +184,8 @@ chat = RubyLLM.chat(
 
 RubyLLM works with any Heroku AI chat model. Popular options include:
 
-- `claude-3-5-sonnet` - Most capable, best for complex reasoning
-- `claude-3-5-haiku` - Fast and efficient, great for production workloads
+- `claude-4-5-sonnet` - Most capable, best for complex reasoning
+- `claude-4-5-haiku` - Fast and efficient, great for production workloads
 - `claude-4-sonnet` - Latest model with extended context
 
 See the complete list in [Heroku AI Model Cards](https://devcenter.heroku.com/articles/heroku-inference-api-model-cards).
@@ -196,7 +196,7 @@ Wrap RubyLLM calls in proper error handling:
 
 ```ruby
 begin
-  chat = RubyLLM.chat(provider: :openai, model: 'claude-3-5-sonnet')
+  chat = RubyLLM.chat(provider: :openai, model: 'claude-4-5-sonnet')
   response = chat.ask("Your question here")
 rescue RubyLLM::AuthenticationError
   puts "Invalid API key. Check your INFERENCE_KEY environment variable."

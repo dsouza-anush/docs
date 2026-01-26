@@ -161,11 +161,11 @@ fullWidth: true
   | Claude Opus 4.5 | Chat | Frontier model with autonomous coding | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 4.5 Sonnet | Chat | High-performance balanced model with speed | Balanced | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Claude 4 Sonnet | Chat | Deep reasoning with chain-of-thought | Premium | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-  | Claude 3.7 Sonnet | Chat | High intelligence with extended thinking | High | 200K tokens | ✓ | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-  | Claude 3.5 Sonnet | Chat | Balanced quality, speed, and cost | Balanced | 200K tokens | Optional | ✓ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 3.7 Sonnet ⚠️ | Chat | High intelligence with extended thinking | High | 200K tokens | ✓ | ✓ | [Deprecated Feb 28](/inference-api/model-deprecations) |
+  | Claude 3.5 Sonnet ⚠️ | Chat | Balanced quality, speed, and cost | Balanced | 200K tokens | Optional | ✓ | [Deprecated Feb 28](/inference-api/model-deprecations) |
   | Claude 4.5 Haiku | Chat | Fast and highly cost-effective | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-  | Claude 3.5 Haiku | Chat | Lowest latency, great for scale | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
-  | Claude 3.0 Haiku | Chat | Legacy low-cost option | Low | 200K tokens | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
+  | Claude 3.5 Haiku ⚠️ | Chat | Lowest latency, great for scale | Low | 200K tokens | ✗ | ✗ | [Deprecated Feb 28](/inference-api/model-deprecations) |
+  | Claude 3.0 Haiku ⚠️ | Chat | Legacy low-cost option | Low | 200K tokens | ✗ | ✗ | [Deprecated Feb 28](/inference-api/model-deprecations) |
   | Amazon Nova 2 Lite | Chat | Fast with extended context and reasoning | Low | 1M tokens | ✓ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Amazon Nova Pro | Chat | Enterprise-first generalist | High | Large | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
   | Amazon Nova Lite | Chat | Efficient conversational model | Low | Medium | ✗ | ✗ | [Pricing](/inference-api/pricing#model-pricing-overview) |
@@ -289,7 +289,10 @@ Advanced language models for assistants, copilots, and automated workflows.
     </Columns>
   </Accordion>
 
-  <Accordion title="Claude 3.7 Sonnet (high IQ, lower cost)">
+  <Accordion title="Claude 3.7 Sonnet (DEPRECATED - Feb 28)">
+    <Warning>
+      **Deprecated**: This model will be removed on February 28, 2025. Migrate to **Claude 4.5 Sonnet** for improved performance and continued support.
+    </Warning>
     <Columns cols={2}>
       <div>
         <h4>Highlights</h4>
@@ -319,7 +322,10 @@ Advanced language models for assistants, copilots, and automated workflows.
     </Columns>
   </Accordion>
 
-  <Accordion title="Claude 3.5 Sonnet (balanced default)">
+  <Accordion title="Claude 3.5 Sonnet (DEPRECATED - Feb 28)">
+    <Warning>
+      **Deprecated**: This model will be removed on February 28, 2025. Migrate to **Claude 4.5 Sonnet** for improved performance and continued support.
+    </Warning>
     <Columns cols={2}>
       <div>
         <h4>Highlights</h4>
@@ -380,7 +386,10 @@ Advanced language models for assistants, copilots, and automated workflows.
     </Columns>
   </Accordion>
 
-  <Accordion title="Claude 3.5 Haiku (high-volume choice)">
+  <Accordion title="Claude 3.5 Haiku (DEPRECATED - Feb 28)">
+    <Warning>
+      **Deprecated**: This model will be removed on February 28, 2025. Migrate to **Claude 4.5 Haiku** for improved performance and continued support.
+    </Warning>
     <Columns cols={2}>
       <div>
         <h4>Highlights</h4>
@@ -410,7 +419,10 @@ Advanced language models for assistants, copilots, and automated workflows.
     </Columns>
   </Accordion>
 
-  <Accordion title="Claude 3.0 Haiku (legacy, low cost)">
+  <Accordion title="Claude 3.0 Haiku (DEPRECATED - Feb 28)">
+    <Warning>
+      **Deprecated**: This model will be removed on February 28, 2025. Migrate to **Claude 4.5 Haiku** for improved performance and continued support.
+    </Warning>
     <Columns cols={2}>
       <div>
         <h4>Highlights</h4>
@@ -429,9 +441,9 @@ Advanced language models for assistants, copilots, and automated workflows.
       <div>
         <h4>Operational tips</h4>
         <ul>
-          <li>Plan migration to 3.5 Haiku for better quality.</li>
+          <li>Plan migration to Claude 4.5 Haiku immediately.</li>
           <li>Limit prompts to short instructions to maintain output quality.</li>
-          <li>Keep an eye on model deprecation timelines.</li>
+          <li>Model will be removed on February 28, 2025.</li>
         </ul>
         <Callout title="Model ID">
           `claude-3-haiku`
@@ -889,7 +901,7 @@ Improve search quality by ranking documents based on semantic relevance to a que
   <Step title="Create a managed resource">
 
   ```bash
-  heroku ai:models:create claude-3-5-sonnet --app my-ai-app
+  heroku ai:models:create claude-4-5-sonnet --app my-ai-app
   ```
   </Step>
   <Step title="Verify attachment">

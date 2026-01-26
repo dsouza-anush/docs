@@ -104,7 +104,7 @@ async def run_heroku_agent(user_message: str):
             # Agentic loop
             while True:
                 response = client.chat.completions.create(
-                    model="claude-3-5-sonnet",
+                    model="claude-4-5-sonnet",
                     messages=messages,
                     tools=tools,
                 )
@@ -177,7 +177,7 @@ async def stream_heroku_agent(user_message: str):
 
             while True:
                 stream = client.chat.completions.create(
-                    model="claude-3-5-sonnet",
+                    model="claude-4-5-sonnet",
                     messages=messages,
                     tools=tools,
                     stream=True,

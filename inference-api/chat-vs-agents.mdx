@@ -42,7 +42,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="claude-3-5-sonnet",
+    model="claude-4-5-sonnet",
     messages=[
         {"role": "system", "content": "You are a concise release-notes assistant."},
         {"role": "user", "content": "Draft highlights for this new CLI feature."},
@@ -65,7 +65,7 @@ Agents build on the same message schema but add a `tools` array so you can deleg
 ```json
 POST /v1/agents/heroku
 {
-  "model": "claude-3-5-sonnet",
+  "model": "claude-4-5-sonnet",
   "messages": [
     {"role": "system", "content": "You are a deployment assistant."},
     {"role": "user", "content": "Run database migrations on my staging app."}

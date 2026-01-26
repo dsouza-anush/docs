@@ -29,7 +29,7 @@ fullWidth: true
       <li>Embed chunks with <code>cohere-embed-multilingual</code> via the Embeddings API.</li>
       <li>Persist vectors in Postgres + pgvector or another ANN store.</li>
       <li>At query time, embed the question, retrieve top-k matches, and assemble a prompt.</li>
-      <li>Send prompt + context to <code>claude-3-5-sonnet</code> or <code>claude-3-5-haiku</code> via the Chat Completions API.</li>
+      <li>Send prompt + context to <code>claude-4-5-sonnet</code> or <code>claude-4-5-haiku</code> via the Chat Completions API.</li>
     </ol>
   </div>
 </section>
@@ -92,7 +92,7 @@ def answer_with_context(question: str, context_blocks: list[str]) -> str:
         [f"[{i}] {block}" for i, block in enumerate(context_blocks, start=1)]
     )
     response = client.chat.completions.create(
-        model="claude-3-5-sonnet",
+        model="claude-4-5-sonnet",
         messages=[
             {
                 "role": "system",

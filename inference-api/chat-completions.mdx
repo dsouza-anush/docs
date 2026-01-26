@@ -36,7 +36,7 @@ You can get your API key from your Heroku app's `INFERENCE_KEY` config variable.
 
 Model ID to use for completion, typically the value of your `INFERENCE_MODEL_ID` config var.
 
-Example: `"claude-4-sonnet"`, `"claude-3-5-haiku"`
+Example: `"claude-4-5-sonnet"`, `"claude-4-5-haiku"`
 
 ### messages
 **array** · required
@@ -211,7 +211,7 @@ curl https://us.inference.heroku.com/v1/chat/completions \
   -H "Authorization: Bearer $INFERENCE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-4-sonnet",
+    "model": "claude-4-5-sonnet",
     "messages": [
       {
         "role": "system",
@@ -356,7 +356,7 @@ puts JSON.parse(response.body)
   "id": "chatcmpl-abc123",
   "object": "chat.completion",
   "created": 1745623456,
-  "model": "claude-4-sonnet",
+  "model": "claude-4-5-sonnet",
   "choices": [
     {
       "index": 0,
@@ -384,7 +384,7 @@ curl https://us.inference.heroku.com/v1/chat/completions \
   -H "Authorization: Bearer $INFERENCE_KEY" \
   -H "Content-Type": "application/json" \
   -d '{
-    "model": "claude-4-sonnet",
+    "model": "claude-4-5-sonnet",
     "messages": [
       {"role": "user", "content": "What is the weather in Portland?"}
     ],
@@ -416,7 +416,7 @@ curl https://us.inference.heroku.com/v1/chat/completions \
   "id": "chatcmpl-def456",
   "object": "chat.completion",
   "created": 1745623500,
-  "model": "claude-4-sonnet",
+  "model": "claude-4-5-sonnet",
   "choices": [
     {
       "index": 0,
@@ -456,7 +456,7 @@ curl https://us.inference.heroku.com/v1/chat/completions \
   -H "Authorization: Bearer $INFERENCE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-4-sonnet",
+    "model": "claude-4-5-sonnet",
     "messages": [{"role": "user", "content": "Tell me a story"}],
     "stream": true
   }'
@@ -465,9 +465,9 @@ curl https://us.inference.heroku.com/v1/chat/completions \
 Each chunk contains a delta of the completion:
 
 ```json
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456,"model":"claude-4-sonnet","choices":[{"index":0,"delta":{"role":"assistant","content":"Once"},"finish_reason":null}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456,"model":"claude-4-5-sonnet","choices":[{"index":0,"delta":{"role":"assistant","content":"Once"},"finish_reason":null}]}
 
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456,"model":"claude-4-sonnet","choices":[{"index":0,"delta":{"content":" upon"},"finish_reason":null}]}
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1745623456,"model":"claude-4-5-sonnet","choices":[{"index":0,"delta":{"content":" upon"},"finish_reason":null}]}
 
 data: [DONE]
 ```
@@ -512,7 +512,7 @@ curl https://us.inference.heroku.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-Heroku-Prompt-Caching: false" \
   -d '{
-    "model": "claude-4-sonnet",
+    "model": "claude-4-5-sonnet",
     "messages": [
       {"role": "system", "content": "You are a helpful assistant."},
       {"role": "user", "content": "Hello!"}

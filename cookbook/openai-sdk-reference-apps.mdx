@@ -12,7 +12,7 @@ Heroku AI exposes OpenAI-compatible endpoints, which lets you reuse the official
 ## Before you start
 
 - Install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) and log in.
-- Provision a model, for example `heroku ai:models:create claude-3-5-sonnet --app my-ai-app`.
+- Provision a model, for example `heroku ai:models:create claude-4-5-sonnet --app my-ai-app`.
 - Store the resulting key securely (`heroku config:get INFERENCE_KEY --app my-ai-app`).
 - Set the base URL when instantiating the SDK client (`base_url="https://us.inference.heroku.com/v1"`).
 
@@ -47,7 +47,7 @@ Provide agents with instant answers sourced from your knowledge base.
       def chat():
           question = request.json.get("question", "")
           response = client.chat.completions.create(
-              model="claude-3-5-sonnet",
+              model="claude-4-5-sonnet",
               messages=[
                   {"role": "system", "content": "You are a Heroku support specialist."},
                   {"role": "user", "content": question},
@@ -93,7 +93,7 @@ Provide agents with instant answers sourced from your knowledge base.
       export async function POST(req: NextRequest) {
         const { question } = await req.json();
         const completion = await client.chat.completions.create({
-          model: "claude-3-5-sonnet",
+          model: "claude-4-5-sonnet",
           max_tokens: 600,
           temperature: 0.3,
           messages: [
@@ -158,7 +158,7 @@ Blend embeddings and chat completions to turn raw documents into actionable brie
       related = fetch_similar_vectors(question, top_k=4)
       context = "\n\n".join(doc.text for doc in related)
       completion = client.chat.completions.create(
-          model="claude-3-5-sonnet",
+          model="claude-4-5-sonnet",
           temperature=0.4,
           max_tokens=700,
           messages=[

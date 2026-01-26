@@ -32,7 +32,7 @@ Make your first API call to Heroku AI and build a simple web search assistant us
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer $INFERENCE_KEY" \
           -d '{
-            "model": "claude-3-5-sonnet",
+            "model": "claude-4-5-sonnet",
             "max_tokens": 1000,
             "messages": [
               {
@@ -56,7 +56,7 @@ Make your first API call to Heroku AI and build a simple web search assistant us
               "text": "Here are some effective search strategies to find the latest renewable energy developments:\n\n## Search Terms to Use:\n- \"renewable energy news 2024\"\n- \"clean energy breakthrough\"\n- \"solar/wind/battery technology advances\"\n- \"green energy innovations\"\n- \"climate tech developments\"\n- \"energy storage solutions\"\n\n## Best Sources to Check:\n\n**News & Industry Sites:**\n- Renewable Energy World\n- GreenTech Media (now Wood Mackenzie)\n- Energy Storage News\n- CleanTechnica\n- PV Magazine (for solar)\n- WindPower Engineering & Development..."
             }
           ],
-          "model": "claude-3-5-sonnet",
+          "model": "claude-4-5-sonnet",
           "stop_reason": "end_turn",
           "usage": {
             "input_tokens": 21,
@@ -99,7 +99,7 @@ Make your first API call to Heroku AI and build a simple web search assistant us
         )
 
         response = client.chat.completions.create(
-            model="claude-3-5-sonnet",
+            model="claude-4-5-sonnet",
             max_tokens=1000,
             messages=[
                 {
@@ -180,7 +180,7 @@ Make your first API call to Heroku AI and build a simple web search assistant us
           });
 
           const response = await client.chat.completions.create({
-            model: "claude-3-5-sonnet",
+            model: "claude-4-5-sonnet",
             max_tokens: 1000,
             messages: [
               {
@@ -269,7 +269,7 @@ Make your first API call to Heroku AI and build a simple web search assistant us
                 OkHttpClient client = new OkHttpClient();
 
                 String json = new Gson().toJson(Map.of(
-                    "model", "claude-3-5-sonnet",
+                    "model", "claude-4-5-sonnet",
                     "max_tokens", 1000,
                     "messages", new Object[] {
                         Map.of(
@@ -317,7 +317,7 @@ Make your first API call to Heroku AI and build a simple web search assistant us
               "text": "Here are some effective search strategies to find the latest renewable energy developments:\n\n## Search Terms to Use:\n- \"renewable energy news 2024\"\n- \"clean energy breakthroughs\"..."
             }
           ],
-          "model": "claude-3-5-sonnet",
+          "model": "claude-4-5-sonnet",
           "stop_reason": "end_turn",
           "usage": {
             "input_tokens": 21,
@@ -364,7 +364,7 @@ heroku login
 heroku create my-ai-app
 
 # Provision a Claude model
-heroku ai:models:create claude-3-5-sonnet --app my-ai-app
+heroku ai:models:create claude-4-5-sonnet --app my-ai-app
 
 # Get your API key
 heroku config:get INFERENCE_KEY --app my-ai-app

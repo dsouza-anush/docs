@@ -38,19 +38,21 @@ During the deprecation period:
 
 ### Active Models
 
-All models currently available are actively supported with no planned deprecations:
-
 <Tabs>
   <Tab title="Chat Models">
     | Model | Status | Released |
     |-------|--------|----------|
+    | Claude Opus 4.5 | ✓ Active | 2025 |
+    | Claude 4.5 Sonnet | ✓ Active | 2025 |
     | Claude 4 Sonnet | ✓ Active | 2025 |
-    | Claude 3.7 Sonnet | ✓ Active | 2024 |
-    | Claude 3.5 Sonnet | ✓ Active | 2024 |
-    | Claude 3.5 Haiku | ✓ Active | 2024 |
-    | Claude 3.0 Haiku | ✓ Active | 2024 |
+    | Claude 4.5 Haiku | ✓ Active | 2025 |
+    | Amazon Nova 2 Lite | ✓ Active | 2025 |
     | Amazon Nova Pro | ✓ Active | 2024 |
     | Amazon Nova Lite | ✓ Active | 2024 |
+    | Kimi K2 Thinking | ✓ Active | 2025 |
+    | MiniMax M2 | ✓ Active | 2025 |
+    | Qwen3 235B | ✓ Active | 2025 |
+    | Qwen3 Coder 480B | ✓ Active | 2025 |
     | OpenAI GPT OSS 120B | ✓ Active | 2024 |
   </Tab>
 
@@ -60,6 +62,13 @@ All models currently available are actively supported with no planned deprecatio
     | Cohere Embed Multilingual | ✓ Active | 2024 |
   </Tab>
 
+  <Tab title="Rerank Models">
+    | Model | Status | Released |
+    |-------|--------|----------|
+    | Cohere Rerank 3.5 | ✓ Active | 2024 |
+    | Amazon Rerank 1.0 | ✓ Active | 2024 |
+  </Tab>
+
   <Tab title="Image Models">
     | Model | Status | Released |
     |-------|--------|----------|
@@ -67,8 +76,23 @@ All models currently available are actively supported with no planned deprecatio
   </Tab>
 </Tabs>
 
+### Deprecated Models
+
+The following models are deprecated and scheduled for removal on **February 28, 2025**:
+
+<Warning>
+  **Action required**: Migrate to the recommended replacement models before February 28, 2025 to avoid service interruption.
+</Warning>
+
+| Model | Status | Removal Date | Recommended Replacement |
+|-------|--------|--------------|------------------------|
+| Claude 3.7 Sonnet | 🚨 Deprecated | Feb 28, 2025 | Claude 4.5 Sonnet |
+| Claude 3.5 Sonnet | 🚨 Deprecated | Feb 28, 2025 | Claude 4.5 Sonnet |
+| Claude 3.5 Haiku | 🚨 Deprecated | Feb 28, 2025 | Claude 4.5 Haiku |
+| Claude 3.0 Haiku | 🚨 Deprecated | Feb 28, 2025 | Claude 4.5 Haiku |
+
 <Note>
-  **No current deprecations**: All models listed above are fully supported with no planned end-of-life dates.
+  These models continue to function normally until the removal date. We recommend migrating as soon as possible to benefit from improved capabilities in the newer models.
 </Note>
 
 ## Deprecation Status Indicators
@@ -145,15 +169,15 @@ We provide specific migration paths for each deprecated model:
 
 ```
 Example:
-Old Model: claude-3-opus
-Replacement: claude-3-5-sonnet or claude-4-sonnet
+Old Model: claude-3-5-sonnet
+Replacement: claude-4-5-sonnet
 ```
 
 #### 3. Test in Development
 
 ```bash
 # Create a new model resource for testing
-heroku ai:models:create claude-3-5-sonnet \
+heroku ai:models:create claude-4-5-sonnet \
   --app my-app-staging \
   --as INFERENCE_NEW
 
@@ -171,7 +195,7 @@ If model IDs are hardcoded, update them:
 model = "old-deprecated-model"
 
 # After
-model = "claude-3-5-sonnet"
+model = "claude-4-5-sonnet"
 ```
 
 Or use environment variables:
@@ -185,7 +209,7 @@ model = os.getenv("INFERENCE_MODEL_ID")
 
 ```bash
 # Attach new model to production app
-heroku ai:models:create claude-3-5-sonnet \
+heroku ai:models:create claude-4-5-sonnet \
   --app my-app-production \
   --as INFERENCE
 

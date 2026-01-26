@@ -36,7 +36,7 @@ from pydantic_ai.mcp import MCPServerSSE
 
 # Configure Heroku as the model provider
 model = OpenAIModel(
-    'claude-3-5-sonnet',
+    'claude-4-5-sonnet',
     provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
 )
 
@@ -76,7 +76,7 @@ class AppStatus(BaseModel):
     last_deployed: str
 
 model = OpenAIModel(
-    'claude-3-5-sonnet',
+    'claude-4-5-sonnet',
     provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
 )
 
@@ -144,7 +144,7 @@ from pydantic_ai.providers.heroku import HerokuProvider
 from pydantic_ai.mcp import MCPServerSSE
 
 model = OpenAIModel(
-    'claude-3-5-sonnet',
+    'claude-4-5-sonnet',
     provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
 )
 
@@ -172,7 +172,7 @@ from pydantic_ai.mcp import MCPServerSSE
 from pydantic_ai.exceptions import ToolExecutionError
 
 model = OpenAIModel(
-    'claude-3-5-sonnet',
+    'claude-4-5-sonnet',
     provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
 )
 

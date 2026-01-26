@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const response = await streamText({
-    model: client.chat("claude-3-5-sonnet"),
+    model: client.chat("claude-4-5-sonnet"),
     messages,
   });
 
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 }
 ```
 
-The provider maps model names to Heroku’s OpenAI-compatible identifiers (e.g., `claude-3-5-sonnet`, `claude-3-5-haiku`). You get streaming responses, tool calling, and error handling that match the Vercel AI SDK.
+The provider maps model names to Heroku’s OpenAI-compatible identifiers (e.g., `claude-4-5-sonnet`, `claude-4-5-haiku`). You get streaming responses, tool calling, and error handling that match the Vercel AI SDK.
 
 ## Deploy
 
