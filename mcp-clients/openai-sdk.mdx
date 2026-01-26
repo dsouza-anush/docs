@@ -1,0 +1,232 @@
+---
+title: "OpenAI SDK"
+description: "Connect Heroku MCP servers using the OpenAI Python SDK with Heroku's OpenAI-compatible API"
+---
+
+Use the OpenAI Python SDK with Heroku's OpenAI-compatible inference endpoint to build AI agents with MCP tools.
+
+## Prerequisites
+
+- Heroku MCP server deployed ([Remote mode](/heroku-inference/mcp-server-remote))
+- Heroku Managed Inference attached to your app
+- Python 3.8+
+
+## Installation
+
+```bash
+pip install openai mcp
+```
+
+## Environment Variables
+
+```bash
+export INFERENCE_KEY='your-heroku-inference-key'
+export INFERENCE_URL='https://us.inference.heroku.com/v1'
+export HEROKU_MCP_URL='https://your-mcp-app.herokuapp.com/sse'
+```
+
+## Connect to Heroku MCP Server
+
+```python
+import os
+from openai import OpenAI
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+
+# Initialize OpenAI client with Heroku endpoint
+client = OpenAI(
+    api_key=os.environ["INFERENCE_KEY"],
+    base_url=os.environ["INFERENCE_URL"],
+)
+
+# Connect to your Heroku MCP server
+async def get_mcp_tools():
+    async with sse_client(url=os.environ["HEROKU_MCP_URL"]) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            return tools
+
+# Convert MCP tools to OpenAI format
+def mcp_to_openai_tools(mcp_tools):
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.inputSchema,
+            }
+        }
+        for tool in mcp_tools.tools
+    ]
+```
+
+## Complete Agent Implementation
+
+```python
+import os
+import json
+import asyncio
+from openai import OpenAI
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+
+client = OpenAI(
+    api_key=os.environ["INFERENCE_KEY"],
+    base_url=os.environ["INFERENCE_URL"],
+)
+
+async def run_heroku_agent(user_message: str):
+    async with sse_client(url=os.environ["HEROKU_MCP_URL"]) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Get available tools
+            tools_response = await session.list_tools()
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.inputSchema,
+                    }
+                }
+                for t in tools_response.tools
+            ]
+
+            messages = [
+                {"role": "system", "content": "You are a Heroku assistant. Use tools to help manage apps."},
+                {"role": "user", "content": user_message}
+            ]
+
+            # Agentic loop
+            while True:
+                response = client.chat.completions.create(
+                    model="claude-3-5-sonnet",
+                    messages=messages,
+                    tools=tools,
+                )
+
+                choice = response.choices[0]
+
+                # Check if we're done
+                if choice.finish_reason == "stop":
+                    return choice.message.content
+
+                # Process tool calls
+                if choice.finish_reason == "tool_calls":
+                    messages.append(choice.message)
+
+                    for tool_call in choice.message.tool_calls:
+                        # Execute the tool via MCP
+                        result = await session.call_tool(
+                            tool_call.function.name,
+                            arguments=json.loads(tool_call.function.arguments)
+                        )
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "content": json.dumps(result.content) if result.content else "Success",
+                        })
+
+# Run the agent
+result = asyncio.run(run_heroku_agent("List all my apps and their current dyno counts"))
+print(result)
+```
+
+## Streaming with Tool Use
+
+```python
+import os
+import json
+import asyncio
+from openai import OpenAI
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+
+client = OpenAI(
+    api_key=os.environ["INFERENCE_KEY"],
+    base_url=os.environ["INFERENCE_URL"],
+)
+
+async def stream_heroku_agent(user_message: str):
+    async with sse_client(url=os.environ["HEROKU_MCP_URL"]) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            tools_response = await session.list_tools()
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.inputSchema,
+                    }
+                }
+                for t in tools_response.tools
+            ]
+
+            messages = [
+                {"role": "system", "content": "You are a Heroku assistant."},
+                {"role": "user", "content": user_message}
+            ]
+
+            while True:
+                stream = client.chat.completions.create(
+                    model="claude-3-5-sonnet",
+                    messages=messages,
+                    tools=tools,
+                    stream=True,
+                )
+
+                collected_content = ""
+                tool_calls = []
+
+                for chunk in stream:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        print(delta.content, end="", flush=True)
+                        collected_content += delta.content
+                    if delta.tool_calls:
+                        tool_calls.extend(delta.tool_calls)
+
+                if not tool_calls:
+                    break
+
+                # Execute tool calls
+                messages.append({"role": "assistant", "content": collected_content, "tool_calls": tool_calls})
+
+                for tool_call in tool_calls:
+                    result = await session.call_tool(
+                        tool_call.function.name,
+                        arguments=json.loads(tool_call.function.arguments)
+                    )
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": json.dumps(result.content) if result.content else "Success",
+                    })
+
+asyncio.run(stream_heroku_agent("Deploy my-app and show the release logs"))
+```
+
+## Deploy to Heroku
+
+```bash
+heroku create my-openai-agent
+heroku config:set INFERENCE_KEY=...
+heroku config:set INFERENCE_URL=https://us.inference.heroku.com/v1
+heroku config:set HEROKU_MCP_URL=https://your-mcp-server.herokuapp.com/sse
+git push heroku main
+```
+
+## Additional Resources
+
+- [OpenAI Python SDK](https://github.com/openai/openai-python)
+- [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
+- [Heroku OpenAI Compatibility](/inference-api/openai-compatibility)
+- [Heroku MCP Server Setup](/heroku-inference/mcp-server-remote)

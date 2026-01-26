@@ -1,0 +1,162 @@
+---
+title: "Zapier"
+description: "Connect Heroku MCP tools to Zapier workflows for no-code automation"
+---
+
+Zapier enables no-code automation between thousands of apps. Connect your Heroku MCP server to trigger Zaps or use Heroku tools in your workflows.
+
+## Overview
+
+Two integration patterns:
+1. **Trigger Zaps from Heroku events** - When an app crashes, scales, or deploys, trigger a Zap
+2. **Use Heroku tools in Zaps** - Call Heroku MCP tools from Zapier workflows
+
+## Pattern 1: Trigger Zaps from Heroku Events
+
+### Set Up Webhook Trigger
+
+Create a Zap with a Webhook trigger:
+
+1. In Zapier, create a new Zap
+2. Choose **Webhooks by Zapier** as the trigger
+3. Select **Catch Hook**
+4. Copy the webhook URL
+
+### Configure Heroku Log Drain
+
+Send Heroku events to your Zapier webhook:
+
+```bash
+# Add a log drain to capture app events
+heroku drains:add "https://hooks.zapier.com/hooks/catch/123456/abcdef/" \
+  --app my-app
+```
+
+### Parse Events in Zapier
+
+Use a Code step to parse Heroku log events:
+
+```javascript
+// Zapier Code step (JavaScript)
+const logLine = inputData.body;
+
+// Parse Heroku log format
+const match = logLine.match(/app\[(\w+)\]: (.+)/);
+if (match) {
+  return {
+    process: match[1],
+    message: match[2],
+    isError: logLine.includes("Error") || logLine.includes("error"),
+    timestamp: new Date().toISOString()
+  };
+}
+
+return { raw: logLine };
+```
+
+### Example: Alert on App Crashes
+
+Create a Zap that sends Slack alerts when your app crashes:
+
+1. **Trigger**: Webhooks by Zapier (Catch Hook)
+2. **Filter**: Only continue if `isError` is true
+3. **Action**: Slack - Send Channel Message
+   - Channel: #alerts
+   - Message: "Heroku Alert: {{message}}"
+
+## Pattern 2: Call Heroku MCP from Zapier
+
+### Create a Proxy API
+
+Deploy a simple API that Zapier can call to execute MCP tools:
+
+```python
+# app.py - Deploy this to Heroku
+from flask import Flask, request, jsonify
+import os
+import asyncio
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+
+app = Flask(__name__)
+
+async def call_mcp_tool(tool_name: str, arguments: dict):
+    async with sse_client(url=os.environ["HEROKU_MCP_URL"]) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool(tool_name, arguments=arguments)
+            return result.content
+
+@app.route("/mcp/<tool_name>", methods=["POST"])
+def execute_tool(tool_name: str):
+    # Verify Zapier webhook signature
+    if request.headers.get("X-Zapier-Secret") != os.environ["ZAPIER_SECRET"]:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    arguments = request.json or {}
+    result = asyncio.run(call_mcp_tool(tool_name, arguments))
+    return jsonify({"result": result})
+
+if __name__ == "__main__":
+    app.run()
+```
+
+Deploy to Heroku:
+
+```bash
+heroku create my-mcp-proxy
+heroku config:set HEROKU_MCP_URL=https://my-mcp-server.herokuapp.com/sse
+heroku config:set ZAPIER_SECRET=your-zapier-secret
+git push heroku main
+```
+
+### Use in Zapier Workflow
+
+1. **Action**: Webhooks by Zapier - POST
+2. **URL**: `https://my-mcp-proxy.herokuapp.com/mcp/heroku_scale_app`
+3. **Headers**:
+   - Content-Type: application/json
+   - X-Zapier-Secret: your-zapier-secret
+4. **Data**:
+   ```json
+   {
+     "app_name": "my-app",
+     "process_type": "web",
+     "quantity": 2
+   }
+   ```
+
+## Example Workflows
+
+### Auto-Scale on Slack Command
+
+When someone posts `/scale my-app 3` in Slack:
+
+1. **Trigger**: Slack - New Message in Channel (matching /scale pattern)
+2. **Action**: Code - Parse the command
+3. **Action**: Webhooks - POST to MCP proxy
+4. **Action**: Slack - Reply with result
+
+### Daily Backup Report
+
+Generate a daily report of all your Heroku apps:
+
+1. **Trigger**: Schedule - Every day at 9am
+2. **Action**: Webhooks - POST to MCP proxy (`heroku_list_apps`)
+3. **Action**: Code - Format the response
+4. **Action**: Email - Send digest
+
+### Deploy on GitHub Release
+
+When a GitHub release is published:
+
+1. **Trigger**: GitHub - New Release
+2. **Filter**: Only if release is not a pre-release
+3. **Action**: Webhooks - POST to MCP proxy (`heroku_deploy`)
+4. **Action**: Slack - Notify #deployments channel
+
+## Additional Resources
+
+- [Zapier Webhooks Documentation](https://zapier.com/apps/webhook/integrations)
+- [Heroku Log Drains](https://devcenter.heroku.com/articles/log-drains)
+- [Heroku MCP Server Setup](/heroku-inference/mcp-server-remote)

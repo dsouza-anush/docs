@@ -1,0 +1,175 @@
+---
+title: "Composio"
+description: "Connect Heroku MCP tools to Composio's platform for enhanced agent capabilities"
+---
+
+Composio is a tool integration platform that connects AI agents to 250+ apps. Combine Heroku MCP tools with Composio's ecosystem for powerful automation.
+
+## Overview
+
+Composio provides:
+- Pre-built integrations with GitHub, Slack, Notion, and more
+- Managed authentication (OAuth, API keys)
+- Tool execution infrastructure
+- Combine with Heroku MCP for infrastructure management
+
+## Installation
+
+```bash
+pip install composio-core composio-openai
+```
+
+## Environment Variables
+
+```bash
+export INFERENCE_KEY='your-heroku-inference-key'
+export INFERENCE_URL='https://us.inference.heroku.com/v1'
+export HEROKU_MCP_URL='https://your-mcp-app.herokuapp.com/sse'
+```
+
+## Connect Heroku MCP to Composio
+
+```python
+import os
+from composio_openai import ComposioToolSet, App
+from openai import OpenAI
+
+# Initialize Composio with your tools
+toolset = ComposioToolSet()
+
+# Add Composio's built-in tools (GitHub, Slack, etc.)
+composio_tools = toolset.get_tools(apps=[App.GITHUB, App.SLACK])
+
+# Add your Heroku MCP tools via custom integration
+heroku_mcp_tools = toolset.get_mcp_tools(url=os.environ["HEROKU_MCP_URL"])
+
+# Combine all tools
+all_tools = composio_tools + heroku_mcp_tools
+
+# Use with Heroku Inference (OpenAI-compatible)
+client = OpenAI(
+    api_key=os.environ["INFERENCE_KEY"],
+    base_url=os.environ["INFERENCE_URL"],
+)
+
+response = client.chat.completions.create(
+    model="claude-3-5-sonnet",
+    messages=[
+        {"role": "user", "content": "Create a GitHub issue for the bug and scale my-app to handle the traffic spike"}
+    ],
+    tools=all_tools,
+)
+
+# Handle tool calls
+toolset.handle_tool_calls(response)
+```
+
+## Multi-Platform Workflow Example
+
+```python
+import os
+from composio_openai import ComposioToolSet, App, Action
+from openai import OpenAI
+
+toolset = ComposioToolSet()
+
+# Use Heroku Inference
+client = OpenAI(
+    api_key=os.environ["INFERENCE_KEY"],
+    base_url=os.environ["INFERENCE_URL"],
+)
+
+# Get tools from multiple platforms
+tools = toolset.get_tools(
+    apps=[App.GITHUB, App.SLACK, App.NOTION],
+    actions=[
+        Action.GITHUB_CREATE_ISSUE,
+        Action.SLACK_SEND_MESSAGE,
+        Action.NOTION_CREATE_PAGE,
+    ]
+)
+
+# Add Heroku MCP tools
+heroku_tools = toolset.get_mcp_tools(url=os.environ["HEROKU_MCP_URL"])
+
+all_tools = tools + heroku_tools
+
+def deploy_with_notifications(app_name: str):
+    """Deploy an app and notify the team via Slack and GitHub."""
+
+    messages = [
+        {
+            "role": "system",
+            "content": """You are a deployment assistant. When deploying:
+            1. Check the current app status on Heroku
+            2. Deploy the latest code
+            3. Post a message to #deployments Slack channel
+            4. Update the deployment log in Notion
+            5. If there are errors, create a GitHub issue"""
+        },
+        {
+            "role": "user",
+            "content": f"Deploy {app_name} to production and notify the team"
+        }
+    ]
+
+    while True:
+        response = client.chat.completions.create(
+            model="claude-3-5-sonnet",
+            messages=messages,
+            tools=all_tools,
+        )
+
+        if response.choices[0].finish_reason == "stop":
+            return response.choices[0].message.content
+
+        # Execute tool calls
+        tool_outputs = toolset.handle_tool_calls(response)
+
+        messages.append(response.choices[0].message)
+        messages.append({
+            "role": "tool",
+            "content": str(tool_outputs),
+            "tool_call_id": response.choices[0].message.tool_calls[0].id
+        })
+
+result = deploy_with_notifications("my-production-app")
+print(result)
+```
+
+## Trigger-Based Automation
+
+```python
+import os
+from composio import ComposioToolSet, App
+from composio.client.collections import TriggerEventData
+
+toolset = ComposioToolSet()
+
+# Listen for GitHub events and respond with Heroku actions
+@toolset.trigger_listener(app=App.GITHUB)
+def on_github_push(event: TriggerEventData):
+    """When code is pushed, deploy to Heroku staging."""
+
+    if event.payload.get("ref") == "refs/heads/main":
+        # Use Heroku MCP to deploy
+        heroku_tools = toolset.get_mcp_tools(url=os.environ["HEROKU_MCP_URL"])
+
+        # Trigger deployment
+        toolset.execute_action(
+            action="heroku_deploy",
+            params={"app": "my-staging-app"},
+            tools=heroku_tools
+        )
+
+        print(f"Deployed to staging after push from {event.payload.get('pusher')}")
+
+# Start listening
+toolset.start_trigger_listener()
+```
+
+## Additional Resources
+
+- [Composio Documentation](https://docs.composio.dev/)
+- [Composio MCP Guide](https://docs.composio.dev/mcp)
+- [Heroku MCP Server Setup](/heroku-inference/mcp-server-remote)

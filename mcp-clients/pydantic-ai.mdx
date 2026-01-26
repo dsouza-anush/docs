@@ -1,0 +1,208 @@
+---
+title: "Pydantic AI"
+description: "Connect Heroku MCP servers to Python agents built with Pydantic AI"
+---
+
+Pydantic AI provides native MCP support and a Heroku provider for building type-safe AI agents in Python.
+
+## Prerequisites
+
+- Heroku MCP server deployed ([Remote mode](/heroku-inference/mcp-server-remote))
+- Heroku Managed Inference attached to your app
+- Python 3.10+
+
+## Installation
+
+```bash
+pip install pydantic-ai[mcp]
+```
+
+## Environment Variables
+
+```bash
+export INFERENCE_KEY='your-heroku-inference-key'
+export INFERENCE_URL='https://us.inference.heroku.com'
+export HEROKU_MCP_URL='https://your-mcp-app.herokuapp.com/sse'
+```
+
+## Connect to Remote MCP Server
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.heroku import HerokuProvider
+from pydantic_ai.mcp import MCPServerSSE
+
+# Configure Heroku as the model provider
+model = OpenAIModel(
+    'claude-3-5-sonnet',
+    provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
+)
+
+# Connect to your Heroku MCP server
+mcp_server = MCPServerSSE(url=os.environ["HEROKU_MCP_URL"])
+
+# Create an agent with Heroku model and MCP tools
+agent = Agent(
+    model,
+    mcp_servers=[mcp_server],
+    system_prompt="You are a Heroku assistant. Help users manage their applications."
+)
+
+async def main():
+    async with agent.run_mcp_servers():
+        result = await agent.run("List all my Heroku apps")
+        print(result.output)
+
+import asyncio
+asyncio.run(main())
+```
+
+## Structured Output with Tools
+
+```python
+import os
+from pydantic import BaseModel
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.heroku import HerokuProvider
+from pydantic_ai.mcp import MCPServerSSE
+
+class AppStatus(BaseModel):
+    name: str
+    status: str
+    dyno_count: int
+    last_deployed: str
+
+model = OpenAIModel(
+    'claude-3-5-sonnet',
+    provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
+)
+
+mcp_server = MCPServerSSE(url=os.environ["HEROKU_MCP_URL"])
+
+agent = Agent(
+    model,
+    mcp_servers=[mcp_server],
+    output_type=list[AppStatus],
+)
+
+async def get_app_statuses():
+    async with agent.run_mcp_servers():
+        result = await agent.run("Get the status of all my production apps")
+        for app in result.output:
+            print(f"{app.name}: {app.status} ({app.dyno_count} dynos)")
+
+asyncio.run(get_app_statuses())
+```
+
+## Multi-Step Agent Workflow
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.heroku import HerokuProvider
+from pydantic_ai.mcp import MCPServerSSE
+
+model = OpenAIModel(
+    'claude-4-sonnet',  # Use Claude 4 for complex reasoning
+    provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
+)
+
+mcp_server = MCPServerSSE(url=os.environ["HEROKU_MCP_URL"])
+
+agent = Agent(
+    model,
+    mcp_servers=[mcp_server],
+    system_prompt="""You are a Heroku deployment assistant. When asked to deploy:
+    1. First check the current app status
+    2. Review recent releases
+    3. Perform the deployment
+    4. Verify the deployment succeeded
+    Always explain what you're doing at each step."""
+)
+
+async def deploy_with_verification(app_name: str):
+    async with agent.run_mcp_servers():
+        result = await agent.run(
+            f"Deploy the latest code to {app_name} and verify it's working"
+        )
+        print(result.output)
+
+asyncio.run(deploy_with_verification("my-production-app"))
+```
+
+## Streaming Responses
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.heroku import HerokuProvider
+from pydantic_ai.mcp import MCPServerSSE
+
+model = OpenAIModel(
+    'claude-3-5-sonnet',
+    provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
+)
+
+mcp_server = MCPServerSSE(url=os.environ["HEROKU_MCP_URL"])
+
+agent = Agent(model, mcp_servers=[mcp_server])
+
+async def stream_response():
+    async with agent.run_mcp_servers():
+        async with agent.run_stream("Analyze the logs for my-app from the last hour") as stream:
+            async for chunk in stream.stream_text():
+                print(chunk, end="", flush=True)
+
+asyncio.run(stream_response())
+```
+
+## Error Handling
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.heroku import HerokuProvider
+from pydantic_ai.mcp import MCPServerSSE
+from pydantic_ai.exceptions import ToolExecutionError
+
+model = OpenAIModel(
+    'claude-3-5-sonnet',
+    provider=HerokuProvider(api_key=os.environ['INFERENCE_KEY']),
+)
+
+mcp_server = MCPServerSSE(url=os.environ["HEROKU_MCP_URL"])
+
+agent = Agent(model, mcp_servers=[mcp_server])
+
+async def safe_operation():
+    async with agent.run_mcp_servers():
+        try:
+            result = await agent.run("Scale my-app to 10 dynos")
+            print(result.output)
+        except ToolExecutionError as e:
+            print(f"Tool execution failed: {e}")
+
+asyncio.run(safe_operation())
+```
+
+## Deploy to Heroku
+
+```bash
+heroku create my-pydantic-agent
+heroku config:set INFERENCE_KEY=...
+heroku config:set INFERENCE_URL=https://us.inference.heroku.com
+heroku config:set HEROKU_MCP_URL=https://your-mcp-server.herokuapp.com/sse
+git push heroku main
+```
+
+## Additional Resources
+
+- [Pydantic AI MCP Documentation](https://ai.pydantic.dev/mcp/)
+- [Heroku Pydantic AI Integration](/ai-integrations/pydantic)
+- [Heroku MCP Server Setup](/heroku-inference/mcp-server-remote)

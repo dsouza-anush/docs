@@ -1,0 +1,230 @@
+---
+title: "Evaluation Best Practices"
+description: "Best practices for evaluating AI applications on Heroku"
+---
+
+Effective evaluation is the foundation of reliable AI applications. This guide covers best practices for designing, implementing, and maintaining evaluations for your LLM-powered features.
+
+## Design Your Evaluation Process
+
+A systematic approach to evaluation follows five steps:
+
+1. **Define your objective** - What does success look like for this feature?
+2. **Collect a dataset** - Which examples help evaluate your objective?
+3. **Define metrics** - How will you measure success quantitatively?
+4. **Run and compare** - Test changes against your baseline
+5. **Continuously evaluate** - Monitor production quality over time
+
+## Set Up Tracing Early
+
+Before deploying to production, instrument your application with tracing. This gives you visibility into every LLM call and enables post-hoc evaluation.
+
+<Tabs>
+  <Tab title="Arize Phoenix">
+```python
+from phoenix.otel import register
+
+tracer_provider = register(project_name="my-heroku-app")
+```
+  </Tab>
+  <Tab title="W&B Weave">
+```python
+import weave
+
+weave.init("my-heroku-app")
+```
+  </Tab>
+  <Tab title="Logfire">
+```python
+import logfire
+
+logfire.configure()
+logfire.instrument_openai()
+```
+  </Tab>
+</Tabs>
+
+## Define Success Metrics
+
+Choose metrics that align with your business objectives:
+
+| Metric Type | Examples | Use Case |
+|-------------|----------|----------|
+| **Accuracy** | Exact match, semantic similarity | Factual Q&A, data extraction |
+| **Quality** | Coherence, helpfulness, relevance | Content generation, chat |
+| **Safety** | Toxicity, PII detection, refusals | User-facing applications |
+| **Performance** | Latency, token usage, cost | Production optimization |
+
+## Types of Evaluators
+
+### Metric-Based Evaluations
+
+Quantitative scores for automated regression testing:
+
+- **Exact match** - Output matches expected answer exactly
+- **String containment** - Output contains required keywords
+- **Regex patterns** - Output matches expected format
+- **Function call accuracy** - Correct tool invocations
+
+Best for: Structured outputs, tool use, classification tasks.
+
+### Human Evaluations
+
+High quality but resource-intensive:
+
+- Use randomized, blinded tests to avoid bias
+- Require multiple reviewer consensus for subjective tasks
+- Reserve for high-stakes decisions and calibrating automated evals
+
+Best for: Creative content, nuanced quality judgments, establishing ground truth.
+
+### LLM-as-a-Judge
+
+Scalable automated evaluation using another LLM:
+
+```python
+JUDGE_PROMPT = """
+Rate the following response on a scale of 1-5 for helpfulness.
+
+User question: {question}
+Assistant response: {response}
+
+Provide your rating and a brief explanation.
+"""
+```
+
+Common patterns:
+- **Pairwise comparison** - Which of two responses is better?
+- **Reference-guided grading** - How close is this to the ideal answer?
+- **Rubric-based scoring** - Rate against specific criteria
+
+Best for: Quality assessment at scale, comparing prompt variations.
+
+## Build Your Evaluation Dataset
+
+### Start Small, Grow Intentionally
+
+Begin with 20-50 carefully curated examples that represent:
+
+- Common use cases (70% of dataset)
+- Edge cases (20% of dataset)
+- Known failure modes (10% of dataset)
+
+### Collect from Production
+
+Use tracing to identify valuable evaluation examples:
+
+```python
+# With Phoenix, export interesting traces to datasets
+from phoenix.trace import TraceDataset
+
+# Filter for traces that need review
+traces = px.Client().get_trace_dataset(
+    project_name="my-app",
+    filter="latency_ms > 5000 OR error IS NOT NULL"
+)
+```
+
+### Handle Edge Cases
+
+Ensure your dataset covers:
+
+- Non-English or multilingual inputs
+- Multiple questions in a single request
+- Typos and misspellings
+- Very long or very short inputs
+- Ambiguous requests
+- Adversarial inputs (jailbreak attempts)
+
+## Run Evaluations Effectively
+
+### Establish a Baseline
+
+Before making changes, measure your current performance:
+
+```python
+# Run evaluation on current prompt
+baseline_results = evaluate(
+    dataset=eval_dataset,
+    prompt=current_prompt,
+    metrics=[accuracy, latency, cost]
+)
+print(f"Baseline accuracy: {baseline_results.accuracy:.2%}")
+```
+
+### Compare Changes Systematically
+
+Test one change at a time:
+
+```python
+# Compare new prompt against baseline
+comparison = compare_evaluations(
+    baseline=baseline_results,
+    candidate=evaluate(dataset=eval_dataset, prompt=new_prompt, metrics=metrics)
+)
+
+if comparison.is_significant_improvement():
+    print("New prompt is better - deploy it")
+```
+
+### Watch for Regressions
+
+Improvements in one area may cause regressions in another:
+
+| Change | Accuracy | Latency | Cost |
+|--------|----------|---------|------|
+| Baseline | 85% | 1.2s | $0.02 |
+| Longer prompt | 92% | 1.8s | $0.04 |
+| Different model | 88% | 0.8s | $0.01 |
+
+## Continuous Evaluation in Production
+
+### Monitor Key Metrics
+
+Set up dashboards and alerts for:
+
+- Error rates by endpoint and model
+- Latency percentiles (p50, p95, p99)
+- Token usage and cost per request
+- User feedback signals (thumbs up/down, regenerations)
+
+### Sample Production Traffic
+
+Periodically evaluate a sample of production requests:
+
+```python
+# Weekly evaluation job
+production_sample = get_random_traces(n=100, period="7d")
+results = evaluate(production_sample, metrics=quality_metrics)
+
+if results.quality_score < THRESHOLD:
+    alert("Quality degradation detected")
+```
+
+### Create a Feedback Loop
+
+1. Collect traces from production
+2. Identify failure cases through monitoring or user feedback
+3. Add failures to evaluation dataset
+4. Test prompt improvements against expanded dataset
+5. Deploy with confidence
+
+## Common Pitfalls to Avoid
+
+<Warning>
+**Don't overfit to your eval set.** If you tune prompts specifically to pass your evaluations, you may not improve real-world performance. Regularly add new examples and rotate test sets.
+</Warning>
+
+<Warning>
+**Don't ignore cost.** A 5% accuracy improvement that doubles your LLM costs may not be worth it. Always consider the cost-quality tradeoff.
+</Warning>
+
+<Warning>
+**Don't skip human review.** Automated metrics can miss subtle quality issues. Periodically review outputs manually, especially after significant changes.
+</Warning>
+
+## Next Steps
+
+- [Set up Arize Phoenix](/ai-integrations/arize-phoenix) for tracing and evaluation
+- [Configure W&B Weave](/ai-integrations/wandb-weave) for experiment tracking
+- [Deploy Logfire](/ai-integrations/logfire) for production monitoring

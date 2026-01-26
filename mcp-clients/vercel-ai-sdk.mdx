@@ -1,0 +1,174 @@
+---
+title: "Vercel AI SDK"
+description: "Connect Heroku MCP servers to applications built with the Vercel AI SDK"
+---
+
+The Vercel AI SDK with the [Heroku AI provider](https://github.com/julianduque/heroku-ai-provider) provides MCP support for building AI applications with React, Next.js, and Node.js.
+
+## Prerequisites
+
+- Heroku MCP server deployed ([Remote mode](/heroku-inference/mcp-server-remote))
+- Heroku Managed Inference attached to your app
+- Node.js 18+
+
+## Installation
+
+```bash
+npm install ai heroku-ai-provider
+```
+
+## Environment Variables
+
+```bash
+# .env.local
+INFERENCE_KEY=your-heroku-inference-key
+INFERENCE_URL=https://us.inference.heroku.com/v1
+HEROKU_MCP_URL=https://your-mcp-app.herokuapp.com/sse
+```
+
+## Connect to Remote MCP Server
+
+```typescript
+import { experimental_createMCPClient as createMCPClient } from "ai/mcp";
+import { Heroku } from "heroku-ai-provider";
+import { generateText } from "ai";
+
+// Initialize Heroku provider
+const heroku = new Heroku({
+  apiKey: process.env.INFERENCE_KEY!,
+  baseURL: process.env.INFERENCE_URL,
+});
+
+// Connect to your Heroku MCP server
+const mcpClient = await createMCPClient({
+  transport: {
+    type: "sse",
+    url: process.env.HEROKU_MCP_URL!,
+  },
+});
+
+// Get tools from the MCP server
+const tools = await mcpClient.tools();
+
+// Use with Heroku AI
+const response = await generateText({
+  model: heroku.chat("claude-3-5-sonnet"),
+  tools,
+  prompt: "List all apps in my Heroku account",
+});
+
+console.log(response.text);
+```
+
+## React Component with Streaming
+
+```tsx
+"use client";
+
+import { useChat } from "ai/react";
+
+export function HerokuAssistant() {
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: "/api/chat",
+  });
+
+  return (
+    <div className="flex flex-col h-screen">
+      <div className="flex-1 overflow-y-auto p-4">
+        {messages.map((m) => (
+          <div key={m.id} className={m.role === "user" ? "text-right" : "text-left"}>
+            <span className="inline-block p-2 rounded-lg bg-gray-100">
+              {m.content}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-4 border-t">
+        <input
+          value={input}
+          onChange={handleInputChange}
+          placeholder="Ask about your Heroku apps..."
+          className="w-full p-2 border rounded"
+          disabled={isLoading}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+## API Route (Next.js App Router)
+
+```typescript
+// app/api/chat/route.ts
+import { experimental_createMCPClient as createMCPClient } from "ai/mcp";
+import { Heroku } from "heroku-ai-provider";
+import { streamText } from "ai";
+
+const heroku = new Heroku({
+  apiKey: process.env.INFERENCE_KEY!,
+  baseURL: process.env.INFERENCE_URL,
+});
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const mcpClient = await createMCPClient({
+    transport: {
+      type: "sse",
+      url: process.env.HEROKU_MCP_URL!,
+    },
+  });
+
+  const tools = await mcpClient.tools();
+
+  const result = streamText({
+    model: heroku.chat("claude-3-5-sonnet"),
+    tools,
+    messages,
+    system: "You are a helpful Heroku assistant. Use the available tools to help users manage their apps.",
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+## Tool Execution with Confirmation
+
+```typescript
+import { Heroku } from "heroku-ai-provider";
+import { generateText } from "ai";
+
+const heroku = new Heroku({
+  apiKey: process.env.INFERENCE_KEY!,
+  baseURL: process.env.INFERENCE_URL,
+});
+
+const response = await generateText({
+  model: heroku.chat("claude-3-5-sonnet"),
+  tools,
+  prompt: "Scale my-app to 2 dynos",
+  maxSteps: 5,
+  onStepFinish: async ({ toolCalls }) => {
+    for (const call of toolCalls || []) {
+      console.log(`Executing: ${call.toolName}`, call.args);
+    }
+  },
+});
+```
+
+## Deploy to Heroku
+
+```bash
+heroku create my-ai-app
+heroku config:set INFERENCE_KEY=... INFERENCE_URL=https://us.inference.heroku.com/v1
+heroku config:set HEROKU_MCP_URL=https://your-mcp-server.herokuapp.com/sse
+git push heroku main
+```
+
+## Additional Resources
+
+- [Heroku AI Provider](https://github.com/julianduque/heroku-ai-provider)
+- [Vercel AI SDK MCP Documentation](https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling#model-context-protocol-mcp)
+- [Heroku MCP Server Setup](/heroku-inference/mcp-server-remote)

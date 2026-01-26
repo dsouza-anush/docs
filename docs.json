@@ -19,7 +19,10 @@
             "pages": [
               "introduction",
               "quickstart",
-              "inference-api/cli-commands"
+              "inference-api/cli-commands",
+              "inference-api/models",
+              "inference-api/choosing-a-model",
+              "inference-api/pricing"
             ]
           },
           {
@@ -28,40 +31,62 @@
               "inference-api/overview",
               "heroku-inference/ai-studio",
               "inference-api/openai-compatibility",
-              "inference-api/chat-vs-agents"
-            ]
-          },
-          {
-            "group": "Models",
-            "pages": [
-              "inference-api/models",
-              "inference-api/choosing-a-model",
-              "inference-api/model-deprecations",
-              "inference-api/pricing",
-              "inference-api/rate-limits"
-            ]
-          },
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/migrate-from-openai",
               "inference-api/structured-output",
-              "cookbook/prompt-patterns",
-              "cookbook/embeddings-rag",
               "cookbook/images",
-              "inference-api/troubleshooting"
+              "cookbook/embeddings-rag",
+              "guides/migrate-from-openai"
+            ]
+          },
+          {
+            "group": "Agents",
+            "pages": [
+              "inference-api/chat-vs-agents",
+              "inference-api/agents-heroku",
+              "cookbook/prompt-patterns"
             ]
           },
           {
             "group": "Tools",
             "pages": [
               "tools/overview",
-              "tool-use/heroku-tools",
-              "tool-use/heroku-tools/code-execution",
-              "tool-use/heroku-tools/run-sql",
-              "tool-use/heroku-tools/doc-reader",
-              "tools/connectors",
-              "tool-use/working-with-mcp"
+              {
+                "group": "Built-in Tools",
+                "pages": [
+                  "tool-use/heroku-tools",
+                  "tool-use/heroku-tools/code-execution",
+                  "tool-use/heroku-tools/run-sql",
+                  "tool-use/heroku-tools/doc-reader"
+                ]
+              },
+              {
+                "group": "Connectors",
+                "pages": [
+                  "tools/connectors",
+                  "connectors/jira-confluence",
+                  "connectors/salesforce-crm",
+                  "connectors/zendesk-support",
+                  "connectors/brightdata-search",
+                  "connectors/exa-search",
+                  "connectors/playwright-browser"
+                ]
+              },
+              {
+                "group": "MCP",
+                "pages": [
+                  "tool-use/working-with-mcp",
+                  "model-context/overview"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Evaluation",
+            "pages": [
+              "evaluation/overview",
+              "ai-integrations/arize-phoenix",
+              "ai-integrations/wandb-weave",
+              "ai-integrations/logfire",
+              "evaluation/best-practices"
             ]
           },
           {
@@ -74,15 +99,16 @@
             ]
           },
           {
-            "group": "Observability",
+            "group": "Reference",
             "pages": [
-              "ai-integrations/arize-phoenix",
-              "ai-integrations/wandb-weave",
-              "ai-integrations/logfire"
+              "inference-api/model-deprecations",
+              "inference-api/rate-limits",
+              "inference-api/troubleshooting",
+              "inference-api/errors"
             ]
           },
           {
-            "group": "Cookbooks",
+            "group": "Cookbook",
             "pages": [
               "cookbook/index",
               "cookbook/openai-sdk-reference-apps",
@@ -132,12 +158,27 @@
             ]
           },
           {
-            "group": "Clients",
+            "group": "SDK Clients",
+            "pages": [
+              "mcp-clients/vercel-ai-sdk",
+              "mcp-clients/pydantic-ai",
+              "mcp-clients/openai-sdk"
+            ]
+          },
+          {
+            "group": "Desktop & IDE Clients",
             "pages": [
               "mcp-clients/chatgpt",
               "mcp-clients/claude",
               "mcp-clients/cursor",
               "mcp-clients/agentforce"
+            ]
+          },
+          {
+            "group": "Third-Party Integrations",
+            "pages": [
+              "mcp-clients/composio",
+              "mcp-clients/zapier"
             ]
           }
         ]
