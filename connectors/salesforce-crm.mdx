@@ -1,0 +1,245 @@
+---
+title: "Salesforce CRM"
+description: "Enable AI agents to query and modify Salesforce data using SOQL, manage records, and access object metadata"
+---
+
+The Salesforce MCP server enables AI agents to interact with Salesforce CRM data, including querying records with SOQL, creating and updating objects, and accessing metadata.
+
+## Overview
+
+This connector provides tools for:
+
+- **SOQL Queries** - Query any Salesforce object with full SOQL support
+- **Record Management** - Create, update, and delete records
+- **Object Metadata** - Discover available objects and their fields
+- **Bulk Operations** - Handle multiple records efficiently
+
+## Integration Options
+
+### Option A: Salesforce Hosted MCP (Coming Soon)
+
+Salesforce is developing an official hosted MCP server, currently in beta with general availability expected in February 2026.
+
+<Note>
+  Sign up for the beta at the [Salesforce Developer Blog](https://developer.salesforce.com/blogs/2025/10/salesforce-hosted-mcp-servers-are-in-beta-today).
+</Note>
+
+### Option B: Deploy to Heroku
+
+Deploy a community MCP server to Heroku:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/heroku-examples/mcp-salesforce)
+
+After deployment, configure your Salesforce credentials:
+
+```bash
+heroku config:set SF_INSTANCE_URL=https://your-instance.salesforce.com -a your-app-name
+heroku config:set SF_CLIENT_ID=your-connected-app-client-id -a your-app-name
+heroku config:set SF_CLIENT_SECRET=your-connected-app-client-secret -a your-app-name
+heroku config:set SF_USERNAME=your-salesforce-username -a your-app-name
+heroku config:set SF_PASSWORD=your-salesforce-password -a your-app-name
+heroku config:set SF_SECURITY_TOKEN=your-security-token -a your-app-name
+```
+
+#### Register with Heroku AI
+
+```bash
+heroku ai:mcp:servers:add salesforce-mcp \
+  --app your-inference-app \
+  --server-app your-salesforce-mcp-app
+```
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `query` | Execute SOQL queries against Salesforce |
+| `describe_object` | Get metadata about a Salesforce object (fields, types, relationships) |
+| `create` | Create a new record in any Salesforce object |
+| `update` | Update an existing record by ID |
+| `delete` | Delete a record by ID |
+
+## Tool Details
+
+### query
+
+Execute SOQL (Salesforce Object Query Language) queries to retrieve data.
+
+**Parameters:**
+- `query` (string, required) - The SOQL query to execute
+
+**Example queries:**
+```sql
+-- Get recent opportunities
+SELECT Id, Name, Amount, StageName, CloseDate
+FROM Opportunity
+WHERE CloseDate = THIS_QUARTER
+ORDER BY Amount DESC
+
+-- Find contacts at a company
+SELECT Id, FirstName, LastName, Email, Phone
+FROM Contact
+WHERE Account.Name = 'Acme Corp'
+
+-- Get open cases
+SELECT Id, CaseNumber, Subject, Status, Priority
+FROM Case
+WHERE IsClosed = false
+ORDER BY CreatedDate DESC
+```
+
+### describe_object
+
+Get metadata about a Salesforce object including fields, data types, and relationships.
+
+**Parameters:**
+- `object_name` (string, required) - API name of the Salesforce object (e.g., `Account`, `Contact`, `Opportunity`)
+
+### create
+
+Create a new record in Salesforce.
+
+**Parameters:**
+- `object_name` (string, required) - API name of the object
+- `fields` (object, required) - Field values for the new record
+
+**Example:**
+```json
+{
+  "object_name": "Contact",
+  "fields": {
+    "FirstName": "Jane",
+    "LastName": "Doe",
+    "Email": "jane.doe@example.com",
+    "AccountId": "001xx000003DGbYAAW"
+  }
+}
+```
+
+### update
+
+Update an existing record.
+
+**Parameters:**
+- `object_name` (string, required) - API name of the object
+- `record_id` (string, required) - Salesforce record ID
+- `fields` (object, required) - Fields to update
+
+### delete
+
+Delete a record from Salesforce.
+
+**Parameters:**
+- `object_name` (string, required) - API name of the object
+- `record_id` (string, required) - Salesforce record ID to delete
+
+## Using with Heroku AI Agents
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Find all opportunities closing this month over $50,000"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["salesforce-mcp"]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Find all opportunities closing this month over $50,000"}
+    ],
+    "mcp_servers": ["salesforce-mcp"]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## Configuration
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SF_INSTANCE_URL` | Your Salesforce instance URL | Yes |
+| `SF_CLIENT_ID` | Connected App consumer key | Yes |
+| `SF_CLIENT_SECRET` | Connected App consumer secret | Yes |
+| `SF_USERNAME` | Salesforce username | Yes |
+| `SF_PASSWORD` | Salesforce password | Yes |
+| `SF_SECURITY_TOKEN` | Security token (append to password if required) | Depends |
+
+### Setting Up a Connected App
+
+1. Go to **Setup** → **App Manager** → **New Connected App**
+2. Enable OAuth Settings
+3. Add OAuth scopes: `api`, `refresh_token`, `offline_access`
+4. Save and note the Consumer Key and Consumer Secret
+5. Configure your Heroku app with the credentials
+
+See [Salesforce Connected Apps Guide](https://help.salesforce.com/s/articleView?id=sf.connected_app_overview.htm) for detailed instructions.
+
+## Example Use Cases
+
+### Sales Pipeline
+
+```
+"Show me all opportunities in the Negotiation stage with close dates in the next 30 days"
+```
+
+### Account Research
+
+```
+"Get the contact information for all decision makers at Acme Corp"
+```
+
+### Data Entry
+
+```
+"Create a new lead for John Smith at TechCorp, email john@techcorp.com, phone 555-0123"
+```
+
+### Reporting
+
+```
+"Summarize our win rate by industry for Q4"
+```
+
+### Case Management
+
+```
+"Find all high-priority cases opened this week that haven't been assigned"
+```
+
+## Security Considerations
+
+- **Principle of Least Privilege** - Use a Salesforce user with minimal required permissions
+- **Field-Level Security** - The MCP server respects Salesforce field-level security
+- **API Limits** - Monitor your Salesforce API usage limits
+- **Audit Logging** - All operations are logged in Salesforce's audit trail
+
+## Additional Resources
+
+- [Salesforce REST API Documentation](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/)
+- [SOQL Reference](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/)
+- [Heroku MCP Integration Guide](/tools/custom)
+- [Heroku Agents API](/inference-api/agents-heroku)

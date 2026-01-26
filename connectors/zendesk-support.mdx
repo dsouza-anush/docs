@@ -1,0 +1,249 @@
+---
+title: "Zendesk Support"
+description: "Enable AI agents to manage support tickets, add comments, and access Help Center knowledge base"
+---
+
+The Zendesk MCP server enables AI agents to manage support tickets, respond to customers, and access your Help Center knowledge base.
+
+## Overview
+
+This connector provides tools for:
+
+- **Ticket Management** - Create, update, and query support tickets
+- **Comments** - Add internal notes and public replies
+- **Help Center** - Access knowledge base articles
+- **Ticket Analysis** - Analyze ticket sentiment and categorize issues
+
+## Deploy to Heroku
+
+Deploy the Zendesk MCP server to Heroku:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/heroku-examples/mcp-zendesk)
+
+After deployment, configure your Zendesk credentials:
+
+```bash
+heroku config:set ZENDESK_SUBDOMAIN=your-subdomain -a your-app-name
+heroku config:set ZENDESK_EMAIL=your-email@example.com -a your-app-name
+heroku config:set ZENDESK_API_TOKEN=your-api-token -a your-app-name
+```
+
+Get your API token from **Zendesk Admin** → **Apps and integrations** → **APIs** → **Zendesk API**.
+
+## Register with Heroku AI
+
+```bash
+heroku ai:mcp:servers:add zendesk-mcp \
+  --app your-inference-app \
+  --server-app your-zendesk-mcp-app
+```
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_tickets` | Fetch tickets with pagination, sorting, and filtering |
+| `get_ticket` | Get detailed information about a specific ticket |
+| `get_ticket_comments` | Retrieve all comments on a ticket |
+| `create_ticket` | Create a new support ticket |
+| `create_ticket_comment` | Add a comment (public reply or internal note) |
+| `update_ticket` | Update ticket status, priority, assignee, tags |
+
+## Tool Details
+
+### get_tickets
+
+Fetch multiple tickets with filtering and pagination.
+
+**Parameters:**
+- `status` (string, optional) - Filter by status: `new`, `open`, `pending`, `hold`, `solved`, `closed`
+- `priority` (string, optional) - Filter by priority: `low`, `normal`, `high`, `urgent`
+- `sort_by` (string, optional) - Sort field: `created_at`, `updated_at`, `priority`, `status`
+- `sort_order` (string, optional) - `asc` or `desc`
+- `per_page` (number, optional) - Results per page (default: 25, max: 100)
+- `page` (number, optional) - Page number
+
+### get_ticket
+
+Get complete details for a single ticket.
+
+**Parameters:**
+- `ticket_id` (number, required) - The ticket ID
+
+### get_ticket_comments
+
+Retrieve all comments on a ticket including public replies and internal notes.
+
+**Parameters:**
+- `ticket_id` (number, required) - The ticket ID
+
+### create_ticket
+
+Create a new support ticket.
+
+**Parameters:**
+- `subject` (string, required) - Ticket subject line
+- `description` (string, required) - Initial ticket description/comment
+- `priority` (string, optional) - `low`, `normal`, `high`, `urgent`
+- `type` (string, optional) - `question`, `incident`, `problem`, `task`
+- `tags` (array, optional) - Tags to apply to the ticket
+- `requester_email` (string, optional) - Email of the requester
+
+### create_ticket_comment
+
+Add a comment to an existing ticket.
+
+**Parameters:**
+- `ticket_id` (number, required) - The ticket ID
+- `body` (string, required) - Comment text (supports basic HTML)
+- `public` (boolean, optional) - `true` for public reply, `false` for internal note (default: true)
+
+### update_ticket
+
+Update ticket properties.
+
+**Parameters:**
+- `ticket_id` (number, required) - The ticket ID
+- `status` (string, optional) - New status
+- `priority` (string, optional) - New priority
+- `assignee_id` (number, optional) - User ID to assign ticket to
+- `tags` (array, optional) - Replace ticket tags
+- `add_tags` (array, optional) - Add tags without removing existing ones
+
+## Built-in Prompts
+
+The Zendesk MCP server includes helpful prompts:
+
+### analyze-ticket
+
+Analyze a ticket to understand the customer's issue, sentiment, and suggested actions.
+
+```
+"Analyze ticket #12345 and suggest a response"
+```
+
+### draft-ticket-response
+
+Draft a professional response based on ticket context and Help Center articles.
+
+```
+"Draft a response to ticket #12345 explaining our refund policy"
+```
+
+## Resources
+
+### Knowledge Base Access
+
+Access Help Center articles through the `zendesk://knowledge-base` resource:
+
+```
+"Search our Help Center for articles about password reset"
+```
+
+## Using with Heroku AI Agents
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Find all urgent tickets opened today and summarize the issues"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["zendesk-mcp"]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Find all urgent tickets opened today and summarize the issues"}
+    ],
+    "mcp_servers": ["zendesk-mcp"]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## Configuration
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ZENDESK_SUBDOMAIN` | Your Zendesk subdomain (e.g., `mycompany` for `mycompany.zendesk.com`) | Yes |
+| `ZENDESK_EMAIL` | Email address of the API user | Yes |
+| `ZENDESK_API_TOKEN` | API token for authentication | Yes |
+
+<Note>
+  The API user must have appropriate permissions to view and manage tickets. Agent or Admin roles are typically required.
+</Note>
+
+## Example Use Cases
+
+### Ticket Triage
+
+```
+"Show me all new tickets from today, categorize them by type, and assign priority levels"
+```
+
+### Customer Response
+
+```
+"Draft a helpful response to ticket #5678 explaining how to reset their password"
+```
+
+### Escalation
+
+```
+"Find all tickets that have been pending for more than 24 hours and escalate them to urgent"
+```
+
+### Reporting
+
+```
+"Summarize the most common issues from tickets opened this week"
+```
+
+### Internal Notes
+
+```
+"Add an internal note to ticket #1234 explaining that engineering is investigating the bug"
+```
+
+### Bulk Updates
+
+```
+"Close all solved tickets older than 7 days with a thank you message"
+```
+
+## Security Considerations
+
+- **API Token Security** - Store tokens in Heroku config vars, never in code
+- **Minimal Permissions** - Use an API user with only necessary permissions
+- **Public vs Private Comments** - Be careful with the `public` parameter to avoid exposing internal notes
+- **PII Handling** - Ticket data may contain sensitive customer information
+
+## Additional Resources
+
+- [Zendesk API Documentation](https://developer.zendesk.com/api-reference/)
+- [Zendesk API Authentication](https://developer.zendesk.com/api-reference/introduction/security-and-auth/)
+- [Heroku MCP Integration Guide](/tools/custom)
+- [Heroku Agents API](/inference-api/agents-heroku)

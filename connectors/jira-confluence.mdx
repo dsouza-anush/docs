@@ -1,0 +1,277 @@
+---
+title: "Jira & Confluence"
+description: "Enable AI agents to manage Jira issues, sprints, boards, and Confluence pages with 51 tools for complete Atlassian integration"
+---
+
+The Atlassian MCP server provides comprehensive access to Jira and Confluence, enabling AI agents to manage issues, sprints, boards, epics, and documentation pages.
+
+## Overview
+
+This connector provides 51 tools covering:
+
+- **Jira Issues** - Create, update, search, and transition issues
+- **Sprints & Boards** - Manage agile workflows
+- **Epics & Backlogs** - Organize work hierarchically
+- **Time Tracking** - Log and manage work time
+- **Confluence** - Create and edit documentation pages
+
+## Integration Options
+
+### Option A: Connect to Atlassian's Remote MCP Server
+
+Atlassian provides an official hosted MCP server. Connect using the Vercel AI SDK or Pydantic AI.
+
+<Tabs>
+  <Tab title="Vercel AI SDK">
+```typescript
+import { experimental_createMCPClient } from "ai/mcp";
+import { createHeroku } from "@heroku/ai-provider";
+
+const mcpClient = await experimental_createMCPClient({
+  transport: {
+    type: "sse",
+    url: "https://mcp.atlassian.com/v1/sse",
+  },
+});
+
+const tools = await mcpClient.tools();
+const heroku = createHeroku();
+
+const response = await generateText({
+  model: heroku("claude-4-sonnet"),
+  tools,
+  prompt: "List my open Jira issues assigned to me",
+});
+```
+  </Tab>
+  <Tab title="Pydantic AI">
+```python
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerSSE
+
+mcp_server = MCPServerSSE("https://mcp.atlassian.com/v1/sse")
+
+agent = Agent(
+    "heroku:claude-4-sonnet",
+    mcp_servers=[mcp_server]
+)
+
+async with agent.run_mcp_servers():
+    result = await agent.run("List my open Jira issues assigned to me")
+    print(result.output)
+```
+  </Tab>
+</Tabs>
+
+<Note>
+  Atlassian's hosted MCP server handles OAuth authentication automatically when you connect.
+</Note>
+
+### Option B: Deploy to Heroku
+
+Deploy a community MCP server to Heroku for full control over configuration:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/heroku-examples/mcp-atlassian)
+
+After deployment, configure your Atlassian credentials:
+
+```bash
+heroku config:set JIRA_HOST=https://your-domain.atlassian.net -a your-app-name
+heroku config:set JIRA_EMAIL=your-email@example.com -a your-app-name
+heroku config:set JIRA_API_TOKEN=your-api-token -a your-app-name
+```
+
+Get your API token from [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens).
+
+#### Register with Heroku AI
+
+```bash
+heroku ai:mcp:servers:add jira-mcp \
+  --app your-inference-app \
+  --server-app your-jira-mcp-app
+```
+
+## Available Tools
+
+### Jira Issue Management
+
+| Tool | Description |
+|------|-------------|
+| `jira_search_issues` | Search issues using JQL (Jira Query Language) |
+| `jira_get_issue` | Get detailed information about a specific issue |
+| `jira_create_issue` | Create a new issue with type, summary, description |
+| `jira_update_issue` | Update issue fields (summary, description, assignee, etc.) |
+| `jira_delete_issue` | Delete an issue |
+| `jira_transition_issue` | Move issue through workflow (To Do → In Progress → Done) |
+| `jira_link_issues` | Create links between related issues |
+| `jira_add_comment` | Add a comment to an issue |
+| `jira_get_comments` | Retrieve all comments on an issue |
+
+### Sprint Management
+
+| Tool | Description |
+|------|-------------|
+| `jira_list_sprints` | List all sprints for a board |
+| `jira_create_sprint` | Create a new sprint |
+| `jira_start_sprint` | Start a sprint with goal and dates |
+| `jira_close_sprint` | Complete a sprint |
+| `jira_move_issue_to_sprint` | Add issues to a sprint |
+
+### Board & Backlog
+
+| Tool | Description |
+|------|-------------|
+| `jira_list_boards` | List all boards in the project |
+| `jira_create_board` | Create a new Scrum or Kanban board |
+| `jira_get_board_issues` | Get all issues on a board |
+| `jira_get_backlog` | Get backlog items |
+| `jira_move_issue_to_backlog` | Move issue to backlog |
+| `jira_rank_issues` | Reorder issues in backlog |
+
+### Epics & Versions
+
+| Tool | Description |
+|------|-------------|
+| `jira_create_epic` | Create a new epic |
+| `jira_assign_issue_to_epic` | Add issues to an epic |
+| `jira_get_epic_issues` | List all issues in an epic |
+| `jira_list_versions` | List project versions/releases |
+| `jira_create_version` | Create a new version |
+| `jira_update_version` | Update version details |
+| `jira_delete_version` | Delete a version |
+
+### Time Tracking
+
+| Tool | Description |
+|------|-------------|
+| `jira_add_worklog` | Log time spent on an issue |
+| `jira_update_worklog` | Update existing work log |
+| `jira_delete_worklog` | Remove a work log entry |
+| `jira_get_worklogs` | Get all work logs for an issue |
+
+### Confluence Pages
+
+| Tool | Description |
+|------|-------------|
+| `confluence_list_pages` | List pages in a space |
+| `confluence_get_page` | Get page content |
+| `confluence_get_page_children` | Get child pages |
+| `confluence_create_page` | Create a new page |
+| `confluence_update_page` | Update page content |
+| `confluence_delete_page` | Delete a page |
+| `confluence_search` | Search using CQL (Confluence Query Language) |
+
+### Confluence Collaboration
+
+| Tool | Description |
+|------|-------------|
+| `confluence_list_spaces` | List all spaces |
+| `confluence_get_comments` | Get page comments |
+| `confluence_add_comment` | Add a comment to a page |
+| `confluence_get_labels` | Get page labels |
+| `confluence_add_label` | Add a label to a page |
+| `confluence_search_user` | Search for users |
+
+## Using with Heroku AI Agents
+
+Once registered, use the connector through the Heroku Agents API:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Create a bug ticket for the login page crash on mobile devices"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["jira-mcp"]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Create a bug ticket for the login page crash on mobile devices"}
+    ],
+    "mcp_servers": ["jira-mcp"]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## Configuration
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `JIRA_HOST` | Your Atlassian instance URL (e.g., `https://company.atlassian.net`) | Yes |
+| `JIRA_EMAIL` | Email associated with your Atlassian account | Yes |
+| `JIRA_API_TOKEN` | API token from Atlassian account settings | Yes |
+
+<Note>
+  The same credentials work for both Jira and Confluence if they're on the same Atlassian instance.
+</Note>
+
+## Example Use Cases
+
+### Sprint Planning
+
+```
+"Move all unfinished issues from Sprint 5 to Sprint 6"
+```
+
+### Bug Triage
+
+```
+"Find all critical bugs created this week and assign them to the platform team"
+```
+
+### Documentation
+
+```
+"Create a Confluence page documenting the new authentication flow based on the Jira epic PROJ-123"
+```
+
+### Status Reports
+
+```
+"Summarize the progress of Sprint 7 including completed issues and remaining work"
+```
+
+### Issue Creation
+
+```
+"Create a story for implementing dark mode with acceptance criteria and link it to the UI Refresh epic"
+```
+
+## Jira Editions
+
+<Warning>
+  Sprint and board management tools require **Jira Software**. If you're using Jira Work Management or Jira Service Management, some agile-specific tools may not be available.
+</Warning>
+
+## Additional Resources
+
+- [Atlassian MCP Documentation](https://support.atlassian.com/atlassian-rovo-mcp-server/docs/use-atlassian-rovo-mcp-server/)
+- [Jira REST API Reference](https://developer.atlassian.com/cloud/jira/platform/rest/v3/)
+- [Confluence REST API Reference](https://developer.atlassian.com/cloud/confluence/rest/v2/)
+- [Heroku MCP Integration Guide](/tools/custom)
+- [Heroku Agents API](/inference-api/agents-heroku)

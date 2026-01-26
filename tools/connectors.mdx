@@ -1,0 +1,166 @@
+---
+title: "Connectors"
+description: "Connect AI agents to external services like Jira, Salesforce, Zendesk, and more"
+---
+
+Connectors extend your AI agents with access to external services and data sources. Each connector is an MCP server that provides tools for interacting with a specific platform.
+
+## Available Connectors
+
+<CardGroup cols={2}>
+  <Card title="Jira & Confluence" icon="puzzle-piece" href="/connectors/jira-confluence">
+    Manage issues, sprints, boards, and Confluence pages with 51 tools for complete Atlassian integration
+  </Card>
+  <Card title="Salesforce CRM" icon="cloud" href="/connectors/salesforce-crm">
+    Query and modify Salesforce data with SOQL, create records, and access object metadata
+  </Card>
+  <Card title="Zendesk Support" icon="headset" href="/connectors/zendesk-support">
+    Manage support tickets, add comments, and access Help Center knowledge base
+  </Card>
+  <Card title="Bright Data Search" icon="globe" href="/connectors/brightdata-search">
+    Search the web, scrape content, and automate browsers with anti-blocking technology
+  </Card>
+  <Card title="Exa AI Search" icon="magnifying-glass" href="/connectors/exa-search">
+    Neural search engine with semantic understanding for research and content discovery
+  </Card>
+  <Card title="Playwright Browser" icon="browser" href="/connectors/playwright-browser">
+    Automate web browsers for testing, screenshots, and complex web interactions
+  </Card>
+</CardGroup>
+
+## Integration Methods
+
+There are three ways to connect external services to your Heroku AI agents:
+
+### Method 1: Deploy MCP Server to Heroku (Recommended)
+
+Deploy an MCP server as a Heroku app and register it with your AI model. Tools become available through the `/v1/agents/heroku` endpoint.
+
+```bash
+# Deploy the MCP server
+heroku create my-jira-mcp
+git push heroku main
+
+# Attach your AI model
+heroku addons:attach my-app::INFERENCE -a my-jira-mcp
+
+# Tools are now available via /v1/agents/heroku
+```
+
+**Best for:** Production deployments, full control over configuration, no external dependencies.
+
+### Method 2: Connect to Remote MCP Servers
+
+Some services offer hosted MCP servers (e.g., Atlassian's `mcp.atlassian.com`). Connect using the Vercel AI SDK or Pydantic AI as an MCP client.
+
+<Tabs>
+  <Tab title="Vercel AI SDK">
+```typescript
+import { experimental_createMCPClient } from "ai/mcp";
+import { createHeroku } from "@heroku/ai-provider";
+
+const mcpClient = await experimental_createMCPClient({
+  transport: {
+    type: "sse",
+    url: "https://mcp.atlassian.com/v1/sse",
+  },
+});
+
+const tools = await mcpClient.tools();
+const heroku = createHeroku();
+
+const response = await generateText({
+  model: heroku("claude-4-sonnet"),
+  tools,
+  prompt: "List my open Jira issues",
+});
+```
+  </Tab>
+  <Tab title="Pydantic AI">
+```python
+from pydantic_ai import Agent
+from pydantic_ai.mcp import MCPServerSSE
+
+mcp_server = MCPServerSSE("https://mcp.atlassian.com/v1/sse")
+
+agent = Agent(
+    "heroku:claude-4-sonnet",
+    mcp_servers=[mcp_server]
+)
+
+async with agent.run_mcp_servers():
+    result = await agent.run("List my open Jira issues")
+    print(result.output)
+```
+  </Tab>
+</Tabs>
+
+**Best for:** Using official hosted MCP servers, quick prototyping, when you don't need custom configuration.
+
+### Method 3: Direct API Integration
+
+For services without MCP support, build custom tools that call APIs directly. See [Custom Tools](/tool-use/working-with-mcp) for details.
+
+## Connector Comparison
+
+| Connector | Official Remote MCP | Deploy to Heroku | Tools |
+|-----------|---------------------|------------------|-------|
+| **Jira & Confluence** | `mcp.atlassian.com` | Community server | 51 tools |
+| **Salesforce** | Beta (GA Feb 2026) | Community server | 5 tools |
+| **Zendesk** | Not available | Community server | 6 tools |
+| **Bright Data** | Not available | Official server | 10+ tools |
+| **Exa AI** | Not available | Community server | 6 tools |
+| **Playwright** | Not available | Official server | 8+ tools |
+
+## Quick Start
+
+### 1. Choose a Connector
+
+Browse the available connectors above and click through to the detailed documentation.
+
+### 2. Deploy or Connect
+
+Each connector page includes:
+- One-click "Deploy to Heroku" button (for Heroku deployment)
+- Configuration for remote MCP connection (where available)
+- Required environment variables and API keys
+
+### 3. Use with Agents
+
+Once connected, include the MCP server in your agent requests:
+
+```python
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Create a Jira ticket for the login bug"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["jira-mcp"]
+        }
+    }
+)
+```
+
+## Building Custom Connectors
+
+Need to connect to a service not listed here? You can build your own MCP server:
+
+1. Implement the [MCP protocol](https://modelcontextprotocol.io/docs/specification)
+2. Define tools with clear descriptions and input schemas
+3. Deploy to Heroku with an `mcp:` process in your Procfile
+4. Attach your AI model to register the tools
+
+See [Custom Tools](/tools/custom) for a complete guide.
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="MCP Overview" icon="plug" href="/model-context/overview">
+    Learn about the Model Context Protocol
+  </Card>
+  <Card title="Agents API" icon="robot" href="/inference-api/agents-heroku">
+    Full API reference for using tools with agents
+  </Card>
+</CardGroup>

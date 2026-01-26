@@ -1,0 +1,245 @@
+---
+title: "Exa AI Search"
+description: "Enable AI agents to perform intelligent web searches using Exa's neural search engine with semantic understanding"
+---
+
+The Exa MCP server provides AI agents with access to Exa's neural search engine, which understands the meaning behind queries rather than just matching keywords. This enables more accurate and relevant search results for complex research tasks.
+
+## Overview
+
+Exa's search capabilities differ from traditional search engines:
+
+- **Neural search**: Understands query semantics, not just keywords
+- **Content extraction**: Returns clean, structured content from pages
+- **Company research**: Deep crawling of company websites
+- **LinkedIn integration**: Search LinkedIn profiles and companies
+- **Deep research**: Multi-step research with comprehensive reports
+
+## Deploy to Heroku
+
+Deploy the Exa MCP server to Heroku with one click:
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dsouza-anush/exa-mcp-server-heroku)
+
+After deployment, set your Exa API key:
+
+```bash
+heroku config:set EXA_API_KEY=your-exa-api-key -a your-app-name
+```
+
+Get your API key from [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys).
+
+## Register with Heroku AI
+
+Register the MCP server with your Heroku AI model:
+
+```bash
+heroku ai:mcp:servers:add exa-search \
+  --app your-inference-app \
+  --server-app your-exa-mcp-app
+```
+
+## Available Tools
+
+### Web Search
+
+| Tool | Description |
+|------|-------------|
+| `web_search_exa` | Perform semantic web searches with content extraction |
+| `crawling` | Extract content from specific URLs |
+
+### Research Tools
+
+| Tool | Description |
+|------|-------------|
+| `company_research` | Comprehensive company research by crawling company websites |
+| `linkedin_search` | Search LinkedIn for companies and people |
+| `deep_researcher_start` | Start an AI-powered deep research task |
+| `deep_researcher_check` | Check status and get results of deep research |
+
+## Using with Heroku AI Agents
+
+Perform intelligent searches through the Heroku Agents API:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Find recent research papers about transformer architectures in NLP"}
+    ],
+    extra_body={
+        "heroku": {
+            "mcp_servers": ["exa-search"]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Find recent research papers about transformer architectures in NLP"}
+    ],
+    "mcp_servers": ["exa-search"]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## Tool Details
+
+### web_search_exa
+
+Performs semantic web searches optimized for AI consumption. Returns relevant results with extracted content.
+
+**Parameters:**
+- `query` (string): The search query
+- `num_results` (integer, optional): Number of results to return (default: 10)
+- `include_domains` (array, optional): Limit search to specific domains
+- `exclude_domains` (array, optional): Exclude specific domains from results
+
+**Example query:**
+```
+"Find tutorials on building RAG applications with LangChain"
+```
+
+### company_research
+
+Crawls company websites to gather comprehensive information about businesses.
+
+**Parameters:**
+- `company_name` (string): Name of the company to research
+- `company_url` (string, optional): Company website URL
+
+**Example query:**
+```
+"Research Anthropic and tell me about their products and team"
+```
+
+### crawling
+
+Extracts clean content from specific URLs. Useful for reading articles, documentation, or any web page.
+
+**Parameters:**
+- `url` (string): The URL to crawl and extract content from
+
+**Example query:**
+```
+"Extract the content from this blog post: https://example.com/blog/ai-trends"
+```
+
+### linkedin_search
+
+Searches LinkedIn for people and companies using Exa's neural search.
+
+**Parameters:**
+- `query` (string): Search query for LinkedIn profiles or companies
+
+**Example query:**
+```
+"Find the LinkedIn profile of the CEO of Stripe"
+```
+
+### deep_researcher_start / deep_researcher_check
+
+For complex research questions, the deep researcher performs multi-step research:
+
+1. Searches multiple sources
+2. Reads and analyzes content
+3. Synthesizes a comprehensive report
+
+**Start a research task:**
+```
+"Start deep research on the current state of quantum computing and its potential applications in cryptography"
+```
+
+**Check research status:**
+```
+"Check if my quantum computing research is complete"
+```
+
+## Configuration Options
+
+Configure which tools are available via environment variables:
+
+```bash
+heroku config:set ENABLED_TOOLS=web_search_exa,company_research,crawling -a your-exa-mcp-app
+```
+
+Available tools:
+- `web_search_exa`
+- `company_research`
+- `crawling`
+- `linkedin_search`
+- `deep_researcher_start`
+- `deep_researcher_check`
+
+If not specified, all tools are enabled by default.
+
+## Example Use Cases
+
+### Academic Research
+
+```
+"Find peer-reviewed papers on climate change mitigation strategies published in the last 2 years"
+```
+
+### Market Research
+
+```
+"Research the top 3 competitors in the project management software space and summarize their key features"
+```
+
+### Technical Documentation
+
+```
+"Find the official documentation for implementing OAuth 2.0 with Python"
+```
+
+### News and Trends
+
+```
+"Search for recent news about AI regulation in the European Union"
+```
+
+### Company Intelligence
+
+```
+"Research Heroku and provide an overview of their platform, pricing, and target customers"
+```
+
+## Neural Search vs Keyword Search
+
+Exa's neural search understands query intent:
+
+| Query | Keyword Search | Neural Search |
+|-------|---------------|---------------|
+| "How do transformers work" | Results about electrical transformers | Results about transformer neural networks |
+| "Apple latest news" | Mixed results | Results about Apple Inc. technology news |
+| "Python best practices" | General Python results | Coding style guides and tutorials |
+
+This semantic understanding makes Exa particularly effective for research and technical queries.
+
+## Additional Resources
+
+- [Exa Documentation](https://docs.exa.ai/)
+- [Exa API Reference](https://docs.exa.ai/reference)
+- [Custom Tools Guide](/tools/custom)
+- [Heroku Agents API](/inference-api/agents-heroku)

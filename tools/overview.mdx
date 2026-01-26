@@ -1,0 +1,130 @@
+---
+title: "Tools Overview"
+description: "Extend AI agents with tools to execute code, query databases, and connect to external services"
+---
+
+Tools enable AI agents to take actions beyond generating text. With Heroku's Managed Inference and Agents add-on, agents can execute code, query databases, search the web, and connect to external services like Jira, Salesforce, and Zendesk.
+
+## How Tools Work
+
+When you make a request to the `/v1/agents/heroku` endpoint with tools enabled, Heroku:
+
+1. Sends your prompt and tool definitions to the model
+2. The model decides which tools to call based on the user's request
+3. Heroku executes the tool calls in secure, isolated dynos
+4. Results are returned to the model for the final response
+
+This agentic loop continues until the model has all the information needed to respond.
+
+## Types of Tools
+
+<CardGroup cols={3}>
+  <Card title="Built-in Tools" icon="wrench" href="/tool-use/heroku-tools">
+    Execute code, run SQL queries, and process documents using Heroku's first-party tools
+  </Card>
+  <Card title="Connectors" icon="plug" href="/tools/connectors">
+    Connect to external services like Jira, Salesforce, Zendesk, and more via MCP servers
+  </Card>
+  <Card title="Custom Tools" icon="code" href="/tool-use/working-with-mcp">
+    Build your own tools using the Model Context Protocol (MCP)
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+Enable code execution for your agent:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.getenv("INFERENCE_URL") + "/v1",
+    api_key=os.getenv("INFERENCE_KEY")
+)
+
+response = client.chat.completions.create(
+    model=os.getenv("INFERENCE_MODEL_ID"),
+    messages=[
+        {"role": "user", "content": "Calculate the first 10 Fibonacci numbers"}
+    ],
+    extra_body={
+        "heroku": {
+            "tools": [
+                {
+                    "type": "heroku_tool",
+                    "name": "code_exec_python",
+                    "runtime_params": {
+                        "target_app_name": "my-app"
+                    }
+                }
+            ]
+        }
+    }
+)
+
+print(response.choices[0].message.content)
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+curl $INFERENCE_URL/v1/agents/heroku \
+  -H "Authorization: Bearer $INFERENCE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'$INFERENCE_MODEL_ID'",
+    "messages": [
+      {"role": "user", "content": "Calculate the first 10 Fibonacci numbers"}
+    ],
+    "tools": [
+      {
+        "type": "heroku_tool",
+        "name": "code_exec_python",
+        "runtime_params": {
+          "target_app_name": "my-app"
+        }
+      }
+    ]
+  }'
+```
+  </Tab>
+</Tabs>
+
+## Tool Categories
+
+| Category | Tools | Use Cases |
+|----------|-------|-----------|
+| **Code Execution** | `code_exec_python`, `code_exec_ruby`, `code_exec_node`, `code_exec_go` | Data processing, calculations, algorithm testing |
+| **Database** | `pg_psql`, `pg_vector_query` | SQL queries, vector similarity search |
+| **Documents** | `doc_reader` | PDF/HTML parsing, content extraction |
+| **Web Search** | Bright Data, Exa AI | Real-time web search, content scraping |
+| **Browser** | Playwright | Web automation, screenshots, form filling |
+| **Enterprise** | Jira, Salesforce, Zendesk | CRM, ticketing, project management |
+
+## Security
+
+All tools run in isolated, one-off dynos with:
+
+- **Process isolation** - Each tool execution is sandboxed
+- **Time limits** - Configurable TTL prevents runaway processes
+- **Call limits** - Set maximum tool invocations per request
+- **Read-only databases** - Database tools require follower databases by default
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Built-in Tools" icon="wrench" href="/tool-use/heroku-tools">
+    Use Heroku's code execution, SQL, and document tools
+  </Card>
+  <Card title="Connectors" icon="plug" href="/tools/connectors">
+    Connect to Jira, Salesforce, Zendesk, and more
+  </Card>
+  <Card title="Custom Tools" icon="code" href="/tool-use/working-with-mcp">
+    Build and deploy your own MCP tools
+  </Card>
+  <Card title="Agents API" icon="robot" href="/inference-api/agents-heroku">
+    Full API reference for the agents endpoint
+  </Card>
+</CardGroup>

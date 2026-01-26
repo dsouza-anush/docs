@@ -53,16 +53,15 @@
             ]
           },
           {
-            "group": "Tools & agents",
+            "group": "Tools",
             "pages": [
+              "tools/overview",
               "tool-use/heroku-tools",
               "tool-use/heroku-tools/code-execution",
               "tool-use/heroku-tools/run-sql",
               "tool-use/heroku-tools/doc-reader",
-              "tool-use/working-with-mcp",
-              "tool-use/brightdata-search",
-              "tool-use/playwright-browser",
-              "tool-use/exa-search"
+              "tools/connectors",
+              "tool-use/working-with-mcp"
             ]
           },
           {
